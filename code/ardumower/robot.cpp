@@ -78,6 +78,7 @@ Robot::Robot(){
   developerActive = false;
   rc.setRobot(this);
   
+  batteryNextChargeAfterFull = 0;
   lastSensorTriggeredTime =0;
 	stateLast = stateCurr = stateNext = STATE_OFF; 
   stateTime = 0;
@@ -1609,7 +1610,10 @@ void Robot::loop()  {
       // waiting until auto-start by user or timer triggered
       if (batMonitor){
         if (chgVoltage > 5.0) {
-          if (batVoltage < startChargingIfBelow && (millis()-stateStartTime>2000)){
+          if (batVoltage < startChargingIfBelow 
+             && (millis()-stateStartTime>2000) 
+             && (millis() >= batteryNextChargeAfterFull)) { // only try to start charging again if it's over 30mins from last time battery full
+            batteryNextChargeAfterFull = 0; 
             setNextState(STATE_STATION_CHARGING,0);
           } else checkTimer();  
         } else setNextState(STATE_OFF,0);
@@ -1618,8 +1622,10 @@ void Robot::loop()  {
     case STATE_STATION_CHARGING:
       // waiting until charging completed    
       if (batMonitor){
-        if ((chgCurrent < batFullCurrent) && (millis()-stateStartTime>2000)) setNextState(STATE_STATION,0); 
-          else if (millis()-stateStartTime > chargingTimeout) {            
+        if ((chgCurrent < batFullCurrent) && (millis()-stateStartTime>2000)) { 
+          batteryNextChargeAfterFull = millis () + 1800000 ;
+          setNextState(STATE_STATION,0); 
+        } else if (millis()-stateStartTime > chargingTimeout) {            
 						Console.println(F("Battery chargingTimeout"));
 						addErrorCounter(ERR_BATTERY);
             setNextState(STATE_ERROR, 0);

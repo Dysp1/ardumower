@@ -188,6 +188,7 @@ class Robot
     unsigned long stateTime;
     const char* stateName();
     unsigned long stateStartTime;
+    unsigned long batteryNextChargeAfterFull;
     unsigned long stateEndTime;
     int idleTimeSec;    
     // --------- timer ----------------------------------
