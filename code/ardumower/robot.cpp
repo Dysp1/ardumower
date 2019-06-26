@@ -512,7 +512,7 @@ void Robot::readSensors(){
 
  if ((sonarUse) && (millis() >= nextTimeSonar)){
     static char senSonarTurn = SEN_SONAR_CENTER;    
-    nextTimeSonar = millis() + 250;
+    nextTimeSonar = millis() + 100;
     
     switch(senSonarTurn) {
       case SEN_SONAR_RIGHT:
@@ -968,7 +968,7 @@ void Robot::checkRain(){
 void Robot::checkSonar(){
   if(!sonarUse) return;
   if (millis() < nextTimeCheckSonar) return;
-  nextTimeCheckSonar = millis() + 500;
+  nextTimeCheckSonar = millis() + 100;
   if ((mowPatternCurr == MOW_BIDIR) && (millis() < stateStartTime + 4000)) return;
   if (sonarDistCenter < 11 || sonarDistCenter > 100) sonarDistCenter = NO_ECHO; // Objekt ist zu nah am Sensor Wert ist unbrauchbar
   if (sonarDistRight < 11 || sonarDistRight > 100) sonarDistRight = NO_ECHO; // Object is too close to the sensor. Sensor value is useless
@@ -998,7 +998,16 @@ void Robot::checkSonar(){
         }
    }  
   
-	 if (sonarTriggerBelow != 0){
+	 if (sonarTriggerBelow != 0  // Sonars may mess up reversing and rolls. sonars are in front so only use them for forward motion
+    && stateCurr != STATE_ROLL
+    && stateCurr != STATE_REVERSE
+    && stateCurr != STATE_PERI_ROLL
+    && stateCurr != STATE_PERI_REV
+    && stateCurr != STATE_STATION_REV
+    && stateCurr != STATE_STATION_ROLL
+    && stateCurr != STATE_ROLL_WAIT
+    && stateCurr != STATE_PERI_OUT_REV
+    && stateCurr != STATE_PERI_OUT_ROLL){
 		if ((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow)) {
 			sonarDistCounter++;   
 			setSensorTriggered(SEN_SONAR_CENTER);
