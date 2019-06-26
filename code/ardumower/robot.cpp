@@ -1045,7 +1045,7 @@ void Robot::checkTilt(){
   int pitchAngle = (imu.ypr.pitch/PI*180.0);
   int rollAngle  = (imu.ypr.roll/PI*180.0);
   if ( (stateCurr != STATE_OFF) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_STATION) ){
-    if ( (abs(pitchAngle) > 40) || (abs(rollAngle) > 40) ){
+    if ( (abs(pitchAngle) > 60) || (abs(rollAngle) > 60) ){
       Console.println(F("Error: IMU tilt"));
       addErrorCounter(ERR_IMU_TILT);
 			setSensorTriggered(SEN_TILT);
