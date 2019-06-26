@@ -135,6 +135,7 @@ Robot::Robot(){
   
   gpsLat = gpsLon = gpsX = gpsY = 0;
   robotIsStuckCounter = 0;
+  gpsMaxAchievedSpeed = 0;
 
   imuDriveHeading = 0;
   imuRollHeading = 0;
@@ -1060,33 +1061,38 @@ void Robot::checkTilt(){
 // check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
 void Robot::checkIfStuck(){
   if (millis() < nextTimeCheckIfStuck) return;
-  nextTimeCheckIfStuck = millis() + 300;
-  if ((gpsUse) && (gps.hdop() < 500))  {
+  nextTimeCheckIfStuck = millis() + 500;
+  if ((gpsUse) && (gps.hdop() < 500) && (gps.satellites() > 3) && (gps.satellites() < 250) ) {
     //float gpsSpeedRead = gps.f_speed_kmph();
     float gpsSpeed = gps.f_speed_kmph();
-    if (gpsSpeedIgnoreTime >= motorReverseTime) gpsSpeedIgnoreTime = motorReverseTime - 500;
+    gpsMaxAchievedSpeed = max(gpsMaxAchievedSpeed, gpsSpeed);
+    if ( (gpsSpeedIgnoreTime >= motorReverseTime) && (stateCurr == STATE_REVERSE)) tempGpsSpeedIgnoreTime = motorReverseTime - 500;
+    else tempGpsSpeedIgnoreTime = gpsSpeedIgnoreTime; //only use lower setting while reversing. reverse is short so have to check the stuck faster
     // low-pass filter
     // double accel = 0.1;
     // float gpsSpeed = (1.0-accel) * gpsSpeed + accel * gpsSpeedRead;
     // Console.println(gpsSpeed);
     // Console.println(robotIsStuckCounter);
     // Console.println(errorCounter[ERR_STUCK]);
-    if ((stateCurr != STATE_MANUAL) && (stateCurr != STATE_REMOTE) && (gpsSpeed <= stuckIfGpsSpeedBelow)    // checks if mower is stuck and counts up
-      && ((motorLeftRpmCurr && motorRightRpmCurr) != 0) && (millis() > stateStartTime + gpsSpeedIgnoreTime) ){
+    if ((stateCurr != STATE_MANUAL) 
+      && (stateCurr != STATE_REMOTE) 
+      && (gpsSpeed <= stuckIfGpsSpeedBelow)   // checks if mower is stuck and counts up
+      && (gpsMaxAchievedSpeed > stuckIfGpsSpeedBelow) // gpsSpeed not reliable. Only add error if the gpsSpeed has been above the stuck limit.
+      && ((motorLeftRpmCurr && motorRightRpmCurr) != 0) 
+      && (millis() > stateStartTime + tempGpsSpeedIgnoreTime) ){
       robotIsStuckCounter++;
-    }
-
-    else {                         // if mower gets unstuck it resets errorCounterMax to zero and reenabling motorMow
-        robotIsStuckCounter = 0;    // resets temporary counter to zero
+    } else {                        // if mower gets unstuck it resets errorCounterMax to zero and reenabling motorMow
+      robotIsStuckCounter = 0;    // resets temporary counter to zero
+      gpsMaxAchievedSpeed = 0;        
       if ( (errorCounter[ERR_STUCK] == 0) && (stateCurr != STATE_OFF) && (stateCurr != STATE_MANUAL) && (stateCurr != STATE_STATION) 
         && (stateCurr != STATE_STATION_CHARGING) && (stateCurr != STATE_STATION_CHECK) 
         && (stateCurr != STATE_STATION_REV) && (stateCurr != STATE_STATION_ROLL) 
         && (stateCurr != STATE_REMOTE) && (stateCurr != STATE_ERROR)) {
         motorMowEnable = true;
         errorCounterMax[ERR_STUCK] = 0;
-      }
+        }
       return;
-    }
+      }
 
     if (robotIsStuckCounter >= 5){    
       motorMowEnable = false;
@@ -1118,7 +1124,7 @@ void Robot::checkIfStuck(){
 void Robot::processGPSData()
 {
   if (millis() < nextTimeGPS) return;
-  nextTimeGPS = millis() + 1000;
+  nextTimeGPS = millis() + 500;
   float nlat, nlon;
   unsigned long age;
   gps.f_get_position(&nlat, &nlon, &age);
