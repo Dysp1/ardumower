@@ -162,9 +162,9 @@ void Perimeter::matchedFilter(byte idx){
 
   // perimeter inside/outside detection
   if (mag[idx] > 0){
-    signalCounter[idx] = min(signalCounter[idx]+1, 3);    
+    signalCounter[idx] = min(signalCounter[idx]+1, 15);    
   } else {
-    signalCounter[idx] = max(signalCounter[idx]-1, -3);    
+    signalCounter[idx] = max(signalCounter[idx]-1, -15);    
   }
   if (signalCounter[idx] < 0){
     lastInsideTime[idx] = millis();
@@ -192,7 +192,7 @@ float Perimeter::getFilterQuality(byte idx){
 }
 
 boolean Perimeter::isInside(byte idx){
-  if (abs(mag[idx]) > 1000) {
+  if (abs(mag[idx]) > 500) {
     // Large signal, the in/out detection is reliable.
     // Using mag yields very fast in/out transition reporting.
     return (mag[idx]<0);

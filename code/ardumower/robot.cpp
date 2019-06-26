@@ -78,6 +78,7 @@ Robot::Robot(){
   developerActive = false;
   rc.setRobot(this);
   
+  batteryNextChargeAfterFull = 0;
   lastSensorTriggeredTime =0;
 	stateLast = stateCurr = stateNext = STATE_OFF; 
   stateTime = 0;
@@ -511,7 +512,7 @@ void Robot::readSensors(){
 
  if ((sonarUse) && (millis() >= nextTimeSonar)){
     static char senSonarTurn = SEN_SONAR_CENTER;    
-    nextTimeSonar = millis() + 250;
+    nextTimeSonar = millis() + 100;
     
     switch(senSonarTurn) {
       case SEN_SONAR_RIGHT:
@@ -967,7 +968,7 @@ void Robot::checkRain(){
 void Robot::checkSonar(){
   if(!sonarUse) return;
   if (millis() < nextTimeCheckSonar) return;
-  nextTimeCheckSonar = millis() + 500;
+  nextTimeCheckSonar = millis() + 100;
   if ((mowPatternCurr == MOW_BIDIR) && (millis() < stateStartTime + 4000)) return;
   if (sonarDistCenter < 11 || sonarDistCenter > 100) sonarDistCenter = NO_ECHO; // Objekt ist zu nah am Sensor Wert ist unbrauchbar
   if (sonarDistRight < 11 || sonarDistRight > 100) sonarDistRight = NO_ECHO; // Object is too close to the sensor. Sensor value is useless
@@ -997,7 +998,16 @@ void Robot::checkSonar(){
         }
    }  
   
-	 if (sonarTriggerBelow != 0){
+	 if (sonarTriggerBelow != 0  // Sonars may mess up reversing and rolls. sonars are in front so only use them for forward motion
+    && stateCurr != STATE_ROLL
+    && stateCurr != STATE_REVERSE
+    && stateCurr != STATE_PERI_ROLL
+    && stateCurr != STATE_PERI_REV
+    && stateCurr != STATE_STATION_REV
+    && stateCurr != STATE_STATION_ROLL
+    && stateCurr != STATE_ROLL_WAIT
+    && stateCurr != STATE_PERI_OUT_REV
+    && stateCurr != STATE_PERI_OUT_ROLL){
 		if ((sonarDistCenter != NO_ECHO) && (sonarDistCenter < sonarTriggerBelow)) {
 			sonarDistCounter++;   
 			setSensorTriggered(SEN_SONAR_CENTER);
@@ -1035,7 +1045,7 @@ void Robot::checkTilt(){
   int pitchAngle = (imu.ypr.pitch/PI*180.0);
   int rollAngle  = (imu.ypr.roll/PI*180.0);
   if ( (stateCurr != STATE_OFF) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_STATION) ){
-    if ( (abs(pitchAngle) > 40) || (abs(rollAngle) > 40) ){
+    if ( (abs(pitchAngle) > 60) || (abs(rollAngle) > 60) ){
       Console.println(F("Error: IMU tilt"));
       addErrorCounter(ERR_IMU_TILT);
 			setSensorTriggered(SEN_TILT);
@@ -1609,7 +1619,10 @@ void Robot::loop()  {
       // waiting until auto-start by user or timer triggered
       if (batMonitor){
         if (chgVoltage > 5.0) {
-          if (batVoltage < startChargingIfBelow && (millis()-stateStartTime>2000)){
+          if (batVoltage < startChargingIfBelow 
+             && (millis()-stateStartTime>2000) 
+             && (millis() >= batteryNextChargeAfterFull)) { // only try to start charging again if it's over 30mins from last time battery full
+            batteryNextChargeAfterFull = 0; 
             setNextState(STATE_STATION_CHARGING,0);
           } else checkTimer();  
         } else setNextState(STATE_OFF,0);
@@ -1618,8 +1631,10 @@ void Robot::loop()  {
     case STATE_STATION_CHARGING:
       // waiting until charging completed    
       if (batMonitor){
-        if ((chgCurrent < batFullCurrent) && (millis()-stateStartTime>2000)) setNextState(STATE_STATION,0); 
-          else if (millis()-stateStartTime > chargingTimeout) {            
+        if ((chgCurrent < batFullCurrent) && (millis()-stateStartTime>2000)) { 
+          batteryNextChargeAfterFull = millis () + 1800000 ;
+          setNextState(STATE_STATION,0); 
+        } else if (millis()-stateStartTime > chargingTimeout) {            
 						Console.println(F("Battery chargingTimeout"));
 						addErrorCounter(ERR_BATTERY);
             setNextState(STATE_ERROR, 0);
