@@ -252,6 +252,12 @@ void Robot::printSettingSerial(){
   Console.println(motorMowPID.Ki);
   Console.print  (F("motorMowPID.Kd                             : "));
   Console.println(motorMowPID.Kd);
+  Console.print  (F("motorMowCircleTriggerPower                 : "));
+  Console.println(motorMowCircleTriggerPower);
+  Console.print  (F("motorMowCircleRadiusWidenTime              : "));
+  Console.println(motorMowCircleRadiusWidenTime);
+  Console.print  (F("motorMowCircleRadiusWidenRatio             : "));
+  Console.println(motorMowCircleRadiusWidenRatio);
 
   // ------ motorMowModulate Interrupt --------------------------------------------
   Console.println(F("---------- motorMowModulate Interrupt ------------------------"));
