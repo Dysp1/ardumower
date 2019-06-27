@@ -321,7 +321,7 @@ class Robot
     int motorMowRpmCurr ;            // motor rpm (range 0..MOW_RPM)
 
     float motorMowCircleTriggerPower;
-    int motorMowCircleRadiusWidenTime;
+    float motorMowCircleRadiusWidenTime;
     float motorMowCircleRadiusWidenRatio;
 
     unsigned long lastMotorMowRpmTime;    
