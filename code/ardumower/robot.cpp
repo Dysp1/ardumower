@@ -760,7 +760,7 @@ void Robot::checkCurrent(){
   }
 
 
-  if ( motorMowSense > 0
+  if ( motorMowCircleTriggerPower > 0
       && motorMowSense >= motorMowCircleTriggerPower 
       && stateCurr == STATE_FORWARD 
       && stateCurr != STATE_CIRCLE
@@ -796,8 +796,11 @@ void Robot::checkCurrent(){
     
   if (motorLeftSense >=motorPowerMax){  
     // left wheel motor overpowered    
-    if (     ((stateCurr == STATE_FORWARD) || (stateCurr == STATE_PERI_FIND)  || (stateCurr == STATE_PERI_TRACK)) 
-          && (millis() > stateStartTime + motorPowerIgnoreTime)){    				  
+    if (  ((stateCurr == STATE_FORWARD) 
+        || (stateCurr == STATE_PERI_FIND)  
+        || (stateCurr == STATE_CIRCLE)  
+        || (stateCurr == STATE_PERI_TRACK)) 
+      && (millis() > stateStartTime + motorPowerIgnoreTime)){    				  
       //beep(1);
       motorLeftSenseCounter++;
 			setSensorTriggered(SEN_MOTOR_LEFT);
@@ -818,7 +821,11 @@ void Robot::checkCurrent(){
   }
   else if (motorRightSense >= motorPowerMax){       
      // right wheel motor overpowered
-     if ( ((stateCurr == STATE_FORWARD) || (stateCurr == STATE_PERI_FIND)) && (millis() > stateStartTime + motorPowerIgnoreTime)){    				  
+     if ( ((stateCurr == STATE_FORWARD) 
+          || (stateCurr == STATE_CIRCLE)
+          || (stateCurr == STATE_PERI_FIND) 
+          || (stateCurr == STATE_PERI_TRACK)) 
+          && (millis() > stateStartTime + motorPowerIgnoreTime)){    				  
        //beep(1);
        motorRightSenseCounter++;
 			 setSensorTriggered(SEN_MOTOR_RIGHT);
@@ -987,7 +994,6 @@ void Robot::checkSonar(){
   if (sonarDistRight < 11 || sonarDistRight > 100) sonarDistRight = NO_ECHO; // Object is too close to the sensor. Sensor value is useless
   if (sonarDistLeft < 11 || sonarDistLeft  > 100) sonarDistLeft = NO_ECHO; // Filters spiks under the possible detection limit
   // slow down motor wheel speed near obstacles   
-  if (     (stateCurr == STATE_FORWARD) 
           || (  (mowPatternCurr == MOW_BIDIR) && ((stateCurr == STATE_FORWARD) || (stateCurr == STATE_REVERSE))  )  
      ){
         if (sonarObstacleTimeout == 0) {
@@ -1263,8 +1269,8 @@ void Robot::setNextState(byte stateNew, byte dir){
 		setActuator(ACT_CHGRELAY, 0);         
   } 
   else if (stateNew == STATE_CIRCLE){      
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm/2;
-    motorRightSpeedRpmSet = 0.1;
+    motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+    motorRightSpeedRpmSet = motorSpeedMaxRpm * 0.05;
     mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime;
     statsMowTimeTotalStart = true;            
     setActuator(ACT_CHGRELAY, 0);         
@@ -1530,6 +1536,7 @@ void Robot::loop()  {
       break;
     case STATE_CIRCLE:
       // driving circles
+      
       checkErrorCounter();    
       checkTimer();
       checkRain();
@@ -1542,12 +1549,17 @@ void Robot::loop()  {
       checkLawn();      
       checkTimeout();     
 
-      if (millis() >= motorMowCircleRadiusWidenTime) {
-        motorMowCircleRadiusWidenTime = millis() + motorMowCircleRadiusWidenTime;
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/2;
-        motorRightSpeedRpmSet = min(motorSpeedMaxRpm/2,motorRightSpeedRpmSet+motorMowCircleRadiusWidenRatio);
+      if (millis() >= mowIncreaseCircleRadiusTime) {
+        mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = min(motorSpeedMaxRpm/1.25,(motorRightSpeedRpmSet * (1+motorMowCircleRadiusWidenRatio / 100)));
       }
-
+      
+      if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
+        mowIncreaseCircleRadiusTime = 0;
+        setNextState(STATE_FORWARD,0);
+      }
+      
       break;
     case STATE_REVERSE:
       // driving reverse
@@ -1750,11 +1762,3 @@ void Robot::loop()  {
                              
   loopsPerSecCounter++;  
 }
-
-
-
-
-
-
-
-

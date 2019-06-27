@@ -412,8 +412,8 @@ void RemoteControl::sendMowMenu(boolean update){
   sendSlider("o08", F("RPM set"), robot->motorMowRPMSet, "", 1, 4500);     
   sendPIDSlider("o09", "RPM", robot->motorMowPID, 0.01, 1.0);      
   sendSlider("o13", F("Circle mow trigger power"), robot->motorMowCircleTriggerPower, "", 1, robot->motorMowPowerMax);     
-  sendSlider("o14", F("Circle mow radius widen time"), robot->motorMowCircleRadiusWidenTime, "", 1, 5000);     
-  sendSlider("o15", F("Circle mow radius widen ratio"), robot->motorMowCircleRadiusWidenRatio, "", 0.1, 100);     
+  sendSlider("o14", F("Circle mow radius widen time"), robot->motorMowCircleRadiusWidenTime, "", 1, 2000);     
+  sendSlider("o15", F("Circle mow radius widen ratio"), robot->motorMowCircleRadiusWidenRatio, "", 1, 100);     
   serialPort->println(F("|o10~Testing is"));
   switch (testmode){
     case 0: serialPort->print(F("OFF")); break;
@@ -1591,6 +1591,3 @@ bool RemoteControl::readSerial(){
   }  
   return res;
 }
-
-
-
