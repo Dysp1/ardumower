@@ -764,7 +764,7 @@ void Robot::checkCurrent(){
       && motorMowSense >= motorMowCircleTriggerPower 
       && stateCurr == STATE_FORWARD 
       && stateCurr != STATE_CIRCLE
-      && !(mowPatternCurr == MOW_BIDIR)){  // if motor power goes above 15 assume that we hit longer crass and start moving around it
+      && !(mowPatternCurr == MOW_BIDIR)){  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer crass and start moving around it
        setNextState(STATE_CIRCLE, 0);
   }
 
@@ -798,7 +798,7 @@ void Robot::checkCurrent(){
     // left wheel motor overpowered    
     if (  ((stateCurr == STATE_FORWARD) 
         || (stateCurr == STATE_PERI_FIND)  
-        || (stateCurr == STATE_CIRCLE)  
+//        || (stateCurr == STATE_CIRCLE)  
         || (stateCurr == STATE_PERI_TRACK)) 
       && (millis() > stateStartTime + motorPowerIgnoreTime)){    				  
       //beep(1);
@@ -822,7 +822,7 @@ void Robot::checkCurrent(){
   else if (motorRightSense >= motorPowerMax){       
      // right wheel motor overpowered
      if ( ((stateCurr == STATE_FORWARD) 
-          || (stateCurr == STATE_CIRCLE)
+  //        || (stateCurr == STATE_CIRCLE)
           || (stateCurr == STATE_PERI_FIND) 
           || (stateCurr == STATE_PERI_TRACK)) 
           && (millis() > stateStartTime + motorPowerIgnoreTime)){    				  
@@ -994,7 +994,7 @@ void Robot::checkSonar(){
   if (sonarDistRight < 11 || sonarDistRight > 100) sonarDistRight = NO_ECHO; // Object is too close to the sensor. Sensor value is useless
   if (sonarDistLeft < 11 || sonarDistLeft  > 100) sonarDistLeft = NO_ECHO; // Filters spiks under the possible detection limit
   // slow down motor wheel speed near obstacles   
-  if ( (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE)
+  if ( (stateCurr == STATE_FORWARD) //|| stateCurr == STATE_CIRCLE)
           || (  (mowPatternCurr == MOW_BIDIR) && ((stateCurr == STATE_FORWARD) || (stateCurr == STATE_REVERSE))  )  
      ){
         if (sonarObstacleTimeout == 0) {
@@ -1551,9 +1551,9 @@ void Robot::loop()  {
       checkTimeout();     
 
       if (millis() >= mowIncreaseCircleRadiusTime) {
-        mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime;
+        mowIncreaseCircleRadiusTime = millis() + 200; //motorMowCircleRadiusWidenTime;
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = min(motorSpeedMaxRpm/1.25,((double)motorRightSpeedRpmSet + (motorSpeedMaxRpm * (1+(motorMowCircleRadiusWidenRatio / 100) ) ) ) );
+        motorRightSpeedRpmSet = motorRightSpeedRpmSet * 2; //min(motorSpeedMaxRpm/1.25,((double)motorRightSpeedRpmSet + (motorSpeedMaxRpm * (1+(motorMowCircleRadiusWidenRatio / 100) ) ) ) );
       }
       
       if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
