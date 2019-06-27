@@ -411,6 +411,11 @@ void RemoteControl::sendMowMenu(boolean update){
   serialPort->print(robot->motorMowRpmCurr);
   sendSlider("o08", F("RPM set"), robot->motorMowRPMSet, "", 1, 4500);     
   sendPIDSlider("o09", "RPM", robot->motorMowPID, 0.01, 1.0);      
+
+  sendSlider("o13", F("Circle mow trigger power"), robot->motorMowCircleTriggerPower, "", 1, robot->motorMowPowerMax);     
+  sendSlider("o14", F("Circle mow radius widen time"), robot->motorMowCircleRadiusWidenTime, "", 1, 5000);     
+  sendSlider("o15", F("Circle mow radius widen ratio"), robot->motorMowCircleRadiusWidenRatio, "", 0.1, 100);     
+
   serialPort->println(F("|o10~Testing is"));
   switch (testmode){
     case 0: serialPort->print(F("OFF")); break;
@@ -433,6 +438,11 @@ void RemoteControl::processMowMenu(String pfodCmd){
     else if (pfodCmd == "o06") robot->motorMowModulate = !robot->motorMowModulate;    
     else if (pfodCmd.startsWith("o08")) processSlider(pfodCmd, robot->motorMowRPMSet, 1);    
     else if (pfodCmd.startsWith("o09")) processPIDSlider(pfodCmd, "o09", robot->motorMowPID, 0.01, 1.0);
+
+    else if (pfodCmd.startsWith("o13")) processSlider(pfodCmd, robot->motorMowCircleTriggerPower, 1);    
+    else if (pfodCmd.startsWith("o14")) processSlider(pfodCmd, robot->motorMowCircleRadiusWidenTime, 1);    
+    else if (pfodCmd.startsWith("o15")) processSlider(pfodCmd, robot->motorMowCircleRadiusWidenRatio, 1);    
+
     else if (pfodCmd == "o10") { 
       testmode = (testmode + 1) % 2;
       switch (testmode){

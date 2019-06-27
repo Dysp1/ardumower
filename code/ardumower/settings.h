@@ -66,6 +66,9 @@ void Robot::loadSaveUserSettings(boolean readflag){
   eereadwrite(readflag, addr, motorMowPowerMax);
   eereadwrite(readflag, addr, motorMowRPMSet);
   eereadwrite(readflag, addr, motorMowSenseScale);
+  eereadwrite(readflag, addr, motorMowCircleTriggerPower);
+  eereadwrite(readflag, addr, motorMowCircleRadiusWidenTime);
+  eereadwrite(readflag, addr, motorMowCircleRadiusWidenRatio);
   eereadwrite(readflag, addr, motorLeftPID.Kp);
   eereadwrite(readflag, addr, motorLeftPID.Ki);
   eereadwrite(readflag, addr, motorLeftPID.Kd);

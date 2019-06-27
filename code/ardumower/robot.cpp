@@ -105,11 +105,13 @@ Robot::Robot(){
   motorLeftZeroTimeout = 0;
   motorRightZeroTimeout = 0;  
   rotateLeft = true;
-  
+  mowIncreaseCircleRadiusTime = 0;
+
   remoteSteer = remoteSpeed = remoteMow = remoteSwitch = 0;  
   remoteSteerLastTime = remoteSpeedLastTime =remoteMowLastTime =remoteSwitchLastTime = 0;
   remoteSteerLastState = remoteSpeedLastState = remoteMowLastState = remoteSwitchLastState = LOW;
 
+  
   motorMowRpmCounter = 0;
   motorMowRpmLastState = LOW;
   motorMowEnable = false;
@@ -757,6 +759,16 @@ void Robot::checkCurrent(){
     }
   }
 
+
+  if ( motorMowSense > 0
+      && motorMowSense >= motorMowCircleTriggerPower 
+      && stateCurr == STATE_FORWARD 
+      && stateCurr != STATE_CIRCLE
+      && !(mowPatternCurr == MOW_BIDIR)){  // if motor power goes above 15 assume that we hit longer crass and start moving around it
+       setNextState(STATE_CIRCLE, 0);
+  }
+
+
   if (motorMowSense >= motorMowPowerMax){
     motorMowSenseCounter++;
 		setSensorTriggered(SEN_MOTOR_MOW);
@@ -1250,6 +1262,13 @@ void Robot::setNextState(byte stateNew, byte dir){
     statsMowTimeTotalStart = true;            
 		setActuator(ACT_CHGRELAY, 0);         
   } 
+  else if (stateNew == STATE_CIRCLE){      
+    motorLeftSpeedRpmSet = motorSpeedMaxRpm/2;
+    motorRightSpeedRpmSet = 0.1;
+    mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime;
+    statsMowTimeTotalStart = true;            
+    setActuator(ACT_CHGRELAY, 0);         
+  } 
   else if (stateNew == STATE_REVERSE)  {
     motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;                    
     stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
@@ -1511,7 +1530,25 @@ void Robot::loop()  {
       break;
     case STATE_CIRCLE:
       // driving circles
-      break;      
+      checkErrorCounter();    
+      checkTimer();
+      checkRain();
+      checkCurrent();
+      checkFreeWheel();            
+      checkBumpers();      
+      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
+      checkSonar();             
+      checkPerimeterBoundary(); 
+      checkLawn();      
+      checkTimeout();     
+
+      if (millis() >= motorMowCircleRadiusWidenTime) {
+        motorMowCircleRadiusWidenTime = millis() + motorMowCircleRadiusWidenTime;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/2;
+        motorRightSpeedRpmSet = min(motorSpeedMaxRpm/2,motorRightSpeedRpmSet+motorMowCircleRadiusWidenRatio);
+      }
+
+      break;
     case STATE_REVERSE:
       // driving reverse
         checkErrorCounter();    

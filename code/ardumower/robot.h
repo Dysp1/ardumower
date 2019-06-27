@@ -294,6 +294,7 @@ class Robot
     int motorZeroSettleTime;     // how long (ms) to wait for motor to settle at zero speed
     int motorLeftSenseCounter ;  // motor current counter
     int motorRightSenseCounter ;
+    unsigned long mowIncreaseCircleRadiusTime ;
     unsigned long nextTimeMotorSense ;
     unsigned long lastSetMotorSpeedTime;
     unsigned long motorLeftZeroTimeout;
@@ -318,6 +319,11 @@ class Robot
     int motorMowSenseCounter ;
     int motorMowSenseErrorCounter ;
     int motorMowRpmCurr ;            // motor rpm (range 0..MOW_RPM)
+
+    float motorMowCircleTriggerPower;
+    unsigned long motorMowCircleRadiusWidenTime;
+    float motorMowCircleRadiusWidenRatio;
+
     unsigned long lastMotorMowRpmTime;    
     unsigned long nextTimeMotorControl;
     unsigned long nextTimeMotorImuControl ;

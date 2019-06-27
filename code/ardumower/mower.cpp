@@ -75,6 +75,9 @@ Mower::Mower(){
   motorLeftSwapDir           = 0;          // inverse left motor direction?
   
   // ------ mower motor -------------------------------
+  motorMowCircleTriggerPower = 0;
+  motorMowCircleRadiusWidenTime = 100;
+  motorMowCircleRadiusWidenRatio = 0.1;
   motorMowAccel              = 2000;       // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption 
   motorMowSpeedMaxPwm        = 255;        // motor mower max PWM
   motorMowPowerMax           = 75.0;       // motor mower max power (Watt)
