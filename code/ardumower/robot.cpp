@@ -1549,18 +1549,18 @@ void Robot::loop()  {
       checkPerimeterBoundary(); 
       checkLawn();      
       checkTimeout();     
-
+/*
       if (millis() >= mowIncreaseCircleRadiusTime) {
-        mowIncreaseCircleRadiusTime = millis() + 200; //motorMowCircleRadiusWidenTime;
+        mowIncreaseCircleRadiusTime = millis() + 100; //motorMowCircleRadiusWidenTime;
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = motorRightSpeedRpmSet * 2; //min(motorSpeedMaxRpm/1.25,((double)motorRightSpeedRpmSet + (motorSpeedMaxRpm * (1+(motorMowCircleRadiusWidenRatio / 100) ) ) ) );
+        motorRightSpeedRpmSet = motorRightSpeedRpmSet + 1; //min(motorSpeedMaxRpm/1.25,((double)motorRightSpeedRpmSet + (motorSpeedMaxRpm * (1+(motorMowCircleRadiusWidenRatio / 100) ) ) ) );
       }
       
       if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
         mowIncreaseCircleRadiusTime = 0;
         setNextState(STATE_FORWARD,0);
       }
-      
+*/      
       break;
     case STATE_REVERSE:
       // driving reverse
