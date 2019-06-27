@@ -994,6 +994,7 @@ void Robot::checkSonar(){
   if (sonarDistRight < 11 || sonarDistRight > 100) sonarDistRight = NO_ECHO; // Object is too close to the sensor. Sensor value is useless
   if (sonarDistLeft < 11 || sonarDistLeft  > 100) sonarDistLeft = NO_ECHO; // Filters spiks under the possible detection limit
   // slow down motor wheel speed near obstacles   
+  if ( (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE)
           || (  (mowPatternCurr == MOW_BIDIR) && ((stateCurr == STATE_FORWARD) || (stateCurr == STATE_REVERSE))  )  
      ){
         if (sonarObstacleTimeout == 0) {
@@ -1552,7 +1553,7 @@ void Robot::loop()  {
       if (millis() >= mowIncreaseCircleRadiusTime) {
         mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime;
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = min(motorSpeedMaxRpm/1.25,(motorRightSpeedRpmSet * (1+motorMowCircleRadiusWidenRatio / 100)));
+        motorRightSpeedRpmSet = min(motorSpeedMaxRpm/1.25,((double)motorRightSpeedRpmSet + (motorSpeedMaxRpm * (1+(motorMowCircleRadiusWidenRatio / 100) ) ) ) );
       }
       
       if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
