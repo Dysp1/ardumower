@@ -760,7 +760,7 @@ void Robot::checkCurrent(){
   }
 
 
-  if ( motorMowCircleTriggerPower > 0
+  if ( motorMowCircleTriggerPower > 5
       && motorMowSense >= motorMowCircleTriggerPower 
       && stateCurr == STATE_FORWARD 
       && stateCurr != STATE_CIRCLE
@@ -917,7 +917,7 @@ void Robot::checkPerimeterBoundary(){
       }     
     }
   } else {  
-    if (stateCurr == STATE_FORWARD) {
+    if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
       if (perimeterTriggerTime != 0) {
         if (millis() >= perimeterTriggerTime){        
           perimeterTriggerTime = 0;
@@ -1549,18 +1549,22 @@ void Robot::loop()  {
       checkPerimeterBoundary(); 
       checkLawn();      
       checkTimeout();     
-/*
+      
+
       if (millis() >= mowIncreaseCircleRadiusTime) {
-        mowIncreaseCircleRadiusTime = millis() + 100; //motorMowCircleRadiusWidenTime;
+        mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime + (motorMowCircleRadiusWidenTime * motorMowCircleRadiusWidenRatio);
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = motorRightSpeedRpmSet + 1; //min(motorSpeedMaxRpm/1.25,((double)motorRightSpeedRpmSet + (motorSpeedMaxRpm * (1+(motorMowCircleRadiusWidenRatio / 100) ) ) ) );
+        //motorRightSpeedRpmSet = min((double)((double)motorSpeedMaxRpm/1.25), (double)((double)motorRightSpeedRpmSet + ((double)motorSpeedMaxRpm * ((double)motorMowCircleRadiusWidenRatio / 100))));
+        motorRightSpeedRpmSet = motorRightSpeedRpmSet+1;
       }
       
       if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
         mowIncreaseCircleRadiusTime = 0;
         setNextState(STATE_FORWARD,0);
       }
-*/      
+      
       break;
     case STATE_REVERSE:
       // driving reverse

@@ -162,9 +162,9 @@ void Perimeter::matchedFilter(byte idx){
 
   // perimeter inside/outside detection
   if (mag[idx] > 0){
-    signalCounter[idx] = min(signalCounter[idx]+1, 15);    
+    signalCounter[idx] = min(signalCounter[idx]+1, 30);    
   } else {
-    signalCounter[idx] = max(signalCounter[idx]-1, -15);    
+    signalCounter[idx] = max(signalCounter[idx]-1, -30);    
   }
   if (signalCounter[idx] < 0){
     lastInsideTime[idx] = millis();
@@ -263,7 +263,3 @@ int16_t Perimeter::corrFilter(int8_t *H, int8_t subsample, int16_t M, int8_t *ip
     return sumMin;
   }  
 }
-
-
-
-
