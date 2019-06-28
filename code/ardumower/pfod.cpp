@@ -1198,15 +1198,6 @@ void RemoteControl::run(){
   if (pfodState == PFOD_LOG_SENSORS){
       //robot->printInfo(Bluetooth);
       //serialPort->println("test");
-//Markor debug
-      serialPort->print("DDDD:");
-      serialPort->print(robot->mowIncreaseCircleRadiusTime);
-      serialPort->print(",");
-      serialPort->print(robot->motorLeftSpeedRpmSet);
-      serialPort->print(",");
-      serialPort->print(robot->motorRightSpeedRpmSet);
-      serialPort->print(":::");
-
       serialPort->print((float(millis())/1000.0f));
       serialPort->print(",");
       serialPort->print(robot->motorLeftSense);
