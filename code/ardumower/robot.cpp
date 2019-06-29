@@ -77,7 +77,7 @@ Robot::Robot(){
   name = "Generic";
   developerActive = false;
   rc.setRobot(this);
-  
+
   batteryNextChargeAfterFull = 0;
   lastSensorTriggeredTime =0;
 	stateLast = stateCurr = stateNext = STATE_OFF; 
@@ -283,6 +283,11 @@ void Robot::setUserSwitches(){
 }
 
 void Robot::setup()  {     
+  
+  while(Console.available() > 0) {
+    char t = Console.read();
+  }
+
   setDefaultTime();
   setMotorPWM(0, 0, false);
   loadSaveErrorCounters(true);
