@@ -13,7 +13,8 @@ char Robot::waitCharConsole() {
 String Robot::waitStringConsole() {
   String s = "";
   char ch;
-  while (true) {
+  unsigned long waitTimeForString = millis() + 5000; 
+  while (millis() >= waitTimeForString) { //Only wait for the end char max of 5000ms
     ch = waitCharConsole();
     if (ch=='\n' || ch=='\r')
       break;
@@ -522,4 +523,3 @@ void Robot::readSerial() {
 	 }
   }    
 }
-
