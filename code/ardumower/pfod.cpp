@@ -298,6 +298,10 @@ void RemoteControl::sendMotorMenu(boolean update){
   serialPort->print(robot->motorLeftPWMCurr);
   serialPort->print(", ");
   serialPort->print(robot->motorRightPWMCurr);
+  serialPort->print(F("|a05~Speed l, r rpm"));
+  serialPort->print(robot->motorLeftRpmCurr);
+  serialPort->print(", ");
+  serialPort->print(robot->motorRightRpmCurr);
   sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255);      
   sendSlider("a11", F("Accel"), robot->motorAccel, "", 1, 2000, 500);  
   sendSlider("a18", F("Power ignore time"), robot->motorPowerIgnoreTime, "", 1, 8000);     
@@ -640,7 +644,41 @@ void RemoteControl::sendGPSMenu(boolean update){
   serialPort->print(F("|q00~Use "));
   sendYesNo(robot->gpsUse);
   sendSlider("q01", F("Stuck if GPS speed is below"), robot->stuckIfGpsSpeedBelow, "", 0.1, 3); 
-  sendSlider("q02", F("GPS speed ignore time"), robot->gpsSpeedIgnoreTime, "", 1, 10000, robot->motorReverseTime);       
+  sendSlider("q02", F("GPS speed ignore time"), robot->gpsSpeedIgnoreTime, "", 1, 10000, robot->motorReverseTime);
+  if (robot->gpsUse) {
+    float lat, lon;
+    unsigned long age;
+    robot->gps.f_get_position(&lat, &lon, &age);
+    serialPort->print(F("|q04~hdop "));
+    serialPort->print(robot->gps.hdop());
+    serialPort->print(F("|q05~satellites "));
+    serialPort->print(robot->gps.satellites());
+    serialPort->print(F("|q06~speed kmph "));
+    serialPort->print(robot->gps.f_speed_kmph());
+    serialPort->print(F("|q07~course "));
+    serialPort->print(robot->gps.f_course());
+    serialPort->print(F("|q08~altitude "));
+    serialPort->print(robot->gps.f_altitude());
+    serialPort->print(F("|q09~lat "));
+    serialPort->print(lat);
+    serialPort->print(F("|q09~lon "));
+    serialPort->print(lon);
+    serialPort->print(F("|q09~stuck count "));
+    serialPort->print(robot->robotIsStuckCounter);
+  }
+  
+    serialPort->print(F("|q09~gpsMaxAchievedSpeed"));
+    serialPort->print(robot->gpsMaxAchievedSpeed );
+    serialPort->print(F("|q09~motorLeftRpmCurr"));
+    serialPort->print(abs(robot->motorLeftRpmCurr));    
+    serialPort->print(F("|q09~motorRightRpmCurr"));
+    serialPort->print(abs(robot->motorRightRpmCurr));
+    serialPort->print(F("|q09~stateStartTime "));
+    serialPort->print(robot->stateStartTime);
+    serialPort->print(F("|q09~millis "));
+    serialPort->print(millis());
+  
+  
   serialPort->println("}");
 }
 
@@ -668,6 +706,18 @@ void RemoteControl::sendImuMenu(boolean update){
   serialPort->print(F("|g03~Roll "));
   serialPort->print(robot->imu.ypr.roll/PI*180);
   serialPort->print(F(" deg"));
+  serialPort->print(F("|g09~Accel x,y,z "));
+  serialPort->print(robot->imu.acc.x);
+  serialPort->print(", ");
+  serialPort->print(robot->imu.acc.y);
+  serialPort->print(", ");
+  serialPort->print(robot->imu.acc.z);
+  serialPort->print(F("|g10~Compass x,y,z "));
+  serialPort->print(robot->imu.com.x);
+  serialPort->print(", ");
+  serialPort->print(robot->imu.com.y);
+  serialPort->print(", ");
+  serialPort->print(robot->imu.com.z);  
   serialPort->print(F("|g04~Correct dir "));
   sendYesNo(robot->imuCorrectDir);  
   sendPIDSlider("g05", F("Dir"), robot->imuDirPID, 0.1, 20);
@@ -1018,6 +1068,8 @@ void RemoteControl::sendCommandMenu(boolean update){
 	serialPort->print(" V");
 	serialPort->print(F("|rs~Last trigger "));
 	serialPort->print(robot->lastSensorTriggeredName());
+  serialPort->print(F("|rs~Last error "));
+  serialPort->print(robot->errorName());
   serialPort->print(F("|rr~Auto rotate is "));
   serialPort->print(robot->motorLeftPWMCurr);
   serialPort->print(F("|r1~User switch 1 is "));
@@ -1199,7 +1251,7 @@ void RemoteControl::run(){
       //robot->printInfo(Bluetooth);
       //serialPort->println("test");
       serialPort->print((float(millis())/1000.0f));
-      serialPort->print(",");
+     /* markor serialPort->print(",");
       serialPort->print(robot->motorLeftSense);
       serialPort->print(",");
       serialPort->print(robot->motorRightSense);
@@ -1231,20 +1283,21 @@ void RemoteControl::run(){
       serialPort->print(robot->imu.gyro.y/PI*180);
       serialPort->print(",");
       serialPort->print(robot->imu.gyro.z/PI*180);
-      serialPort->print(",");
+      serialPort->print(",");*/
+     serialPort->print(",x: ");
       serialPort->print(robot->imu.acc.x);
-      serialPort->print(",");
+      serialPort->print(",y: ");
       serialPort->print(robot->imu.acc.y);
-      serialPort->print(",");
+      serialPort->print(",z: ");
       serialPort->print(robot->imu.acc.z);
-      serialPort->print(",");
+      serialPort->print(",     ");
       serialPort->print(robot->imu.com.x);
       serialPort->print(",");
       serialPort->print(robot->imu.com.y);
       serialPort->print(",");
       serialPort->print(robot->imu.com.z);
       serialPort->print(",");
-      float lat, lon;
+ /*  markor   float lat, lon;
       unsigned long age;
       robot->gps.f_get_position(&lat, &lon, &age);
       serialPort->print(robot->gps.hdop());
@@ -1259,7 +1312,7 @@ void RemoteControl::run(){
       serialPort->print(",");
       serialPort->print(lat);
       serialPort->print(",");
-      serialPort->print(lon);
+      serialPort->print(lon);*/
       serialPort->println();
   } else if (pfodState == PFOD_PLOT_BAT){
     if (millis() >= nextPlotTime){

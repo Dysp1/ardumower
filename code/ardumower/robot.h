@@ -86,7 +86,10 @@ enum {
   SEN_RTC,
   SEN_RAIN,
   SEN_TILT,
-  SEN_FREE_WHEEL,    
+  SEN_FREE_WHEEL,        
+  SEN_GPS_SPEED,         // If GPS Speed goes below user definable treshold
+  SEN_IMU_ACC,           // If IMU acceleration sensors go over user definable tresholds
+  SEN_MOW_POWER          // If mower user more than user definable amount of power, start STATE_CIRCLE
 };
 
 // actuators
@@ -187,6 +190,7 @@ class Robot
     byte stateNext;    
     unsigned long stateTime;
     const char* stateName();
+    const char* errorName();
     unsigned long stateStartTime;
     unsigned long batteryNextChargeAfterFull;
     unsigned long stateEndTime;
@@ -368,6 +372,7 @@ class Robot
     //point_float_t accMin;
     //point_float_t accMax;
     unsigned long nextTimeIMU ; //read IMU data
+    unsigned long nextTimeCheckIfImuMaxed ;
     unsigned long nextTimeCheckTilt; // check if
     // ------- perimeter state --------------------------
     Perimeter perimeter;
@@ -505,6 +510,7 @@ class Robot
     unsigned long nextTimeErrorCounterReset;    
     unsigned long nextTimePrintErrors;
     unsigned long nextTimeErrorBeep ;  
+    byte lastErrType ;
     // ------------robot stats---------------------------
     boolean statsOverride ;
     boolean statsMowTimeTotalStart ;
@@ -631,6 +637,7 @@ protected:
     virtual void checkOdometryFaults();
     virtual void checkIfStuck();
     virtual void checkRobotStats();
+    virtual void checkIfImuAccelerationMaxed();
     
     // motor controllers
     virtual void motorControl();    
@@ -695,5 +702,3 @@ protected:
 
 
 #endif
-
-
