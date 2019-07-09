@@ -14,7 +14,7 @@ String Robot::waitStringConsole() {
   String s = "";
   char ch;
   unsigned long waitTimeForString = millis() + 5000; 
-  while (millis() >= waitTimeForString) { //Only wait for the end char max of 5000ms
+  while (true) { 
     ch = waitCharConsole();
     if (ch=='\n' || ch=='\r')
       break;
@@ -440,11 +440,13 @@ void Robot::readSerial() {
   if (Console.available() > 0) {     
     // String cmd = Console.readString();
      String cmd = waitStringConsole();
+
      if (cmd.startsWith("$ROS")) {
        setNextState(STATE_ROS, 0);
        return;
      }
      char ch = cmd[0];
+
      if (!rmcsUse){
         resetIdleTime();
      }

@@ -1251,7 +1251,7 @@ void RemoteControl::run(){
       //robot->printInfo(Bluetooth);
       //serialPort->println("test");
       serialPort->print((float(millis())/1000.0f));
-     /* markor serialPort->print(",");
+      serialPort->print(",");
       serialPort->print(robot->motorLeftSense);
       serialPort->print(",");
       serialPort->print(robot->motorRightSense);
@@ -1283,7 +1283,8 @@ void RemoteControl::run(){
       serialPort->print(robot->imu.gyro.y/PI*180);
       serialPort->print(",");
       serialPort->print(robot->imu.gyro.z/PI*180);
-      serialPort->print(",");*/
+      serialPort->print(",");
+/*      
      serialPort->print(",x: ");
       serialPort->print(robot->imu.acc.x);
       serialPort->print(",y: ");
@@ -1297,7 +1298,8 @@ void RemoteControl::run(){
       serialPort->print(",");
       serialPort->print(robot->imu.com.z);
       serialPort->print(",");
- /*  markor   float lat, lon;
+   markor   */
+      float lat, lon;
       unsigned long age;
       robot->gps.f_get_position(&lat, &lon, &age);
       serialPort->print(robot->gps.hdop());
@@ -1312,7 +1314,7 @@ void RemoteControl::run(){
       serialPort->print(",");
       serialPort->print(lat);
       serialPort->print(",");
-      serialPort->print(lon);*/
+      serialPort->print(lon);
       serialPort->println();
   } else if (pfodState == PFOD_PLOT_BAT){
     if (millis() >= nextPlotTime){

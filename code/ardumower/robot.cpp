@@ -1426,12 +1426,15 @@ void Robot::loop()  {
   stateTime = millis() - stateStartTime;
   int steer;
   ADCMan.run();
+
   if (stateCurr != STATE_ROS) readSerial();   
+
   if (!rmcsUse){
      if (rc.readSerial()) resetIdleTime();
   } else {
     rc.readSerial();
   }
+  
   readSensors(); 
   checkBattery(); 
   checkIfStuck();
