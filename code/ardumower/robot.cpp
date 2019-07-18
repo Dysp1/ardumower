@@ -110,6 +110,7 @@ Robot::Robot(){
   motorRightZeroTimeout = 0;  
   rotateLeft = true;
   mowIncreaseCircleRadiusTime = 0;
+  currentCirclingStep = 0;
 
   remoteSteer = remoteSpeed = remoteMow = remoteSwitch = 0;  
   remoteSteerLastTime = remoteSpeedLastTime =remoteMowLastTime =remoteSwitchLastTime = 0;
@@ -1667,17 +1668,39 @@ void Robot::loop()  {
       checkTimeout();     
       
 
+  //    motorSpeedMaxRpm
+  //sendSlider("l04", F("Ticks per one full revolution"), robot->odometryTicksPerRevolution, "", 1, 2120);       
+  //sendSlider("l01", F("Ticks per cm"), robot->odometryTicksPerCm, "", 0.1, 35);       
+  //sendSlider("l02", F("Wheel base cm"), robot->odometryWheelBaseCm, "", 0.1, 50);    
+
+      if (millis() >= mowIncreaseCircleRadiusTime) {
+
+        float innerWheelCircleSphere = currentCirclingStep * odometryWheelBaseCm * 2 * PI;
+        float outerWheelCircleSphere = (currentCirclingStep + 1) * odometryWheelBaseCm * 2 * PI;
+
+        float cmsPerSecond = odometryTicksPerRevolution*(motorSpeedMaxRpm/1.25)/60/odometryTicksPerCm;
+
+        float secondsToCompleteOuterWheelCircle = outerWheelCircleSphere/cmsPerSecond;
+
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = (int)(innerWheelCircleSphere/secondsToCompleteOuterWheelCircle/cmsPerSecond*motorSpeedMaxRpm/1.25);
+
+        mowIncreaseCircleRadiusTime = millis() + secondsToCompleteOuterWheelCircle*1000;
+        currentCirclingStep = currentCirclingStep + 1;
+      }
+      /*
       if (millis() >= mowIncreaseCircleRadiusTime) {
         mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime + (motorMowCircleRadiusWidenTime * motorMowCircleRadiusWidenRatio);
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
         //motorRightSpeedRpmSet = min((double)((double)motorSpeedMaxRpm/1.25), (double)((double)motorRightSpeedRpmSet + ((double)motorSpeedMaxRpm * ((double)motorMowCircleRadiusWidenRatio / 100))));
         motorRightSpeedRpmSet = motorRightSpeedRpmSet+1;
       }
-      
-      if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
+      */
+      if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet || currentCirclingStep > 5) {
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
         motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
         mowIncreaseCircleRadiusTime = 0;
+        currentCirclingStep = 0;
         setNextState(STATE_FORWARD,0);
       }
       
