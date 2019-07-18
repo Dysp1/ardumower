@@ -300,7 +300,8 @@ class Robot
     int motorLeftSenseCounter ;  // motor current counter
     int motorRightSenseCounter ;
     unsigned long mowIncreaseCircleRadiusTime ;
-    int currentCirclingStep ; 
+    int currentCirclingStep ;
+    boolean startNewCircle ; 
     unsigned long nextTimeMotorSense ;
     unsigned long lastSetMotorSpeedTime;
     unsigned long motorLeftZeroTimeout;
