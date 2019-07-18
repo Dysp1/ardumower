@@ -111,7 +111,6 @@ Robot::Robot(){
   rotateLeft = true;
   mowIncreaseCircleRadiusTime = 0;
   currentCirclingStep = 0;
-  startNewCircle = true;
 
   remoteSteer = remoteSpeed = remoteMow = remoteSwitch = 0;  
   remoteSteerLastTime = remoteSpeedLastTime =remoteMowLastTime =remoteSwitchLastTime = 0;
@@ -1315,8 +1314,9 @@ void Robot::setNextState(byte stateNew, byte dir){
   } 
   else if (stateNew == STATE_CIRCLE){      
     motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-    motorRightSpeedRpmSet = motorSpeedMaxRpm * 0.05;
-    mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime;
+    motorRightSpeedRpmSet = 0;
+    mowIncreaseCircleRadiusTime = 0;
+    currentCirclingStep = 0;
     statsMowTimeTotalStart = true;            
     setActuator(ACT_CHGRELAY, 0);         
   } 
@@ -1556,6 +1556,7 @@ void Robot::loop()  {
         if (lastErrType == ERR_GPS_DATA);
         if (lastErrType == ERR_STUCK);
         if (lastErrType == ERR_EEPROM_DATA);
+        
         if (lastErrType == ERR_CPU_SPEED) {
           if (stateLast == STATE_REVERSE) {
             setNextState(STATE_FORWARD,0);
@@ -1563,6 +1564,7 @@ void Robot::loop()  {
             setNextState(STATE_REVERSE,0);            
           }
         }
+      
       }
       
       if (stateStartTime + 30000 
@@ -1671,8 +1673,8 @@ void Robot::loop()  {
       if (millis() >= mowIncreaseCircleRadiusTime) {
         float cmsPerSecond = odometryTicksPerRevolution*(motorSpeedMaxRpm/1.25)/60/odometryTicksPerCm;
 
-        float innerWheelCircleDiameter = ( (odometryWheelBaseCm + motorMowCircleRadiusWidenRatio * currentCirclingStep) / 2 ) * 2 * PI;  //currentCirclingStep * (odometryWheelBaseCm / 2) * 2 * PI;
-        float outerWheelCircleDiameter = ( (odometryWheelBaseCm + motorMowCircleRadiusWidenRatio * (currentCirclingStep + 1)) / 2) * 2 * PI; //(currentCirclingStep + 1) * (odometryWheelBaseCm / 2) * 2 * PI;
+        float innerWheelCircleDiameter = ( (motorMowCircleRadiusWidenCM * currentCirclingStep) / 2 ) * 2 * PI;  //currentCirclingStep * (odometryWheelBaseCm / 2) * 2 * PI;
+        float outerWheelCircleDiameter = ( (odometryWheelBaseCm + motorMowCircleRadiusWidenCM * currentCirclingStep) / 2) * 2 * PI; //(currentCirclingStep + 1) * (odometryWheelBaseCm / 2) * 2 * PI;
 
         float secondsToCompleteOuterWheelCircle = outerWheelCircleDiameter/cmsPerSecond;
 

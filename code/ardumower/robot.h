@@ -301,7 +301,6 @@ class Robot
     int motorRightSenseCounter ;
     unsigned long mowIncreaseCircleRadiusTime ;
     int currentCirclingStep ;
-    boolean startNewCircle ; 
     unsigned long nextTimeMotorSense ;
     unsigned long lastSetMotorSpeedTime;
     unsigned long motorLeftZeroTimeout;
@@ -328,8 +327,7 @@ class Robot
     int motorMowRpmCurr ;            // motor rpm (range 0..MOW_RPM)
 
     float motorMowCircleTriggerPower;
-    float motorMowCircleRadiusWidenTime;
-    float motorMowCircleRadiusWidenRatio;
+    float motorMowCircleRadiusWidenCM;
 
     unsigned long lastMotorMowRpmTime;    
     unsigned long nextTimeMotorControl;

@@ -148,8 +148,7 @@ void Robot::loadSaveUserSettings(boolean readflag){
 	eereadwrite(readflag, addr, motorMowForceOff);	
   eereadwrite(readflag, addr, freeWheelUse);  
   eereadwrite(readflag, addr, motorMowCircleTriggerPower);
-  eereadwrite(readflag, addr, motorMowCircleRadiusWidenTime);
-  eereadwrite(readflag, addr, motorMowCircleRadiusWidenRatio);
+  eereadwrite(readflag, addr, motorMowCircleRadiusWidenCM);
   Console.print(F("loadSaveUserSettings addrstop="));
   Console.println(addr);
 }
@@ -254,10 +253,8 @@ void Robot::printSettingSerial(){
   Console.println(motorMowPID.Kd);
   Console.print  (F("motorMowCircleTriggerPower                 : "));
   Console.println(motorMowCircleTriggerPower);
-  Console.print  (F("motorMowCircleRadiusWidenTime              : "));
-  Console.println(motorMowCircleRadiusWidenTime);
-  Console.print  (F("motorMowCircleRadiusWidenRatio             : "));
-  Console.println(motorMowCircleRadiusWidenRatio);
+  Console.print  (F("motorMowCircleRadiusWidenCM             : "));
+  Console.println(motorMowCircleRadiusWidenCM);
 
   // ------ motorMowModulate Interrupt --------------------------------------------
   Console.println(F("---------- motorMowModulate Interrupt ------------------------"));
