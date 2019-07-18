@@ -1669,48 +1669,28 @@ void Robot::loop()  {
       checkTimeout();     
       
       if (millis() >= mowIncreaseCircleRadiusTime) {
-          float cmsPerSecond = odometryTicksPerRevolution*(motorSpeedMaxRpm/1.25)/60/odometryTicksPerCm;
+        float cmsPerSecond = odometryTicksPerRevolution*(motorSpeedMaxRpm/1.25)/60/odometryTicksPerCm;
 
-        if (startNewCircle) {
-          float innerWheelCircleDiameter = currentCirclingStep * odometryWheelBaseCm * 2 * PI;
-          float outerWheelCircleDiameter = (currentCirclingStep + 1) * odometryWheelBaseCm * 2 * PI;
+        float innerWheelCircleDiameter = ( (odometryWheelBaseCm + motorMowCircleRadiusWidenRatio * currentCirclingStep) / 2 ) * 2 * PI;  //currentCirclingStep * (odometryWheelBaseCm / 2) * 2 * PI;
+        float outerWheelCircleDiameter = ( (odometryWheelBaseCm + motorMowCircleRadiusWidenRatio * (currentCirclingStep + 1)) / 2) * 2 * PI; //(currentCirclingStep + 1) * (odometryWheelBaseCm / 2) * 2 * PI;
 
-          float secondsToCompleteOuterWheelCircle = outerWheelCircleDiameter/cmsPerSecond;
+        float secondsToCompleteOuterWheelCircle = outerWheelCircleDiameter/cmsPerSecond;
 
-          motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-          motorRightSpeedRpmSet = (int)(innerWheelCircleDiameter/secondsToCompleteOuterWheelCircle/cmsPerSecond*motorSpeedMaxRpm/1.25);
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = (int)(innerWheelCircleDiameter/secondsToCompleteOuterWheelCircle/cmsPerSecond*motorSpeedMaxRpm/1.25);
 
-          mowIncreaseCircleRadiusTime = millis() + secondsToCompleteOuterWheelCircle*1000;
-          startNewCircle = false;
-          currentCirclingStep = currentCirclingStep + 1;
+        mowIncreaseCircleRadiusTime = millis() + secondsToCompleteOuterWheelCircle*1000;
+        currentCirclingStep = currentCirclingStep + 1;
 
-        } else {
-          mowIncreaseCircleRadiusTime = millis() + (odometryWheelBaseCm / cmsPerSecond * 1000);
-          
-          motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-          motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-          startNewCircle = true;
-        }
       }
 
-      if ((motorRightSpeedRpmSet >= motorLeftSpeedRpmSet || currentCirclingStep > 5) && startNewCircle != true) {
+      if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
         motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
         mowIncreaseCircleRadiusTime = 0;
         currentCirclingStep = 0;
-        startNewCircle = true;
         setNextState(STATE_FORWARD,0);
       }
-
-
-      /*
-      if (millis() >= mowIncreaseCircleRadiusTime) {
-        mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime + (motorMowCircleRadiusWidenTime * motorMowCircleRadiusWidenRatio);
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        //motorRightSpeedRpmSet = min((double)((double)motorSpeedMaxRpm/1.25), (double)((double)motorRightSpeedRpmSet + ((double)motorSpeedMaxRpm * ((double)motorMowCircleRadiusWidenRatio / 100))));
-        motorRightSpeedRpmSet = motorRightSpeedRpmSet+1;
-      }
-      */
 
       
       break;
