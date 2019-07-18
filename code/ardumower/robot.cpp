@@ -1683,6 +1683,7 @@ void Robot::loop()  {
           mowIncreaseCircleRadiusTime = millis() + secondsToCompleteOuterWheelCircle*1000;
           startNewCircle = false;
           currentCirclingStep = currentCirclingStep + 1;
+
         } else {
           mowIncreaseCircleRadiusTime = millis() + (odometryWheelBaseCm / cmsPerSecond * 1000);
           
@@ -1691,6 +1692,17 @@ void Robot::loop()  {
           startNewCircle = true;
         }
       }
+
+      if ((motorRightSpeedRpmSet >= motorLeftSpeedRpmSet || currentCirclingStep > 5) && startNewCircle != true) {
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        mowIncreaseCircleRadiusTime = 0;
+        currentCirclingStep = 0;
+        startNewCircle = true;
+        setNextState(STATE_FORWARD,0);
+      }
+
+
       /*
       if (millis() >= mowIncreaseCircleRadiusTime) {
         mowIncreaseCircleRadiusTime = millis() + motorMowCircleRadiusWidenTime + (motorMowCircleRadiusWidenTime * motorMowCircleRadiusWidenRatio);
@@ -1699,14 +1711,7 @@ void Robot::loop()  {
         motorRightSpeedRpmSet = motorRightSpeedRpmSet+1;
       }
       */
-      if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet || currentCirclingStep > 5) {
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        mowIncreaseCircleRadiusTime = 0;
-        currentCirclingStep = 0;
-        startNewCircle = true;
-        setNextState(STATE_FORWARD,0);
-      }
+
       
       break;
     case STATE_REVERSE:
