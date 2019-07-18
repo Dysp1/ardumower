@@ -667,8 +667,8 @@ void RemoteControl::sendGPSMenu(boolean update){
     serialPort->print(robot->robotIsStuckCounter);
   }
   
-    serialPort->print(F("|q09~gpsMaxAchievedSpeed"));
-    serialPort->print(robot->gpsMaxAchievedSpeed );
+    serialPort->print(F("|q09~gpsAchievedSpeed"));
+    serialPort->print(robot->gpsAchievedSpeed );
     serialPort->print(F("|q09~motorLeftRpmCurr"));
     serialPort->print(abs(robot->motorLeftRpmCurr));    
     serialPort->print(F("|q09~motorRightRpmCurr"));

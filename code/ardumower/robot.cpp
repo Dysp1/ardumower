@@ -142,7 +142,8 @@ Robot::Robot(){
   
   gpsLat = gpsLon = gpsX = gpsY = 0;
   robotIsStuckCounter = 0;
-  gpsMaxAchievedSpeed = 0;
+  gpsAchievedSpeed = 0;
+  gpsSpeedUpdatedTime = 0;
 
   imuDriveHeading = 0;
   imuRollHeading = 0;
@@ -775,7 +776,8 @@ void Robot::checkCurrent(){
       && motorMowSense >= motorMowCircleTriggerPower 
       && stateCurr == STATE_FORWARD 
       && stateCurr != STATE_CIRCLE
-      && !(mowPatternCurr == MOW_BIDIR)){  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer crass and start moving around it
+      && stateCurr != STATE_PERI_FIND
+      && !(mowPatternCurr == MOW_BIDIR)){  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
        setSensorTriggered(SEN_MOW_POWER);
        setNextState(STATE_CIRCLE, 0);
   }
@@ -806,9 +808,7 @@ void Robot::checkCurrent(){
   }       
 
     
-  if (motorLeftSense >=motorPowerMax
-   //   || (stateCurr == STATE_CIRCLE && (double)motorLeftSense >= motorPowerMax/2)
-     ){  //detection needs to be much more sensitive when circling
+  if (motorLeftSense >=motorPowerMax){  
     // left wheel motor overpowered    
     if (  ((stateCurr == STATE_FORWARD) 
         || (stateCurr == STATE_PERI_FIND)  
@@ -833,9 +833,7 @@ void Robot::checkCurrent(){
       setNextState(STATE_FORWARD, 0);
     }    
   }
-  else if (motorRightSense >= motorPowerMax
-           //|| (stateCurr == STATE_CIRCLE && (double)motorRightSense >= motorPowerMax/2)
-           ){  //detection needs to be much more sensitive when circling
+  else if (motorRightSense >= motorPowerMax){  
      // right wheel motor overpowered
      if ( ((stateCurr == STATE_FORWARD) 
           || (stateCurr == STATE_CIRCLE)
@@ -1123,14 +1121,17 @@ void Robot::checkIfStuck(){
   if (millis() >= nextTimeCheckIfStuck) {
     nextTimeCheckIfStuck = millis() + 500;
     if ((gpsUse) && (gps.hdop() < 500) && (gps.satellites() > 3) && (gps.satellites() < 250) ) {
+
       float gpsSpeed = gps.f_speed_kmph();
-      gpsMaxAchievedSpeed = max(gpsMaxAchievedSpeed, gpsSpeed);
-      //if ( (gpsSpeedIgnoreTime >= motorReverseTime) && (stateCurr == STATE_REVERSE)) tempGpsSpeedIgnoreTime = motorReverseTime - 500;
-      //else tempGpsSpeedIgnoreTime = gpsSpeedIgnoreTime; //only use lower setting while reversing. reverse is short so have to check the stuck faster
+      if (gpsSpeed > stuckIfGpsSpeedBelow) {
+        gpsAchievedSpeed = gpsSpeed;
+        gpsSpeedUpdatedTime = millis();
+      } else if (millis() >= gpsSpeedUpdatedTime + 20000) gpsAchievedSpeed = 0;  // do not use GPS speed if not updated in last 20 seconds
+      
       if ((stateCurr != STATE_MANUAL) 
           && (stateCurr != STATE_REMOTE) 
           && (gpsSpeed <= stuckIfGpsSpeedBelow)   // checks if mower is stuck and counts up
-          && (gpsMaxAchievedSpeed > stuckIfGpsSpeedBelow) // gpsSpeed not reliable. Only add error if the gpsSpeed has been above the stuck limit.
+          && (gpsAchievedSpeed > stuckIfGpsSpeedBelow) // gpsSpeed not reliable. Only add error if the gpsSpeed has been above the stuck limit.
           && (abs(motorLeftRpmCurr) > 1 || abs(motorRightRpmCurr) > 1) 
           && (millis() >= stateStartTime + gpsSpeedIgnoreTime) ){
         robotIsStuckCounter++;
@@ -1140,14 +1141,14 @@ void Robot::checkIfStuck(){
           && (stateCurr != STATE_STATION_CHARGING) && (stateCurr != STATE_STATION_CHECK) 
           && (stateCurr != STATE_STATION_REV) && (stateCurr != STATE_STATION_ROLL) 
           && (stateCurr != STATE_REMOTE) && (stateCurr != STATE_ERROR)) {
-          motorMowEnable = true;
+       //   motorMowEnable = true;
           errorCounterMax[ERR_STUCK] = 0;
         }
         return;
       }
 
       if (robotIsStuckCounter >= 5){    
-        motorMowEnable = false;
+        //motorMowEnable = false;
         if (errorCounterMax[ERR_STUCK] >= 3){   // robot is definately stuck and unable to move
           Console.println(F("Error: Mower is stuck"));
           addErrorCounter(ERR_STUCK);
@@ -1157,14 +1158,14 @@ void Robot::checkIfStuck(){
         }
         else if (errorCounter[ERR_STUCK] < 3) {   // mower tries 3 times to get unstuck
           if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE){
-            motorMowEnable = false;
+           // motorMowEnable = false;
 					  addErrorCounter(ERR_STUCK);             
             setSensorTriggered(SEN_GPS_SPEED);
 					  setMotorPWM( 0, 0, false );  
 					  reverseOrBidir(RIGHT);
 				  }
 				  else if (stateCurr == STATE_ROLL){
-					  motorMowEnable = false;
+					 // motorMowEnable = false;
 					  addErrorCounter(ERR_STUCK);             
 	          setSensorTriggered(SEN_GPS_SPEED);
   				  setMotorPWM( 0, 0, false );  
@@ -1398,9 +1399,8 @@ void Robot::setNextState(byte stateNew, byte dir){
   }   
   if (stateNew != STATE_REMOTE){
     motorMowSpeedPWMSet = motorMowSpeedMaxPwm;
-  }
+  }      
 
-  gpsMaxAchievedSpeed = 0;        
   sonarObstacleTimeout = 0;
   // state has changed    
   stateStartTime = millis();

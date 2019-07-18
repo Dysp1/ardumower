@@ -221,7 +221,8 @@ class Robot
     int gpsSpeedIgnoreTime ; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
     int robotIsStuckCounter ;
     int tempGpsSpeedIgnoreTime;
-    float gpsMaxAchievedSpeed;
+    float gpsAchievedSpeed;
+    unsigned long gpsSpeedUpdatedTime;
     // -------- odometry state --------------------------
     char odometryUse       ;       // use odometry?
     int wheelDiameter     ;        // wheel diameter (mm)
