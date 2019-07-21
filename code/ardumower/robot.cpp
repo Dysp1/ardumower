@@ -773,11 +773,11 @@ void Robot::checkCurrent(){
   }
 
 
-  if ( motorMowCircleTriggerPower > 5
+  if ( motorMowCircleTriggerPower > 3
       && motorMowSense >= motorMowCircleTriggerPower 
       && stateCurr == STATE_FORWARD 
-      && stateCurr != STATE_CIRCLE
-      && stateCurr != STATE_PERI_FIND
+      && millis() >= stateStartTime + 5000
+      && perimeter.isInside(0)
       && !(mowPatternCurr == MOW_BIDIR)){  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
        setSensorTriggered(SEN_MOW_POWER);
        setNextState(STATE_CIRCLE, 0);
@@ -791,7 +791,7 @@ void Robot::checkCurrent(){
   else{ 
       errorCounterMax[ERR_MOW_SENSE] = 0;
       motorMowSenseCounter = 0;
-      if ( (lastTimeMotorMowStuck != 0) && (millis() >= lastTimeMotorMowStuck + 30000) ) { // wait 30 seconds before switching on again
+      if ( (lastTimeMotorMowStuck != 0) && (millis() >= lastTimeMotorMowStuck + 10000) ) { // wait 30 seconds before switching on again
         errorCounter[ERR_MOW_SENSE] = 0;
         motorMowEnable = true;
 				lastTimeMotorMowStuck = 0;
