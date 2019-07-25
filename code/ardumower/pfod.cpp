@@ -654,13 +654,13 @@ void RemoteControl::sendGPSMenu(boolean update){
     serialPort->print(F("|q06~speed kmph "));
     serialPort->print(robot->gps.f_speed_kmph());
     serialPort->print(F("|q07~course "));
-    serialPort->print(robot->gps.f_course());
+    serialPort->print(robot->gps.f_course()*100000);
     serialPort->print(F("|q08~altitude "));
-    serialPort->print(robot->gps.f_altitude());
+    serialPort->print(robot->gps.f_altitude()*100000);
     serialPort->print(F("|q09~lat "));
-    serialPort->print(lat);
+    serialPort->print(lat*100000);
     serialPort->print(F("|q09~lon "));
-    serialPort->print(lon);
+    serialPort->print(lon*100000);
     serialPort->print(F("|q09~stuck count "));
     serialPort->print(robot->robotIsStuckCounter);
   }

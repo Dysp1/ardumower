@@ -776,8 +776,9 @@ void Robot::checkCurrent(){
   if ( motorMowCircleTriggerPower > 3
       && motorMowSense >= motorMowCircleTriggerPower
       && stateCurr == STATE_FORWARD
-      && millis() >= stateStartTime + 5000
-      && perimeter.isInside(0)
+      && millis() >= stateStartTime + 7000
+      && perimeter.isInside(0) == true
+      && perimeter.getMagnitude(0) > 600
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
        setSensorTriggered(SEN_MOW_POWER);
        setNextState(STATE_CIRCLE, 0);
