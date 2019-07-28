@@ -488,7 +488,7 @@ void Robot::readSensors(){
         perimeterTriggerTime = millis();
       }
     }
-    if (perimeter.signalTimedOut(0))  {      
+    if (perimeter.signalTimedOut(0) && stateCurr != STATE_ERROR)  {      
       if ( (stateCurr != STATE_OFF) && (stateCurr != STATE_MANUAL) && (stateCurr != STATE_STATION) 
       	&& (stateCurr != STATE_STATION_CHARGING) && (stateCurr != STATE_STATION_CHECK) 
       	&& (stateCurr != STATE_STATION_REV) && (stateCurr != STATE_STATION_ROLL) 
@@ -1213,7 +1213,7 @@ const char* Robot::stateName(){
 }
 
 const char* Robot::errorName(){
-  return stateNames[lastErrType];
+  return errorNames[lastErrType];
 }
 
 // set state machine new state
@@ -1566,20 +1566,20 @@ void Robot::loop()  {
           }
         }
       
+        if (lastErrType == ERR_PERIMETER_TIMEOUT) {
+          if (perimeter.isInside(0)) {
+            errorCounterMax[ERR_PERIMETER_TIMEOUT] = 1;
+            if(rotateLeft){  
+              setNextState(STATE_PERI_OUT_REV, LEFT);
+            } else {
+              setNextState(STATE_PERI_OUT_REV, RIGHT);
+            }
+          }
+        }
+
       }
       
-      if (stateStartTime + 30000 
-       && lastErrType == ERR_PERIMETER_TIMEOUT) 
-      {
-        if (perimeter.isInside(0)) {
-          errorCounterMax[ERR_PERIMETER_TIMEOUT] = 1;
-          if (stateLast == STATE_REVERSE) {
-            setNextState(STATE_FORWARD,0);
-          } else {
-            setNextState(STATE_REVERSE,0);            
-          }           
-        }
-      }
+
 
       break;
     case STATE_OFF:
