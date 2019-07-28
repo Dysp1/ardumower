@@ -1568,7 +1568,6 @@ void Robot::loop()  {
       
         if (lastErrType == ERR_PERIMETER_TIMEOUT) {
           if (perimeter.isInside(0)) {
-            errorCounterMax[ERR_PERIMETER_TIMEOUT] = 1;
             if(rotateLeft){  
               setNextState(STATE_PERI_OUT_REV, LEFT);
             } else {
