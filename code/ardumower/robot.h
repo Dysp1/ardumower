@@ -188,9 +188,16 @@ class Robot
     byte stateCurr;
     byte stateLast;
     byte stateNext;    
+
+    byte stateLog[35];
+    byte errorLog[35];
+    byte sensorLog[35];
+
     unsigned long stateTime;
-    const char* stateName();
-    const char* errorName();
+    const char* stateName(byte);
+    const char* errorName(byte);
+    const char* sensorName(byte);
+
     unsigned long stateStartTime;
     unsigned long batteryNextChargeAfterFull;
     unsigned long stateEndTime;
@@ -497,6 +504,7 @@ class Robot
     byte errorCounter[ERR_ENUM_COUNT];    // temporary error counts (will be resetted periodically)
     // --------- other ----------------------------------
     int loopsPerSec ;  // main loops per second
+    int loopsPerSecMax ;
 		byte loopsPerSecLowCounter ;  
     float loopsTa ;   // main loop-time factor (milliseconds)
     int loopsPerSecCounter ;

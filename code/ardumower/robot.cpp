@@ -82,6 +82,12 @@ Robot::Robot(){
   developerActive = false;
   rc.setRobot(this);
 
+  for (int initCounter = 0; initCounter < 30; initCounter++) {
+    stateLog[initCounter] = -1;
+    errorLog[initCounter] = -1;
+    sensorLog[initCounter] = -1;
+  }
+
   batteryNextChargeAfterFull = 0;
   lastSensorTriggeredTime =0;
 	stateLast = stateCurr = stateNext = STATE_OFF; 
@@ -184,6 +190,7 @@ Robot::Robot(){
   memset(errorCounter, 0, sizeof errorCounterMax);
     
   loopsPerSec = 0;
+  loopsPerSecMax = 0;
 	loopsPerSecLowCounter = 0;
   loopsTa = 5.0;
   loopsPerSecCounter = 0;
@@ -246,6 +253,13 @@ const char *Robot::mowPatternName(){
 void Robot::setSensorTriggered(char type){
   lastSensorTriggered = type;
   lastSensorTriggeredTime = millis();
+
+  for (int shiftArrayCounter = 28; shiftArrayCounter >= 0; shiftArrayCounter--) {
+    sensorLog[shiftArrayCounter+1] = sensorLog[shiftArrayCounter];
+  }
+  sensorLog[0] = lastSensorTriggered;
+
+
   if (!rmcsUse){
   Console.println( sensorNames[lastSensorTriggered] );
   }else{
@@ -778,7 +792,7 @@ void Robot::checkCurrent(){
       && stateCurr == STATE_FORWARD
       && millis() >= stateStartTime + 7000
       && perimeter.isInside(0)
-      && abs(perimeter.getMagnitude(0)) < 600
+      && abs(perimeterMag) < 800
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
        setSensorTriggered(SEN_MOW_POWER);
        setNextState(STATE_CIRCLE, 0);
@@ -1208,12 +1222,19 @@ void Robot::checkTimeout(){
 }
 
 
-const char* Robot::stateName(){
-  return stateNames[stateCurr];
+const char* Robot::stateName(byte nameForThisState){
+  if (nameForThisState < 0) return "-";
+  else return stateNames[nameForThisState];
 }
 
-const char* Robot::errorName(){
-  return errorNames[lastErrType];
+const char* Robot::errorName(byte nameForThisError){
+  if (nameForThisError < 0) return "-";
+  else return errorNames[nameForThisError];
+}
+
+const char* Robot::sensorName(byte nameForThisSensor){
+  if (nameForThisSensor < 0) return "-";
+  else return sensorNames[nameForThisSensor];
 }
 
 // set state machine new state
@@ -1297,7 +1318,8 @@ void Robot::setNextState(byte stateNew, byte dir){
 		imuRollDir = rollDir;
 	}
 	stateEndTime = millis() + random(perimeterOutRollTimeMin,perimeterOutRollTimeMax) + motorZeroSettleTime;
-	if (dir == RIGHT)
+	
+  if (dir == RIGHT)
 	{
 		motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
 		motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;           
@@ -1410,6 +1432,12 @@ void Robot::setNextState(byte stateNew, byte dir){
   stateLast = stateCurr;
   stateCurr = stateNext;    
   perimeterTriggerTime=0;
+
+  for (int shiftArrayCounter = 28; shiftArrayCounter >= 0; shiftArrayCounter--) {
+    stateLog[shiftArrayCounter+1] = stateLog[shiftArrayCounter];
+  }
+  stateLog[0] = stateCurr;
+
   if (rmcsUse == false) {  
      printInfo(Console);          
   }
@@ -1495,6 +1523,7 @@ void Robot::loop()  {
 			}
 		} else loopsPerSecLowCounter = 0; // reset counter to zero
     if (loopsPerSec > 0) loopsTa = 1000.0 / ((double)loopsPerSec);    
+    loopsPerSecMax = loopsPerSecCounter;
     loopsPerSecCounter = 0;    
   }   
      
@@ -1632,7 +1661,8 @@ void Robot::loop()  {
       checkSonar();             
       checkPerimeterBoundary(); 
       checkLawn();      
-      checkTimeout();      
+      checkTimeout();  
+
       break;
     case STATE_ROLL:
       checkCurrent();            
@@ -1683,15 +1713,15 @@ void Robot::loop()  {
 
         mowIncreaseCircleRadiusTime = millis() + secondsToCompleteOuterWheelCircle*1000;
         currentCirclingStep = currentCirclingStep + 1;
-
       }
 
       if (motorRightSpeedRpmSet >= motorLeftSpeedRpmSet) {
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorLeftSpeedRpmSet = 0;
+        motorRightSpeedRpmSet = 0;
         mowIncreaseCircleRadiusTime = 0;
         currentCirclingStep = 0;
-        setNextState(STATE_FORWARD,0);
+        if (rollDir == RIGHT) setNextState(STATE_FORWARD, LEFT); // toggle roll dir
+        else setNextState(STATE_FORWARD, RIGHT);
       }
 
       

@@ -93,6 +93,7 @@ class RemoteControl
     // main menu
     void sendMainMenu(boolean update);
     void sendErrorMenu(boolean update);
+    void sendStatusLogsMenu(boolean update);
     void sendInfoMenu(boolean update);
     void sendCommandMenu(boolean update);
     void processCommandMenu(String pfodCmd);

@@ -180,6 +180,9 @@ void RemoteControl::sendMainMenu(boolean update){
     serialPort->print(")");
   }
   serialPort->print(F("|r~Commands|n~Manual|s~Settings|in~Info|c~Test compass|m1~Log sensors|yp~Plot"));
+  if (robot->developerActive) {
+    serialPort->print(F("|l3~Status Logs"));
+  }
   serialPort->println(F("|y4~Error counters|y9~ADC calibration}"));
 }
 
@@ -217,6 +220,33 @@ void RemoteControl::sendSettingsMenu(boolean update){
   serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s16~Free wheel|s3~BumperDuino|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~R/C"));
   serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain|s15~Drop sensor|s14~GPS|i~Timer|s12~Date/time|sx~Factory settings}"));
 }  
+
+void RemoteControl::sendStatusLogsMenu(boolean update){
+  if (update) serialPort->print("{:"); else serialPort->print(F("{.Status Logs`1000"));
+  serialPort->print(F("|z00~Main loop fps: "));
+  serialPort->print(robot->loopsPerSecMax);
+
+  serialPort->print(F("|z00~StateLog - last 30"));
+  for (int logCounter = 0; logCounter < 30; logCounter++) {
+    serialPort->print(F("|zz~"));
+    serialPort->print(robot->stateName(robot->stateLog[logCounter]));
+  }
+
+  serialPort->print(F("|z00~SensorLog - last 30"));
+  for (int logCounter = 0; logCounter < 30; logCounter++) {
+    serialPort->print(F("|zz~"));
+    serialPort->print(robot->sensorName(robot->sensorLog[logCounter]));
+  }
+
+  serialPort->print(F("|z00~ErrorLog - last 30"));
+  for (int logCounter = 0; logCounter < 30; logCounter++) {
+    serialPort->print(F("|zz~"));
+    serialPort->print(robot->errorName(robot->errorLog[logCounter]));
+  }
+
+  serialPort->println("}");
+}  
+
 
 void RemoteControl::sendErrorMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Error counters`1000"));
@@ -574,7 +604,7 @@ void RemoteControl::sendPerimeterMenu(boolean update){
   serialPort->print(F("|e13~Block inner wheel  "));
   sendYesNo(robot->trackingBlockInnerWheelWhilePerimeterStruggling);
 	serialPort->print(F("|e18~State "));  
-	serialPort->print(robot->stateName());
+	serialPort->print(robot->stateName(robot->stateCurr));
 	serialPort->print(F("|e18~Last trigger "));
 	serialPort->print(robot->lastSensorTriggeredName());
 	serialPort->print(F("|e19~OFF|e20~Home|e21~Track"));
@@ -1060,14 +1090,14 @@ void RemoteControl::sendCommandMenu(boolean update){
   serialPort->print(F("|rp~Pattern is "));
   serialPort->print(robot->mowPatternName());
   serialPort->print(F("|rh~Home|rk~Track|rs~State "));
-  serialPort->print(robot->stateName());
+  serialPort->print(robot->stateName(robot->stateCurr));
 	serialPort->print(F("|rb~Battery "));
   serialPort->print(robot->batVoltage);	
 	serialPort->print(" V");
 	serialPort->print(F("|rs~Last trigger "));
 	serialPort->print(robot->lastSensorTriggeredName());
   serialPort->print(F("|rs~Last error "));
-  serialPort->print(robot->errorName());
+  serialPort->print(robot->errorName(robot->lastErrType));
   serialPort->print(F("|rr~Auto rotate is "));
   serialPort->print(robot->motorLeftPWMCurr);
   serialPort->print(F("|r1~User switch 1 is "));
@@ -1600,6 +1630,7 @@ bool RemoteControl::readSerial(){
         }              
         else if (pfodCmd == "yp") sendPlotMenu(false);
         else if (pfodCmd == "y4")sendErrorMenu(false);
+        else if (pfodCmd == "l3")sendStatusLogsMenu(false);        
         else if (pfodCmd == "y9")sendADCMenu(false);
         else if (pfodCmd == "n") sendManualMenu(false);
         else if (pfodCmd == "s") sendSettingsMenu(false);      

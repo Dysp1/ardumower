@@ -541,6 +541,12 @@ void Robot::deleteRobotStats(){
 void Robot::addErrorCounter(byte errType){   
   // increase error counters (both temporary and maximum error counters)
   lastErrType = errType;
+
+  for (int shiftArrayCounter = 28; shiftArrayCounter >= 0; shiftArrayCounter--) {
+    errorLog[shiftArrayCounter+1] = errorLog[shiftArrayCounter];
+  }
+  errorLog[0] = lastErrType;
+
   if (errorCounter[errType] < 255) errorCounter[errType]++;
   if (errorCounterMax[errType] < 255) errorCounterMax[errType]++;    
 }
