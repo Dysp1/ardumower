@@ -41,6 +41,7 @@
 #include "adcman.h"
 #include "perimeter.h"
 #include "gps.h"
+#include "gpsMap.h"
 #include "pfod.h"
 #include "RunningMedian.h"
 
