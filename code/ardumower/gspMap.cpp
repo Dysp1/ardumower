@@ -27,22 +27,109 @@
 #include "config.h"
 #include "flashmem.h"
 //#include "buzzer.h"
-#include "vector"
+
+#include <map>
+
+
 
 #define MAGIC 1
 #define ADDR_GPSMAP_DATA 900
 
+
+
+// gpsMapData is used to map the yard which we are cutting
+//
+// Each point in the map is referenced by GPS latitude and longitude.
+// 5th decimal point is used to reach about 1 - 1,1 meters between map points
+//
+// gpsMapData integer is used to save 5 values for each point in map:
+//  1 = is within perimeter
+//  2 = is edge node of perimeter
+//  4 = connected to adjacent point to north
+//  8 = connected to adjacent point to east
+// 16 = connected to adjacent point to south
+// 32 = connected to adjacent point to west
+std::map<std::pair<float,float>, int> gpsMapData;
+
 GPSMAP::GPSMAP() 
 {
-  gpsMapData[][][] ;
 }
 
 //
 // public methods
 //
-
 void GPSMAP::init(){
   loadSaveMapData(true);
+  gpsMapDataChanged = false;
+  float lastPointLongitude = 0.0;
+  float lastPointLatitude = 0.0;
+  nextGpsMapSaveTime = 0;
+}
+
+
+void GPSMAP::printMap() {
+  for(auto it = gpsMapData.cbegin(); it != gpsMapData.cend(); ++it)
+  {
+    Console.print(it->first.first);
+    Console.print(",");
+    Console.print(it->first.second);
+    Console.print(",");
+
+    if ( bitOfPointIsOn(it->first.first,it->first.second,INSIDE_PERIMETER   ) ) Console.print("I");
+    if ( bitOfPointIsOn(it->first.first,it->first.second,PERIMETER_EDGE_NODE) ) Console.print("P");
+    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_NORTH    ) ) Console.print("N");
+    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_EAST     ) ) Console.print("E");
+    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_SOUTH    ) ) Console.print("S");
+    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_WEST     ) ) Console.print("W");
+
+    Console.println("");
+  }
+}
+
+boolean GPSMAP::bitOfPointIsOn(float longitude, float latitude, int bitToCompare) {
+  return (boolean)((gpsMapData[std::make_pair(longitude,latitude)] >> bitToCompare) & 1);
+}
+
+void GPSMAP::setBitOnOfPoint(float longitude, float latitude, int bitToSet) {
+    if ( !bitOfPointIsOn(longitude,latitude,bitToSet) ){
+      gpsMapData[std::make_pair(longitude,latitude)] |= 1UL << bitToSet;
+      gpsMapDataChanged = true;
+    }
+
+    if (gpsMapDataChanged && millis() > nextGpsMapSaveTime) {
+      nextGpsMapSaveTime = millis() + 10000;
+      loadSaveMapData(false);
+    }
+}
+
+void GPSMAP::setPerimeterEdgePoint(float longitude, float latitude){
+  setBitOnOfPoint(longitude,latitude,PERIMETER_EDGE_NODE);
+}
+
+void GPSMAP::checkPoint(float longitude, float latitude){
+
+  setBitOnOfPoint(longitude,latitude,INSIDE_PERIMETER);
+
+  if ( lastPointLongitude - longitude == 0.00001 && lastPointLatitude - latitude == 0 ) {
+    setBitOnOfPoint(longitude,latitude,CONNECTED_WEST);
+    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_EAST);
+  }
+  
+  if ( lastPointLongitude - longitude == -0.00001 && lastPointLatitude - latitude == 0 ) {
+    setBitOnOfPoint(longitude,latitude,CONNECTED_EAST);
+    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_WEST);
+  }
+  
+  if ( lastPointLongitude - longitude == 0 && lastPointLatitude - latitude == 0.00001 ) {
+    setBitOnOfPoint(longitude,latitude,CONNECTED_NORTH);
+    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_SOUTH);
+  }
+
+  if ( lastPointLongitude - longitude == 0 && lastPointLatitude - latitude == -0.00001 ) {
+    setBitOnOfPoint(longitude,latitude,CONNECTED_SOUTH);
+    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_NORTH);
+  }
+
 }
 
 void GPSMAP::loadSaveMapData(boolean readflag){
@@ -56,6 +143,9 @@ void GPSMAP::loadSaveMapData(boolean readflag){
     Console.println(F("EEPROM ERROR DATA: NO GPSMAP DATA FOUND"));    
     return;
   }
+
+  eereadwrite(readflag, addr, chargingLongitude);  
+  eereadwrite(readflag, addr, chargingLatitude);  
   eereadwrite(readflag, addr, gpsMapData);  
   Console.print(F("loadSaveMapData addrstop="));
   Console.println(addr);

@@ -27,15 +27,28 @@
 
 #include "Arduino.h"
 
+enum {INSIDE_PERIMETER, PERIMETER_EDGE_NODE, CONNECTED_NORTH, CONNECTED_EAST, CONNECTED_SOUTH, CONNECTED_WEST};
+
 class GPSMAP
 {
 public:
   GPSMAP();
   void init();
+  void checkPoint(float longitude, float latitude) ;
+  void setPerimeterEdgePoint(float longitude, float latitude) ;
+  void printMap() ; 
 
 private:
-  void loadSaveMapData(boolean); 
-  int gpsMapData[][][];  
+  void loadSaveMapData(boolean) ; 
+  float chargingLatitude ;
+  float chargingLongitude ;
+  float lastPointLatitude ;
+  float lastPointLongitude ;
+  int angleToChargingStation ;
+  unsigned long nextGpsMapSaveTime ;
+  boolean gpsMapDataChanged ; 
+  void setBitOnOfPoint(float longitude, float latitude, int bitToSet) ;
+  boolean bitOfPointIsOn(float longitude, float latitude, int bitToCompare) ;
 };
 
 
