@@ -34,7 +34,7 @@
 
 GPSMAP::GPSMAP() 
 {
-  gpsMapData[1000][1000][6] ;
+  gpsMapData[][][] ;
 }
 
 //
