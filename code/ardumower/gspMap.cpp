@@ -42,7 +42,7 @@
 // Each point in the map is referenced by GPS latitude and longitude.
 // 5th decimal point is used to reach about 1 - 1,1 meters between map points
 //
-// gpsMapData integer is used to save 5 values for each point in map:
+// gpsMapData integer is used to save 6 values for each point in map:
 //  1 = is within perimeter
 //  2 = is edge node of perimeter
 //  4 = connected to adjacent point to north
@@ -60,10 +60,10 @@ GPSMAP::GPSMAP()
 //
 void GPSMAP::init(){
   loadSaveMapData(true);
-  gpsMapDataChanged = false;
+  boolean gpsMapDataChanged = false;
   float lastPointLongitude = 0.0;
   float lastPointLatitude = 0.0;
-  nextGpsMapSaveTime = 0;
+  unsigned long nextGpsMapSaveTime = 0;
 }
 
 
@@ -86,48 +86,57 @@ void GPSMAP::printMap() {
   }
 }
 
-boolean GPSMAP::bitOfPointIsOn(float longitude, float latitude, int bitToCompare) {
-  return (boolean)((gpsMapData[std::make_pair(longitude,latitude)] >> bitToCompare) & 1);
+boolean GPSMAP::bitOfPointIsOn(float latitude, float longitude, int bitToCompare) {
+  return (boolean)((gpsMapData[std::make_pair(latitude,longitude)] >> bitToCompare) & 1);
 }
 
-void GPSMAP::setBitOnOfPoint(float longitude, float latitude, int bitToSet) {
-    if ( !bitOfPointIsOn(longitude,latitude,bitToSet) ){
-      gpsMapData[std::make_pair(longitude,latitude)] |= 1UL << bitToSet;
-      gpsMapDataChanged = true;
-    }
+void GPSMAP::setBitOnOfPoint(float latitude, float longitude, int bitToSet) {
 
-    if (gpsMapDataChanged && millis() > nextGpsMapSaveTime) {
-      nextGpsMapSaveTime = millis() + 10000;
-      loadSaveMapData(false);
-    }
+  // If the point is not yet in the map, add it to map
+  if (gpsMapData[std::make_pair(latitude,longitude)]) {
+    gpsMapData[std::make_pair(latitude,longitude)] = 0;
+    gpsMapDataChanged = true;
+  }
+
+  // if the bit that we are trying to set is not yet 1, set it to 1
+  if ( !bitOfPointIsOn(latitude,longitude,bitToSet) ){
+    gpsMapData[std::make_pair(latitude,longitude)] |= 1UL << bitToSet;
+    gpsMapDataChanged = true;
+  }
+
+  // If the map has changed during the last xxx ms, save it to memory
+  if (gpsMapDataChanged && millis() > nextGpsMapSaveTime) {
+    nextGpsMapSaveTime = millis() + 10000;
+    loadSaveMapData(false);
+  }
 }
 
-void GPSMAP::setPerimeterEdgePoint(float longitude, float latitude){
-  setBitOnOfPoint(longitude,latitude,PERIMETER_EDGE_NODE);
+void GPSMAP::setPerimeterEdgePoint(float latitude, float longitude){
+  setBitOnOfPoint(latitude,longitude,PERIMETER_EDGE_NODE);
 }
 
-void GPSMAP::checkPoint(float longitude, float latitude){
+void GPSMAP::checkPoint(float latitude, float longitude){
 
-  setBitOnOfPoint(longitude,latitude,INSIDE_PERIMETER);
+  setBitOnOfPoint(latitude,longitude,INSIDE_PERIMETER);
 
   if ( lastPointLongitude - longitude == 0.00001 && lastPointLatitude - latitude == 0 ) {
-    setBitOnOfPoint(longitude,latitude,CONNECTED_WEST);
-    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_EAST);
+    setBitOnOfPoint(latitude,longitude,CONNECTED_WEST);
+    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_EAST);
   }
   
   if ( lastPointLongitude - longitude == -0.00001 && lastPointLatitude - latitude == 0 ) {
-    setBitOnOfPoint(longitude,latitude,CONNECTED_EAST);
-    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_WEST);
+    setBitOnOfPoint(latitude,longitude,CONNECTED_EAST);
+    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_WEST);
   }
   
   if ( lastPointLongitude - longitude == 0 && lastPointLatitude - latitude == 0.00001 ) {
-    setBitOnOfPoint(longitude,latitude,CONNECTED_NORTH);
-    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_SOUTH);
+    setBitOnOfPoint(latitude,longitude,CONNECTED_NORTH);
+    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_SOUTH);
   }
 
   if ( lastPointLongitude - longitude == 0 && lastPointLatitude - latitude == -0.00001 ) {
-    setBitOnOfPoint(longitude,latitude,CONNECTED_SOUTH);
-    setBitOnOfPoint(lastPointLongitude,lastPointLatitude,CONNECTED_NORTH);
+    setBitOnOfPoint(latitude,longitude,CONNECTED_SOUTH);
+    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_NORTH);
   }
 
 }
@@ -144,8 +153,8 @@ void GPSMAP::loadSaveMapData(boolean readflag){
     return;
   }
 
-  eereadwrite(readflag, addr, chargingLongitude);  
   eereadwrite(readflag, addr, chargingLatitude);  
+  eereadwrite(readflag, addr, chargingLongitude);  
   eereadwrite(readflag, addr, gpsMapData);  
   Console.print(F("loadSaveMapData addrstop="));
   Console.println(addr);
