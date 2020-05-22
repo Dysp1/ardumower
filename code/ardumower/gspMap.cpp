@@ -28,7 +28,7 @@
 #include "flashmem.h"
 //#include "buzzer.h"
 
-#include <map>
+//#include <map>
 
 
 
@@ -49,7 +49,22 @@
 //  8 = connected to adjacent point to east
 // 16 = connected to adjacent point to south
 // 32 = connected to adjacent point to west
-std::map<std::pair<float,float>, int> gpsMapData;
+//std::map<std::pair<float,float>, int> gpsMapData;
+
+struct innerData {
+  int32_t longitude;
+  uint8_t pointData;
+};
+ 
+struct outerData {
+  int32_t latitude;
+  innerData innerData222[3];
+};
+ 
+//outerData gpsMapData[3]; 
+
+//gpsMapData[0].latitude = 0;
+//gpsMapData[0].innerData.longitude = 0;
 
 GPSMAP::GPSMAP() 
 {
@@ -68,7 +83,7 @@ void GPSMAP::init(){
 
 
 void GPSMAP::printMap() {
-  for(auto it = gpsMapData.cbegin(); it != gpsMapData.cend(); ++it)
+/*  for(auto it = gpsMapData.begin(); it != gpsMapData.end(); ++it)
   {
     Console.print(it->first.first);
     Console.print(",");
@@ -83,15 +98,15 @@ void GPSMAP::printMap() {
     if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_WEST     ) ) Console.print("W");
 
     Console.println("");
-  }
+  }*/
 }
 
 boolean GPSMAP::bitOfPointIsOn(float latitude, float longitude, int bitToCompare) {
-  return (boolean)((gpsMapData[std::make_pair(latitude,longitude)] >> bitToCompare) & 1);
+//  return (boolean)((gpsMapData[std::make_pair(latitude,longitude)] >> bitToCompare) & 1);
 }
 
 void GPSMAP::setBitOnOfPoint(float latitude, float longitude, int bitToSet) {
-
+/*
   // If the point is not yet in the map, add it to map
   if (gpsMapData[std::make_pair(latitude,longitude)]) {
     gpsMapData[std::make_pair(latitude,longitude)] = 0;
@@ -138,11 +153,11 @@ void GPSMAP::checkPoint(float latitude, float longitude){
     setBitOnOfPoint(latitude,longitude,CONNECTED_SOUTH);
     setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_NORTH);
   }
-
+*/
 }
 
 void GPSMAP::loadSaveMapData(boolean readflag){
-  if (readflag) Console.println(F("loadSaveGPSMapData:: read"));
+/*  if (readflag) Console.println(F("loadSaveGPSMapData:: read"));
     else Console.println(F("loadSaveGPSMapData: write"));
   int addr = ADDR_GPSMAP_DATA;
   short magic = 0;
@@ -158,5 +173,6 @@ void GPSMAP::loadSaveMapData(boolean readflag){
   eereadwrite(readflag, addr, gpsMapData);  
   Console.print(F("loadSaveMapData addrstop="));
   Console.println(addr);
+  */
 }
 
