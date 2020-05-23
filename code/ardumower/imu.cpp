@@ -32,9 +32,10 @@
 
 // -------------I2C addresses ------------------------
 #define ADXL345B (0x53)          // ADXL345B acceleration sensor (GY-80 PCB)
-#define HMC5883L (0x1E)          // HMC5883L compass sensor (GY-80 PCB)
+#define HMC5883L (0x1E)          // COMPASSTOUSE = 0; HMC5883L compass sensor (GY-80 PCB)
+#define MMC5883MA (0x30)           // COMPASSTOUSE = 1; MMC5883MA compass sensor (GY-80 PCB later version)
+//#define COMPASSTOUSE 1
 #define L3G4200D (0xD2 >> 1)     // L3G4200D gyro sensor (GY-80 PCB)
-
 
 #define ADDR 600
 #define MAGIC 6
@@ -406,6 +407,71 @@ void IMU::readHMC5883L(){
   }  
 }
 
+void  IMU::initMMC5883MA(){
+  I2CwriteTo(MMC5883MA, 0x08, 0x08);  // reset      
+  Console.println("init MMC5883MA ");
+}
+
+void IMU::readMMC5883MA(){    
+  I2CwriteTo(MMC5883MA, 0x08, 0x08);  // reset  
+  delay(1);
+  I2CwriteTo(MMC5883MA, 0x08, 0x10);  // set
+  delay(1);
+  I2CwriteTo(MMC5883MA, 0x08, 0x01);  // mode measurement   
+  delay(1);
+
+  uint8_t buf[6];  
+  if (I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf) != 6){
+    errorCounter++;
+    return;
+  }
+
+  int x,y,z;
+
+  x = buf[0]; //X msb
+  x|= buf[1]<<8; //X lsb
+  x = x - 0x7FFF;
+
+  y = buf[2]; //Y msb
+  y|= buf[3]<<8; //Y lsb
+  y = y - 0x7FFF;
+
+  z = buf[4]; //Z msb
+  z|= buf[5]<<8; //Z lsb
+  z = z - 0x7FFF;
+  
+
+/*
+  // scale +1.3Gauss..-1.3Gauss  (*0.00092)  
+  float x = (int16_t) (((uint16_t)buf[1]) << 8 | buf[0]);
+  float y = (int16_t) (((uint16_t)buf[3]) << 8 | buf[2]);
+  float z = (int16_t) (((uint16_t)buf[5]) << 8 | buf[4]);
+*/
+ // Console.println(x);
+ // Console.println(y);
+ // Console.println(z);
+  if (useComCalibration){
+    x -= comOfs.x;
+    y -= comOfs.y;
+    z -= comOfs.z;
+    x /= comScale.x*0.5;    
+    y /= comScale.y*0.5;    
+    z /= comScale.z*0.5;
+    com.x = x;
+    com.y = y;
+    com.z = z;
+  } else {
+    com.x = x;
+    com.y = y;
+    com.z = z;
+  }
+  
+  //  Console.println(x);
+  //  Console.println(y);
+  //  Console.println(z);
+}
+
+
 float IMU::sermin(float oldvalue, float newvalue){
   if (newvalue < oldvalue) {
     Console.print(".");
@@ -471,7 +537,9 @@ boolean IMU::newMinMaxFound(){
 void IMU::calibComUpdate(){
   comLast = com;
   delay(20);
-  readHMC5883L();  
+  //if (COMPASSTOUSE == 0) readHMC5883L();
+  //if (COMPASSTOUSE == 1) 
+  readMMC5883MA();
   boolean newfound = false;
   if ( (abs(com.x-comLast.x)<10) &&  (abs(com.y-comLast.y)<10) &&  (abs(com.z-comLast.z)<10) ){
     if (com.x < comMin.x) { 
@@ -703,7 +771,10 @@ boolean IMU::init(){
   printCalib();    
   if (!initL3G4200D()) return false;
   initADXL345B();
-  initHMC5883L();    
+  //if (COMPASSTOUSE == 0) initHMC5883L();
+  //if (COMPASSTOUSE == 1) 
+  initMMC5883MA();
+
   now = 0;  
   hardwareInitialized = true;
   return true;
@@ -729,7 +800,9 @@ void IMU::read(){
   callCounter++;    
   readL3G4200D(true);
   readADXL345B();
-  readHMC5883L();  
+  //if (COMPASSTOUSE == 0) readHMC5883L();
+  //if (COMPASSTOUSE == 1) 
+  readMMC5883MA();
   //calcComCal();
 }
 

@@ -143,9 +143,11 @@ private:
   void initADXL345B();
   boolean initL3G4200D();
   void initHMC5883L();
+  void initMMC5883MA();
   void readL3G4200D(boolean useTa);
   void readADXL345B();
   void readHMC5883L();
+  void readMMC5883MA();
   boolean foundNewMinMax;
 };
 

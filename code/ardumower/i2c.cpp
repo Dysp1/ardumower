@@ -133,7 +133,7 @@ int I2CreadFrom(uint8_t device, uint8_t address, uint8_t num, uint8_t buff[], in
     //Wire.beginTransmission(device); //start transmission to device (initiate again)
     Wire.requestFrom(device, num);    // request 6 bytes from device
   
-    while(Wire.available())    //device may send less than requested (abnormal)
+    while(i<=num && Wire.available())    //device may send less than requested (abnormal)
     {  
       buff[i] = Wire.read(); // receive a byte
       i++;
@@ -168,13 +168,14 @@ void I2CScanner(){
         Console.print(" (");
         nDevices++;
         switch (address){          
-          case 0x1E: Console.print("probably HMC5883L"); break;          
-          case 0x50: Console.print("probably AT24C32"); break;
-          case 0x53: Console.print("probably ADXL345B"); break;
-          case 0x60: Console.print("probably CMPS11"); break;          
-          case 0x68: Console.print("probably DS1307"); break;
-          case 0x69: Console.print("probably MPU6050/9150 or L3G4200D"); break;          
-          case 0x77: Console.print("probably BMP180"); break;                    
+          case 0x1E: Console.print("probably HMC5883L - Compass"); break;          
+          case 0x30: Console.print("probably MMC5883 - Compass"); break;          
+          case 0x50: Console.print("probably AT24C32 - EEPROM Memory"); break;
+          case 0x53: Console.print("probably ADXL345B - Accelerometer"); break;
+          case 0x60: Console.print("probably CMPS11 - Compass"); break;          
+          case 0x68: Console.print("probably DS1307 - RTC (Clock)"); break;
+          case 0x69: Console.print("probably MPU6050/9150 or L3G4200D - Acceleromer/Compass"); break;          
+          case 0x77: Console.print("probably BMP180 - Barometric pressure/temperature/altitude"); break;                    
           default: Console.print("unknown module");
         }
         Console.println(")");
