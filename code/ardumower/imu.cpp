@@ -33,12 +33,37 @@
 // -------------I2C addresses ------------------------
 #define ADXL345B (0x53)          // ADXL345B acceleration sensor (GY-80 PCB)
 #define HMC5883L (0x1E)          // COMPASSTOUSE = 0; HMC5883L compass sensor (GY-80 PCB)
-#define MMC5883MA (0x30)           // COMPASSTOUSE = 1; MMC5883MA compass sensor (GY-80 PCB later version)
-//#define COMPASSTOUSE 1
 #define L3G4200D (0xD2 >> 1)     // L3G4200D gyro sensor (GY-80 PCB)
+#define MMC5883MA (0x30)         // Sensor I2C address
 
 #define ADDR 600
 #define MAGIC 6
+
+//*****************************************************
+// MMC5883MA Register map
+//*****************************************************
+#define XOUT_LSB    0x00
+#define XOUT_MSB    0x01
+#define YOUT_LSB    0x02
+#define YOUT_MSB    0x03
+#define ZOUT_LSB    0x04
+#define ZOUT_MSB    0x05
+#define TEMPERATURE 0x06
+#define STATUS      0x07
+#define INT_CTRL0   0x08
+#define INT_CTRL1   0x09
+#define INT_CTRL2   0x0A
+#define X_THRESHOLD 0x0B
+#define Y_THRESHOLD 0x0C
+#define Z_THRESHOLD 0x0D
+#define PROD_ID1    0x2F
+
+#define MMC5883MA_DYNAMIC_RANGE 16
+#define MMC5883MA_RESOLUTION    65536
+//*****************************************************
+// MMC5883MA Register map end
+//*****************************************************
+
 
 
 struct {
@@ -57,8 +82,7 @@ IMU::IMU(){
   calibrationAvail = false;
   state = IMU_RUN;
   callCounter = 0;  
-  errorCounter = 0;
-  
+  errorCounter = 0;  
   gyroOfs.x=gyroOfs.y=gyroOfs.z=0;  
   gyroNoise = 0;      
   gyroCounter = 0; 
@@ -408,12 +432,67 @@ void IMU::readHMC5883L(){
 }
 
 void  IMU::initMMC5883MA(){
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x04);  // set      
+  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x80);  // reset      
+  I2CwriteTo(MMC5883MA, INT_CTRL2, 0x40);
+  I2CwriteTo(MMC5883MA, STATUS, 0x01);
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+
+/*
   I2CwriteTo(MMC5883MA, 0x08, 0x08);  // reset      
   Console.println("init MMC5883MA ");
+*/
 }
 
 void IMU::readMMC5883MA(){    
-  I2CwriteTo(MMC5883MA, 0x08, 0x08);  // reset  
+  uint8_t currentStatus = 0;  
+  uint8_t mask = 1;
+  uint8_t x_lsb, x_msb, y_lsb, y_msb, z_lsb, z_msb;
+  float x_val, y_val, z_val;
+  
+  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)currentStatus);  //STATUS register will set and remain 1 when measurement ready
+  Console.println("Status register before: ");
+  Console.println(currentStatus);
+  delay(200);
+
+
+  if (!(currentStatus & mask)) { //measurement has been done and we can read the data
+    Console.println("Status register measured: ");
+    Console.println(currentStatus);
+
+    I2CreadFrom(MMC5883MA, XOUT_LSB, 1, (uint8_t*)x_lsb); 
+    I2CreadFrom(MMC5883MA, XOUT_MSB, 1, (uint8_t*)x_msb); 
+    I2CreadFrom(MMC5883MA, YOUT_LSB, 1, (uint8_t*)y_lsb); 
+    I2CreadFrom(MMC5883MA, YOUT_MSB, 1, (uint8_t*)y_msb); 
+    I2CreadFrom(MMC5883MA, ZOUT_LSB, 1, (uint8_t*)z_lsb); 
+    I2CreadFrom(MMC5883MA, ZOUT_MSB, 1, (uint8_t*)z_msb); 
+    
+    x_val = (float)(x_msb << 8 | x_lsb) * MMC5883MA_DYNAMIC_RANGE / MMC5883MA_RESOLUTION - (float)MMC5883MA_DYNAMIC_RANGE / 2;
+    y_val = (float)(y_msb << 8 | y_lsb) * MMC5883MA_DYNAMIC_RANGE / MMC5883MA_RESOLUTION - (float)MMC5883MA_DYNAMIC_RANGE / 2;
+    z_val = (float)(z_msb << 8 | z_lsb) * MMC5883MA_DYNAMIC_RANGE / MMC5883MA_RESOLUTION - (float)MMC5883MA_DYNAMIC_RANGE / 2;
+
+    com.x = x_val;
+    com.y = y_val;
+    com.z = z_val;
+
+    Console.println(x_val);
+    Console.println(y_val);
+    Console.println(z_val);
+
+    I2CwriteTo(MMC5883MA, INT_CTRL1, 0x80);  // reset      
+    I2CwriteTo(MMC5883MA, INT_CTRL2, 0x40);  // measurement interrupt on
+    I2CwriteTo(MMC5883MA, STATUS, 0x01);     // clear interrupt
+    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);  // initiate magnetic field measurement, autoresets to 0. STATUS register set to 0 during measurement
+ 
+  }
+
+
+
+
+
+
+
+/*  I2CwriteTo(MMC5883MA, 0x08, 0x08);  // reset  
   delay(1);
   I2CwriteTo(MMC5883MA, 0x08, 0x10);  // set
   delay(1);
@@ -439,7 +518,7 @@ void IMU::readMMC5883MA(){
   z = buf[4]; //Z msb
   z|= buf[5]<<8; //Z lsb
   z = z - 0x7FFF;
-  
+*/  
 
 /*
   // scale +1.3Gauss..-1.3Gauss  (*0.00092)  
@@ -450,6 +529,8 @@ void IMU::readMMC5883MA(){
  // Console.println(x);
  // Console.println(y);
  // Console.println(z);
+
+/*
   if (useComCalibration){
     x -= comOfs.x;
     y -= comOfs.y;
@@ -465,7 +546,7 @@ void IMU::readMMC5883MA(){
     com.y = y;
     com.z = z;
   }
-  
+*/  
   //  Console.println(x);
   //  Console.println(y);
   //  Console.println(z);
