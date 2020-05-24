@@ -626,7 +626,7 @@ void Robot::readSensors(){
       Console.println(F("IMU comm error"));    
     }    
     if (!imu.calibrationAvail) {
-      Console.println(F("Error: missing IMU calibration data"));
+      //MR Console.println(F("Error: missing IMU calibration data"));
       addErrorCounter(ERR_IMU_CALIB);
       setNextState(STATE_ERROR, 0);
     }

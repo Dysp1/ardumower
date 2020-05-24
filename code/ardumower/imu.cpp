@@ -42,21 +42,21 @@
 //*****************************************************
 // MMC5883MA Register map
 //*****************************************************
-#define XOUT_LSB    0x00
-#define XOUT_MSB    0x01
-#define YOUT_LSB    0x02
-#define YOUT_MSB    0x03
-#define ZOUT_LSB    0x04
-#define ZOUT_MSB    0x05
-#define TEMPERATURE 0x06
-#define STATUS      0x07
-#define INT_CTRL0   0x08
-#define INT_CTRL1   0x09
-#define INT_CTRL2   0x0A
-#define X_THRESHOLD 0x0B
-#define Y_THRESHOLD 0x0C
-#define Z_THRESHOLD 0x0D
-#define PROD_ID1    0x2F
+#define XOUT_LSB    (0x00)
+#define XOUT_MSB    (0x01)
+#define YOUT_LSB    (0x02)
+#define YOUT_MSB    (0x03)
+#define ZOUT_LSB    (0x04)
+#define ZOUT_MSB    (0x05)
+#define TEMPERATURE (0x06)
+#define STATUS      (0x07)
+#define INT_CTRL0   (0x08)
+#define INT_CTRL1   (0x09)
+#define INT_CTRL2   (0x0A)
+#define X_THRESHOLD (0x0B)
+#define Y_THRESHOLD (0x0C)
+#define Z_THRESHOLD (0x0D)
+#define PROD_ID1    (0x2F)
 
 #define MMC5883MA_DYNAMIC_RANGE 16
 #define MMC5883MA_RESOLUTION    65536
@@ -432,11 +432,43 @@ void IMU::readHMC5883L(){
 }
 
 void  IMU::initMMC5883MA(){
-  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x04);  // set      
+/*  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x04);  // set      
   I2CwriteTo(MMC5883MA, INT_CTRL1, 0x80);  // reset      
   I2CwriteTo(MMC5883MA, INT_CTRL2, 0x40);
   I2CwriteTo(MMC5883MA, STATUS, 0x01);
   I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+*/
+/*
+  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x80);  // (1000 0000) 5ms Reset, similar to power-up. It will clear all registers and also re-read OTP.
+  delay(100);
+
+  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x03);  // (0000 0011) Set output resolution to 16bits, 1.6ms and 600Hz (1.6ms to read each axis)
+  delay(10);
+
+  I2CwriteTo(MMC5883MA, INT_CTRL2, 0x21);  // (0010 0001) Enable the motion detected interrupt (5th) and set continous measurements to be taken at 14Hz (1st)
+  delay(10);
+
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x04);  // (0000 0100) Start continuous measurement
+  delay(10);
+*/
+
+  //I2CwriteTo(MMC5883MA, STATUS, 0x04);  // (0000 0100) Start continuous measurement
+
+  I2CwriteTo(MMC5883MA, 0x08, 0x08);
+  delay(10);
+  I2CwriteTo(MMC5883MA, 0x08, 0x10);
+  delay(10);
+  I2CwriteTo(MMC5883MA, 0x08, 0x01);
+  delay(10);
+  
+//  I2CwriteTo(MMC5883MA, STATUS, 0x01);
+
+
+
+  uint8_t currentStatus = 0;  
+  I2CreadFrom((byte)MMC5883MA, 0x07, 1, (uint8_t*)currentStatus);  //STATUS register will set and remain 1 when measurement ready
+  Console.println("First read Status register before: ");
+  Console.println(currentStatus);
 
 /*
   I2CwriteTo(MMC5883MA, 0x08, 0x08);  // reset      
@@ -445,18 +477,87 @@ void  IMU::initMMC5883MA(){
 }
 
 void IMU::readMMC5883MA(){    
-  uint8_t currentStatus = 0;  
-  uint8_t mask = 1;
+
+
+  int x,y,z; //triple axis data
+  
+
+  //Wire.beginTransmission(MMC5883MA); //open communication with MMC5883
+  //Wire.write(0x08); //select mode register
+  //Wire.write(0x08); //RESET
+  //Wire.endTransmission();
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);
+  delay(1);
+
+  //Wire.beginTransmission(MMC5883MA); //open communication with MMC5883
+  //Wire.write(0x08); //select mode register
+  //Wire.write(0x10); //SET
+  //Wire.endTransmission();
+  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x03);
+  delay(1);
+     
+  //Wire.beginTransmission(MMC5883MA); //open communication with MMC5883
+  //Wire.write(0x08); //select mode register
+  //Wire.write(0x01); //1 measurement mode
+  //Wire.endTransmission();
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+  delay(10);//10MS
+
+  //Tell the MMC5883 where to begin reading data
+  Wire.beginTransmission(MMC5883MA);
+  Wire.write(0x00); //select register 3, X MSB register
+  Wire.endTransmission();
+
+  uint8_t buf2[2];  
+  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
+  Serial.print("status: ");
+  Serial.println(buf2[0]);
+  Serial.println(buf2[1]);
+
+  
+  uint8_t buf[6];  
+  I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf);
+
+  //  if (I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf) != 6){
+
+
+  x = buf[0]; //X msb
+  x|= buf[1]<<8; //X lsb
+  x = x - 0x7FFF;
+  y = buf[2]; //Z msb
+  y|= buf[3]<<8; //Y lsb
+  y = y - 0x7FFF;
+  z = buf[4]; //Y msb
+  z|= buf[5]<<8; //Z lsb
+  z = z - 0x7FFF;
+   
+ // }
+  
+  //Print out values of each axis
+  Serial.print("x: ");
+  Serial.print(x);
+  Serial.print("  y: ");
+  Serial.print(y);
+  Serial.print("  z: ");
+  Serial.println(z);
+  
+  delay(10);
+
+
+/*  uint8_t currentStatus = 0;  
+  uint8_t motionDetected = 4; //(0000 0100) Motion detected
   uint8_t x_lsb, x_msb, y_lsb, y_msb, z_lsb, z_msb;
   float x_val, y_val, z_val;
   
-  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)currentStatus);  //STATUS register will set and remain 1 when measurement ready
-  Console.println("Status register before: ");
-  Console.println(currentStatus);
-  delay(200);
+  I2CreadFrom((byte)MMC5883MA, (byte)0x07, 1, (uint8_t*)currentStatus);  //STATUS register will set and remain 1 when measurement ready
+  if (currentStatus > 0) {
+    Console.println("Status register before: ");
+    Console.println(currentStatus);
+  }
 
+    I2CreadFrom(MMC5883MA, XOUT_LSB, 1, (uint8_t*)x_lsb); 
 
-  if (!(currentStatus & mask)) { //measurement has been done and we can read the data
+  if ((currentStatus & motionDetected) == 4) { //measurement has been done and we can read the data
     Console.println("Status register measured: ");
     Console.println(currentStatus);
 
@@ -483,10 +584,10 @@ void IMU::readMMC5883MA(){
     I2CwriteTo(MMC5883MA, INT_CTRL2, 0x40);  // measurement interrupt on
     I2CwriteTo(MMC5883MA, STATUS, 0x01);     // clear interrupt
     I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);  // initiate magnetic field measurement, autoresets to 0. STATUS register set to 0 during measurement
- 
+
   }
 
-
+*/
 
 
 

@@ -130,15 +130,13 @@ int I2CreadFrom(uint8_t device, uint8_t address, uint8_t num, uint8_t buff[], in
     Wire.write(address);        //sends address to read from
     Wire.endTransmission(); //end transmission
   
-    //Wire.beginTransmission(device); //start transmission to device (initiate again)
     Wire.requestFrom(device, num);    // request 6 bytes from device
   
-    while(i<=num && Wire.available())    //device may send less than requested (abnormal)
+    while(Wire.available())    //device may send less than requested (abnormal)
     {  
       buff[i] = Wire.read(); // receive a byte
       i++;
     }
-    //Wire.endTransmission(); //end transmission
     if (num == i) return i;
     if (j != retryCount) delay(3);
   }
