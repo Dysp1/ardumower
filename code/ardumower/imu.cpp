@@ -442,13 +442,33 @@ void  IMU::initMMC5883MA(){
   I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
 */
 
-  uint8_t buf[6]; 
+//  uint8_t buf[6]; 
   
   I2CwriteTo(MMC5883MA, INT_CTRL1, 0x80);  // (1000 0000) 5ms Reset, similar to power-up. It will clear all registers and also re-read OTP.
   delay(10);
 
-  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x03);  // (0000 0011) Set output resolution to 16bits, 1.6ms and 600Hz (1.6ms to read each axis)
+  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x00 );  // (0000 0011) Set output resolution to 16bits, 1.6ms and 600Hz (1.6ms to read each axis)
+  delay(2);
+
+  //I2CwriteTo(MMC5883MA, INT_CTRL0, 0x04);  // 
+  //delay(100);
+
+  //I2CwriteTo(MMC5883MA, INT_CTRL2, 0x41);  // Start motion detection
+  //  delay(1);
+/*
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);
   delay(1);
+
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+  delay(1);
+
+
+  uint8_t buf2[2];  
+  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
+  Serial.print("First status: ");
+  Serial.println(buf2[0]);
+*/
+/*
 
   if (bridgeOffsetDone < 1 && 1 == 0) {   // Not in use at the moment
     ///////////////////////////////
@@ -505,62 +525,157 @@ void  IMU::initMMC5883MA(){
   Console.print(yOffset);
   Console.print(",");
   Console.println(zOffset);
+*/
 
-  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+//  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
 
 }
 
 void IMU::readMMC5883MA(){    
 
+  int x,y,z; //triple axis data
+  
+//  Wire.beginTransmission(MMC5883MA); //open communication with MMC5883
+//  Wire.write(0x08); //select mode register
+//  Wire.write(0x08); //RESET
+//  Wire.endTransmission();
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);  
+  delay(1);
+
+//  Wire.beginTransmission(MMC5883MA); //open communication with MMC5883
+//  Wire.write(0x08); //select mode register
+//  Wire.write(0x10); //SET
+//  Wire.endTransmission();
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x10);  
+  delay(1);
+     
+//  Wire.beginTransmission(MMC5883MA); //open communication with MMC5883
+//  Wire.write(0x08); //select mode register
+//  Wire.write(0x01); //1 measurement mode
+//  Wire.endTransmission();
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);  
+  delay(20);//10MS
+
+  //Tell the MMC5883 where to begin reading data
+  Wire.beginTransmission(MMC5883MA);
+  Wire.write(0x00); //select register 3, X MSB register
+  Wire.endTransmission();
+  
+ 
+ //Read data from each axis, 2 registers per axis
+  Wire.requestFrom(MMC5883MA, 6);
+  if(6<=Wire.available()){
+    x = Wire.read(); //X msb
+    x|= Wire.read()<<8; //X lsb
+    x =x - 0x7FFF;
+    y = Wire.read(); //Z msb
+    y|= Wire.read()<<8; //Y lsb
+    y =y - 0x7FFF;
+   z = Wire.read(); //Y msb
+   z |= Wire.read()<<8; //Z lsb
+   z =z - 0x7FFF;
+   
+  }
+
+/*  
+  //Print out values of each axis
+  Serial.print("x: ");
+  Serial.print(x);
+  Serial.print("  y: ");
+  Serial.print(y);
+  Serial.print("  z: ");
+  Serial.println(z);
+*/
+
+
+
+  if (useComCalibration){
+    x -= comOfs.x;
+    y -= comOfs.y;
+    z -= comOfs.z;
+    x /= comScale.x*0.5;    
+    y /= comScale.y*0.5;    
+    z /= comScale.z*0.5;
+    com.x = x;
+    com.y = y;
+    com.z = z;
+  } else {
+    com.x = x;
+    com.y = y;
+    com.z = z;
+  }
+
+
+
+
+/*
+
+
   //int x,y,z; //triple axis data
 
   uint8_t buf2[2];  
   I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-  //Serial.print("status: ");
-  //Serial.println(buf2[0]);
+  Serial.print("status: ");
+  Serial.println(buf2[0]);
 
 
   if ( (buf2[0] & 1) == 1 ) {  
     uint8_t buf[6];  
     I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf);
+    delay(1);
+
+//    I2CwriteTo(MMC5883MA, STATUS, 0x03);
+//    delay(1);
+
+//    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);
+//    delay(1);
+
+
+//    I2CwriteTo(MMC5883MA, INT_CTRL2, 0x41);  // Start motion detection
+//    delay(1);
+
+//    I2CwriteTo(MMC5883MA, STATUS, 0x01);  // Start motion detection
+//    delay(1);
+
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x16);
+  delay(1);
+
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);
+  delay(1);
+
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+  delay(1);
+
+  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
+  Serial.print("status: ");
+  Serial.println(buf2[0]);
+delay(1);
+  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
+  Serial.print("status: ");
+  Serial.println(buf2[0]);
+
+
 
   //  if (I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf) != 6){
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);
-    delay(1);
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+
 
     // scale +1.3Gauss..-1.3Gauss  (*0.00092)  
-    //float x = (int16_t) (((uint16_t)buf[1]) << 8 | buf[0]);
-    //float y = (int16_t) (((uint16_t)buf[3]) << 8 | buf[2]);
-    //float z = (int16_t) (((uint16_t)buf[5]) << 8 | buf[4]);
     float x = (int16_t) (((uint16_t)buf[1]) << 8 | buf[0]);
+    x = x - 0x7FFF;
     float y = (int16_t) (((uint16_t)buf[5]) << 8 | buf[4]);
+    y = y - 0x7FFF;
     float z = (int16_t) (((uint16_t)buf[3]) << 8 | buf[2]);  
+    z = z - 0x7FFF;
 
-
-/*
-    x = buf[0]; //X msb
-    x|= buf[1]<<8; //X lsb
-    //x = x - 0x7FFF;
-    x = x - xOffset;
-    y = buf[2]; //Z msb
-    y|= buf[3]<<8; //Y lsb
-    //y = y - 0x7FFF;
-    y = y - yOffset;
-    z = buf[4]; //Y msb
-    z|= buf[5]<<8; //Z lsb
-    //z = z - 0x7FFF;
-    z = z - zOffset;
-  */ 
  // }
   
     //Print out values of each axis
-    //Serial.print("x: ");
-    //Serial.print(x);
-    //Serial.print("  y: ");
-    //Serial.print(y);
-    //Serial.print("  z: ");
-    //Serial.println(z);
+    Serial.print("x: ");
+    Serial.print(x);
+    Serial.print("  y: ");
+    Serial.print(y);
+    Serial.print("  z: ");
+    Serial.println(z);
 
     if (useComCalibration){
       x -= comOfs.x;
@@ -578,7 +693,7 @@ void IMU::readMMC5883MA(){
       com.z = z;
     }
   }
-
+*/
 }
 
 
