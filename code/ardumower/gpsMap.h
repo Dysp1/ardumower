@@ -1,8 +1,6 @@
 /*
   Ardumower (www.ardumower.de)
   Copyright (c) 2019 by Marko Riihimaki
-  
-  Private-use only! (you need to ask for a commercial-use)
  
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,9 +15,36 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
   
-  Private-use only! (you need to ask for a commercial-use)
+  You are free to use the code in this classs for commercial or personal use at your will.
 
 */
+
+/*
+#ifndef GPSMap_h
+#define GPSMap_h
+
+#include "Arduino.h"
+
+typedef struct {int x, y;} Point;
+
+class GPSMap
+{
+    private:
+        int isLeft( Point P0, Point P1, Point P2 );
+        Point _currentLocation = {0,0};
+        Point _mainAreaPointList[31] = {};
+        int _numberOfMainAreaPoints = 0;
+    public:
+        int wn_PnPoly();
+        float distanceToClosestWall();
+        void setCurrentLocation( float x, float y);
+        uint8_t addMainAreaPoint( float x, float y);
+        uint8_t removeMainAreaPoint( int pointNro);
+};
+
+#endif
+*/
+
 
 
 #ifndef GPSMAP_H
