@@ -781,9 +781,14 @@ void RemoteControl::sendBatteryMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Battery`1000"));
   serialPort->print(F("|j01~Monitor "));
   sendYesNo(robot->batMonitor);
+  serialPort->print(F("|j13~Start Charging "));
+  int dummy;
+  sendYesNo(dummy);
+
   serialPort->print(F("|j00~Battery "));
   serialPort->print(robot->batVoltage);
   serialPort->print(" V");
+
   if (robot->developerActive)
   {
     sendSlider("j05", F("Calibrate batFactor "), robot->batFactor, "", 0.001, 0.30, 0.55);
@@ -825,6 +830,11 @@ void RemoteControl::processBatteryMenu(String pfodCmd){
       processSlider(pfodCmd, robot->batGoHomeIfBelow, 0.1);
       //Console.print("gohomeifbelow=");
       //Console.println(robot->batGoHomeIfBelow);
+    } else if (pfodCmd == "j13") {
+      if (robot->stateCurr == STATE_STATION_CHARGING || robot->stateCurr == STATE_STATION) {
+        robot->setActuator(ACT_CHGRELAY, 1); 
+        robot->setNextState(STATE_STATION_CHARGING,0);
+      }
     }
     else if (pfodCmd.startsWith("j03")) processSlider(pfodCmd, robot->batSwitchOffIfBelow, 0.1); 
     //bb change
