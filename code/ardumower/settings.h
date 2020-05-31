@@ -149,6 +149,7 @@ void Robot::loadSaveUserSettings(boolean readflag){
   eereadwrite(readflag, addr, freeWheelUse);  
   eereadwrite(readflag, addr, motorMowCircleTriggerPower);
   eereadwrite(readflag, addr, motorMowCircleRadiusWidenCM);
+  eereadwrite(readflag, addr, gpsPerimeterUse);
   Console.print(F("loadSaveUserSettings addrstop="));
   Console.println(addr);
 }

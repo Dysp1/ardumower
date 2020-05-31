@@ -218,7 +218,7 @@ void RemoteControl::sendPlotMenu(boolean update){
 void RemoteControl::sendSettingsMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Settings"));
   serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s16~Free wheel|s3~BumperDuino|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~R/C"));
-  serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain|s15~Drop sensor|s14~GPS|i~Timer|s12~Date/time|sx~Factory settings}"));
+  serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain|s15~Drop sensor|s14~GPS|sgpsPMmm~GPS Perimeter|i~Timer|s12~Date/time|sx~Factory settings}"));
 }  
 
 void RemoteControl::sendStatusLogsMenu(boolean update){
@@ -710,12 +710,61 @@ void RemoteControl::sendGPSMenu(boolean update){
   serialPort->println("}");
 }
 
+
 void RemoteControl::processGPSMenu(String pfodCmd){      
   if (pfodCmd == "q00") robot->gpsUse = !robot->gpsUse;
   else if (pfodCmd.startsWith("q01")) processSlider(pfodCmd, robot->stuckIfGpsSpeedBelow, 0.1);  
   else if (pfodCmd.startsWith("q02")) processSlider(pfodCmd, robot->gpsSpeedIgnoreTime, 1);  
   sendGPSMenu(true);
 }
+
+
+void RemoteControl::sendGPSPerimeterMenu(boolean update){
+  if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS Perimeter`1000"));
+  serialPort->print(F("|0gpsPMmm00~Use "));
+  sendYesNo(robot->gpsPerimeterUse);
+  if (robot->gpsPerimeterUse) {
+	  serialPort->print(F("|sgpsPMma~Main Area|sgpsPMea1~Exclude Area 1|sgpsPMea2~Exclude Area 2"));
+  }
+  serialPort->println("}");
+}
+
+void RemoteControl::processGPSPerimeterMenu(String pfodCmd){      
+  if (pfodCmd == "0gpsPMmm00") {
+  	robot->gpsPerimeterUse = !robot->gpsPerimeterUse;
+  }
+  sendGPSPerimeterMenu(true);
+}
+
+void RemoteControl::sendGPSPerimeterMainArea(boolean update){      
+  if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS P Main Area`1000"));
+  
+    float lat, lon;
+    unsigned long age;
+    robot->gps.f_get_position(&lat, &lon, &age);
+    serialPort->print(F("|0gpsPMmaCom1~lat "));
+    serialPort->print(lat*100000);
+    serialPort->print(F("|0gpsPMmaCom2~lon "));
+    serialPort->print(lon*100000);
+	serialPort->print(F("|0gpsPMmaCom3~Save as edge point"));
+	
+	serialPort->println("}");
+
+}
+
+void RemoteControl::processGPSPerimeterMainArea(String pfodCmd){      
+    float lat, lon;
+    unsigned long age;
+    robot->gps.f_get_position(&lat, &lon, &age);
+    serialPort->print(F("|0gpsPMmaCom1~lat "));
+    serialPort->print(lat*100000);
+    serialPort->print(F("|0gpsPMmaCom2~lon "));
+    serialPort->print(lon*100000);
+
+	gpsMapPerimeter.addMainAreaPoint(lat,lon);	
+  //sendGPSPerimeterMainArea(t);
+}
+
 
 
 void RemoteControl::sendImuMenu(boolean update){
@@ -1267,6 +1316,10 @@ void RemoteControl::processSettingsMenu(String pfodCmd){
       else if (pfodCmd == "s13") sendRainMenu(false);            
       else if (pfodCmd == "s15") sendDropMenu(false);
       else if (pfodCmd == "s14") sendGPSMenu(false);
+      else if (pfodCmd == "sgpsPMmm") sendGPSPerimeterMenu(false);
+      else if (pfodCmd == "sgpsPMma") sendGPSPerimeterMainArea(false);
+      else if (pfodCmd == "sgpsPMea1") sendGPSPerimeterMainArea(false);
+      else if (pfodCmd == "sgpsPMea1") sendGPSPerimeterMainArea(false);
       else if (pfodCmd == "s16") sendFreeWheelMenu(false);
       else if (pfodCmd == "sx") sendFactorySettingsMenu(false);
       else if (pfodCmd == "sz") { robot->saveUserSettings(); sendSettingsMenu(true); }
@@ -1656,7 +1709,9 @@ bool RemoteControl::readSerial(){
         else if (pfodCmd.startsWith("k")) processStationMenu(pfodCmd);       
         else if (pfodCmd.startsWith("l")) processOdometryMenu(pfodCmd);  
         else if (pfodCmd.startsWith("m")) processRainMenu(pfodCmd);               
-        else if (pfodCmd.startsWith("q")) processGPSMenu(pfodCmd);                       
+        else if (pfodCmd.startsWith("q")) processGPSMenu(pfodCmd);
+        else if (pfodCmd.startsWith("0gpsPMmm")) processGPSPerimeterMenu(pfodCmd);
+        else if (pfodCmd.startsWith("0gpsPMma")) processGPSPerimeterMainArea(pfodCmd);
         else if (pfodCmd.startsWith("t")) processDateTimeMenu(pfodCmd);  
         else if (pfodCmd.startsWith("i")) processTimerMenu(pfodCmd);      
         else if (pfodCmd.startsWith("p")) processTimerDetailMenu(pfodCmd);      

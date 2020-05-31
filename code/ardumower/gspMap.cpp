@@ -1,4 +1,4 @@
-/*
+
 // Copyright 2000 softSurfer, 2012 Dan Sunday
 // This code may be freely used and modified for any purpose
 // providing that this copyright notice is included with it.
@@ -7,7 +7,7 @@
 // Users of this code must verify correctness for their application.
 
 #include "Arduino.h"
-#include "gpstest.h"
+#include "gpsMap.h"
 // a Point is defined by its coordinates {int x, y;}
 //===================================================================
 //typedef struct {int x, y;} Point;
@@ -21,7 +21,7 @@
 //    See: Algorithm 1 "Area of Triangles and Polygons"
 //inline int isLeft(Point P0, Point P1, Point P2) __attribute__((always_inline));
 
-int GPSMap::isLeft( Point P0, Point P1, Point P2 )
+int gpsMap::isLeft( Point P0, Point P1, Point P2 )
 {
     return ( (P1.x - P0.x) * (P2.y - P0.y)
             - (P2.x -  P0.x) * (P1.y - P0.y) );
@@ -32,7 +32,7 @@ int GPSMap::isLeft( Point P0, Point P1, Point P2 )
 //      Input:   P = a point,
 //               V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
 //      Return:  wn = the winding number (=0 only when P is outside)
-int GPSMap::wn_PnPoly()
+int gpsMap::wn_PnPoly()
 {
     int    wn = 0;    // the  winding number counter
 
@@ -52,7 +52,7 @@ int GPSMap::wn_PnPoly()
     return wn;
 }
 
-float GPSMap::distanceToClosestWall()
+float gpsMap::distanceToClosestWall()
 {
     float distanceToClosestWall = 100000;
     for (int i=0; i<_numberOfMainAreaPoints; i++) {   // edge from V[i] to  V[i+1]
@@ -84,11 +84,11 @@ float GPSMap::distanceToClosestWall()
     return distanceToClosestWall;
 }
 
-void GPSMap::setCurrentLocation( float x, float y) {
+void gpsMap::setCurrentLocation( float x, float y) {
     _currentLocation = {x,y};
 }
 
-uint8_t GPSMap::addMainAreaPoint( float x, float y) {
+uint8_t gpsMap::addMainAreaPoint( float x, float y) {
     if (_numberOfMainAreaPoints >= 30) {
         return 1;
     } else {
@@ -99,7 +99,7 @@ uint8_t GPSMap::addMainAreaPoint( float x, float y) {
     return 0;
 }
 
-uint8_t GPSMap::removeMainAreaPoint( int pointNro) {
+uint8_t gpsMap::removeMainAreaPoint( int pointNro) {
     if (_numberOfMainAreaPoints <= 1) {
         _numberOfMainAreaPoints = 0;
         return 1;
@@ -114,10 +114,6 @@ uint8_t GPSMap::removeMainAreaPoint( int pointNro) {
     }
     return 0;
 }
-*/
-
-
-
 
 /*
   Ardumower (www.ardumower.de)
@@ -141,6 +137,7 @@ uint8_t GPSMap::removeMainAreaPoint( int pointNro) {
   Private-use only! (you need to ask for a commercial-use)
 */
 
+/*
 #include "gpsMap.h"
 //#include <Wire.h>
 //#include "drivers.h"
@@ -154,7 +151,7 @@ uint8_t GPSMap::removeMainAreaPoint( int pointNro) {
 
 
 #define MAGIC 1
-#define ADDR_GPSMAP_DATA 900
+#define ADDR_gpsMap_DATA 900
 
 
 
@@ -187,24 +184,24 @@ struct outerData {
 //gpsMapData[0].latitude = 0;
 //gpsMapData[0].innerData.longitude = 0;
 
-GPSMAP::GPSMAP() 
+gpsMap::gpsMap() 
 {
 }
 
 //
 // public methods
 //
-void GPSMAP::init(){
+void gpsMap::init(){
   loadSaveMapData(true);
   boolean gpsMapDataChanged = false;
   float lastPointLongitude = 0.0;
   float lastPointLatitude = 0.0;
-  unsigned long nextGpsMapSaveTime = 0;
+  unsigned long nextgpsMapSaveTime = 0;
 }
 
 
-void GPSMAP::printMap() {
-/*  for(auto it = gpsMapData.begin(); it != gpsMapData.end(); ++it)
+void gpsMap::printMap() {
+  for(auto it = gpsMapData.begin(); it != gpsMapData.end(); ++it)
   {
     Console.print(it->first.first);
     Console.print(",");
@@ -219,15 +216,14 @@ void GPSMAP::printMap() {
     if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_WEST     ) ) Console.print("W");
 
     Console.println("");
-  }*/
+  }
 }
 
-boolean GPSMAP::bitOfPointIsOn(float latitude, float longitude, int bitToCompare) {
+boolean gpsMap::bitOfPointIsOn(float latitude, float longitude, int bitToCompare) {
 //  return (boolean)((gpsMapData[std::make_pair(latitude,longitude)] >> bitToCompare) & 1);
 }
 
-void GPSMAP::setBitOnOfPoint(float latitude, float longitude, int bitToSet) {
-/*
+void gpsMap::setBitOnOfPoint(float latitude, float longitude, int bitToSet) {
   // If the point is not yet in the map, add it to map
   if (gpsMapData[std::make_pair(latitude,longitude)]) {
     gpsMapData[std::make_pair(latitude,longitude)] = 0;
@@ -241,17 +237,17 @@ void GPSMAP::setBitOnOfPoint(float latitude, float longitude, int bitToSet) {
   }
 
   // If the map has changed during the last xxx ms, save it to memory
-  if (gpsMapDataChanged && millis() > nextGpsMapSaveTime) {
-    nextGpsMapSaveTime = millis() + 10000;
+  if (gpsMapDataChanged && millis() > nextgpsMapSaveTime) {
+    nextgpsMapSaveTime = millis() + 10000;
     loadSaveMapData(false);
   }
 }
 
-void GPSMAP::setPerimeterEdgePoint(float latitude, float longitude){
+void gpsMap::setPerimeterEdgePoint(float latitude, float longitude){
   setBitOnOfPoint(latitude,longitude,PERIMETER_EDGE_NODE);
 }
 
-void GPSMAP::checkPoint(float latitude, float longitude){
+void gpsMap::checkPoint(float latitude, float longitude){
 
   setBitOnOfPoint(latitude,longitude,INSIDE_PERIMETER);
 
@@ -274,18 +270,18 @@ void GPSMAP::checkPoint(float latitude, float longitude){
     setBitOnOfPoint(latitude,longitude,CONNECTED_SOUTH);
     setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_NORTH);
   }
-*/
+
 }
 
-void GPSMAP::loadSaveMapData(boolean readflag){
-/*  if (readflag) Console.println(F("loadSaveGPSMapData:: read"));
-    else Console.println(F("loadSaveGPSMapData: write"));
-  int addr = ADDR_GPSMAP_DATA;
+void gpsMap::loadSaveMapData(boolean readflag){
+  if (readflag) Console.println(F("loadSavegpsMapData:: read"));
+    else Console.println(F("loadSavegpsMapData: write"));
+  int addr = ADDR_gpsMap_DATA;
   short magic = 0;
   if (!readflag) magic = MAGIC;  
   eereadwrite(readflag, addr, magic); // magic
   if ((readflag) && (magic != MAGIC)) {
-    Console.println(F("EEPROM ERROR DATA: NO GPSMAP DATA FOUND"));    
+    Console.println(F("EEPROM ERROR DATA: NO gpsMap DATA FOUND"));    
     return;
   }
 
@@ -294,6 +290,7 @@ void GPSMAP::loadSaveMapData(boolean readflag){
   eereadwrite(readflag, addr, gpsMapData);  
   Console.print(F("loadSaveMapData addrstop="));
   Console.println(addr);
-  */
+  
 }
 
+*/

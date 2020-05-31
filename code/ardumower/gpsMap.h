@@ -16,18 +16,18 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
   
   You are free to use the code in this classs for commercial or personal use at your will.
-
 */
 
-/*
-#ifndef GPSMap_h
-#define GPSMap_h
+
+
+#ifndef gpsMap_h
+#define gpsMap_h
 
 #include "Arduino.h"
 
 typedef struct {int x, y;} Point;
 
-class GPSMap
+class gpsMap
 {
     private:
         int isLeft( Point P0, Point P1, Point P2 );
@@ -43,21 +43,21 @@ class GPSMap
 };
 
 #endif
-*/
 
 
+/*
 
-#ifndef GPSMAP_H
-#define GPSMAP_H
+#ifndef gpsMap_H
+#define gpsMap_H
 
 #include "Arduino.h"
 
 enum {INSIDE_PERIMETER, PERIMETER_EDGE_NODE, CONNECTED_NORTH, CONNECTED_EAST, CONNECTED_SOUTH, CONNECTED_WEST};
 
-class GPSMAP
+class gpsMap
 {
 public:
-  GPSMAP();
+  gpsMap();
   void init();
   void checkPoint(float longitude, float latitude) ;
   void setPerimeterEdgePoint(float longitude, float latitude) ;
@@ -70,7 +70,7 @@ private:
   float lastPointLatitude ;
   float lastPointLongitude ;
   int angleToChargingStation ;
-  unsigned long nextGpsMapSaveTime ;
+  unsigned long nextgpsMapSaveTime ;
   boolean gpsMapDataChanged ; 
   void setBitOnOfPoint(float longitude, float latitude, int bitToSet) ;
   boolean bitOfPointIsOn(float longitude, float latitude, int bitToCompare) ;
@@ -78,3 +78,4 @@ private:
 
 
 #endif
+*/
