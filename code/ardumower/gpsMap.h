@@ -25,21 +25,24 @@
 
 #include "Arduino.h"
 
+#define MAXMAINAREAPOINTS 31
+
 typedef struct {int x, y;} Point;
 
 class gpsMap
 {
     private:
         int isLeft( Point P0, Point P1, Point P2 );
-        Point _currentLocation = {0,0};
-        Point _mainAreaPointList[31] = {};
-        int _numberOfMainAreaPoints = 0;
+        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
+        uint8_t _numberOfMainAreaPoints = 0;
     public:
-        int wn_PnPoly();
-        float distanceToClosestWall();
-        void setCurrentLocation( float x, float y);
+        int wn_PnPoly(float x, float y);
+        float distanceToClosestWall(float x, float y);
         uint8_t addMainAreaPoint( float x, float y);
         uint8_t removeMainAreaPoint( int pointNro);
+        float getMainAreaPointX(int pointNro);
+        float getMainAreaPointY(int pointNro);
+        uint8_t getNumberOfMainAreaPoints();
 };
 
 #endif

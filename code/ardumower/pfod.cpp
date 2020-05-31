@@ -739,30 +739,38 @@ void RemoteControl::processGPSPerimeterMenu(String pfodCmd){
 void RemoteControl::sendGPSPerimeterMainArea(boolean update){      
   if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS P Main Area`1000"));
   
-    float lat, lon;
-    unsigned long age;
-    robot->gps.f_get_position(&lat, &lon, &age);
-    serialPort->print(F("|0gpsPMmaCom1~lat "));
-    serialPort->print(lat*100000);
-    serialPort->print(F("|0gpsPMmaCom2~lon "));
-    serialPort->print(lon*100000);
+  float lat, lon;
+  unsigned long age;
+  robot->gps.f_get_position(&lat, &lon, &age);
+  serialPort->print(F("|0gpsPMmaCom1~lat "));
+  serialPort->print(lat*100000);
+  serialPort->print(F("|0gpsPMmaCom2~lon "));
+  serialPort->print(lon*100000);
 	serialPort->print(F("|0gpsPMmaCom3~Save as edge point"));
 	
+
+	serialPort->print(F("|0~-----------------"));
+	
+	int areaPoints = robot->gpsMapPerimeter.getNumberOfMainAreaPoints();
+	int i=0;
+	while (i <= areaPoints) {
+		robot->gpsMapPerimeter.getMainAreaPointY(i);
+		serialPort->print(F("|0~"));
+		serialPort->print(robot->gpsMapPerimeter.getMainAreaPointX(i));
+		serialPort->print(",");
+		serialPort->print(robot->gpsMapPerimeter.getMainAreaPointY(i));
+		i++;
+	}
 	serialPort->println("}");
 
 }
 
 void RemoteControl::processGPSPerimeterMainArea(String pfodCmd){      
-    float lat, lon;
-    unsigned long age;
-    robot->gps.f_get_position(&lat, &lon, &age);
-    serialPort->print(F("|0gpsPMmaCom1~lat "));
-    serialPort->print(lat*100000);
-    serialPort->print(F("|0gpsPMmaCom2~lon "));
-    serialPort->print(lon*100000);
-
-	gpsMapPerimeter.addMainAreaPoint(lat,lon);	
-  //sendGPSPerimeterMainArea(t);
+  float lat, lon;
+  unsigned long age;
+  robot->gps.f_get_position(&lat, &lon, &age);
+	robot->gpsMapPerimeter.addMainAreaPoint(lat*100000,lon*100000);	
+  sendGPSPerimeterMainArea(true);
 }
 
 
@@ -830,10 +838,9 @@ void RemoteControl::sendBatteryMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Battery`1000"));
   serialPort->print(F("|j01~Monitor "));
   sendYesNo(robot->batMonitor);
-  serialPort->print(F("|j13~Start Charging "));
-  int dummy;
-  sendYesNo(dummy);
-
+  if (robot->stateCurr == STATE_STATION_CHARGING || robot->stateCurr == STATE_STATION) {
+		serialPort->print(F("|j13~Manually Start Charging"));
+	}
   serialPort->print(F("|j00~Battery "));
   serialPort->print(robot->batVoltage);
   serialPort->print(" V");
