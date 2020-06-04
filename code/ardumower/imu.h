@@ -68,7 +68,6 @@ struct ypr_t {
 };
 typedef struct ypr_t ypr_t;
 
-
 class IMU
 {
 public:
@@ -78,6 +77,8 @@ public:
   int getCallCounter();
   int getErrorCounter();
   void deleteCalib();  
+  float MMC5883MAHeading;
+
   int callCounter;
   int errorCounter;
   boolean hardwareInitialized;  
@@ -114,7 +115,9 @@ public:
   point_float_t comMax; // compass sensor data (raw)  
   point_float_t comTilt; // compass sensor data (tilt corrected)
   point_float_t comOfs;
-  point_float_t comScale;  
+  point_float_t comScale;
+  uint8_t comTemperature;
+
   float comYaw;         // compass heading (radiant, raw)
   boolean useComCalibration;
   // calibrate compass sensor  

@@ -26,6 +26,8 @@
 #include "Arduino.h"
 
 #define MAXMAINAREAPOINTS 31
+#define MAGIC 1
+#define ADDR_GPSMAP_DATA 900
 
 typedef struct {int x, y;} Point;
 
@@ -35,6 +37,7 @@ class gpsMap
         int isLeft( Point P0, Point P1, Point P2 );
         Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
         uint8_t _numberOfMainAreaPoints = 0;
+        void loadSaveMapData(boolean readflag);
     public:
         int wn_PnPoly(float x, float y);
         float distanceToClosestWall(float x, float y);
@@ -43,6 +46,7 @@ class gpsMap
         float getMainAreaPointX(int pointNro);
         float getMainAreaPointY(int pointNro);
         uint8_t getNumberOfMainAreaPoints();
+
 };
 
 #endif

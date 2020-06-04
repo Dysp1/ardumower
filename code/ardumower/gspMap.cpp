@@ -8,6 +8,7 @@
 
 #include "Arduino.h"
 #include "gpsMap.h"
+#include "flashmem.h"
 
 // a Point is defined by its coordinates {int x, y;}
 //===================================================================
@@ -128,26 +129,26 @@ uint8_t gpsMap::getNumberOfMainAreaPoints() {
 }
 
 void gpsMap::loadSaveMapData(boolean readflag){
-  if (readflag) Console.println(F("loadSavegpsMapData:: read"));
-    else Console.println(F("loadSavegpsMapData: write"));
+  if (readflag) Serial.println(F("loadSavegpsMapData:: read"));
+    else Serial.println(F("loadSavegpsMapData: write"));
   int addr = ADDR_GPSMAP_DATA;
   short magic = 0;
   if (!readflag) magic = MAGIC;  
   eereadwrite(readflag, addr, magic); // magic
   if ((readflag) && (magic != MAGIC)) {
-    Console.println(F("EEPROM ERROR DATA: NO gpsMap DATA FOUND"));    
+    Serial.println(F("EEPROM ERROR DATA: NO gpsMap DATA FOUND"));    
     return;
   }
 
   int i=0;
   while (i < MAXMAINAREAPOINTS) {
     eereadwrite(readflag, addr, _mainAreaPointList[i].x);  
-    eereadwrite(readflag, addr, _mainAreaPointList[i].x);  
+    eereadwrite(readflag, addr, _mainAreaPointList[i].y);  
     i++;
   }
 
-  Console.print(F("loadSaveMapData addrstop="));
-  Console.println(addr);
+  Serial.print(F("loadSaveMapData addrstop="));
+  Serial.println(addr);
 }
 
 

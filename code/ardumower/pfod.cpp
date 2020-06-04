@@ -773,17 +773,25 @@ void RemoteControl::processGPSPerimeterMainArea(String pfodCmd){
   sendGPSPerimeterMainArea(true);
 }
 
-
-
 void RemoteControl::sendImuMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.IMU`1000"));
   serialPort->print(F("|g00~Use "));
   sendYesNo(robot->imuUse);
+
   serialPort->print(F("|g01~Yaw "));
   serialPort->print(robot->imu.ypr.yaw/PI*180);
+
+
+  float myHeading = (robot->imu.comYaw/PI*180);
+  if (myHeading < 0) myHeading += 360;
   serialPort->print(F(" deg"));
   serialPort->print(F("|g09~DriveHeading "));
-  serialPort->print(robot->imuDriveHeading/PI*180);
+  serialPort->print(myHeading);
+
+
+  serialPort->print(F(" deg"));
+  serialPort->print(F("|g21~MMC5883MA Heading "));
+  serialPort->print(robot->imu.MMC5883MAHeading);
   serialPort->print(F(" deg"));
   serialPort->print(F("|g02~Pitch "));
   serialPort->print(robot->imu.ypr.pitch/PI*180);
@@ -1164,6 +1172,10 @@ void RemoteControl::sendCommandMenu(boolean update){
 	serialPort->print(robot->lastSensorTriggeredName());
   serialPort->print(F("|rs~Last error "));
   serialPort->print(robot->errorName(robot->lastErrType));
+  
+  serialPort->print(F("|rs~Case temperature: "));
+  serialPort->print(robot->imu.comTemperature);
+  
   serialPort->print(F("|rr~Auto rotate is "));
   serialPort->print(robot->motorLeftPWMCurr);
   serialPort->print(F("|r1~User switch 1 is "));
