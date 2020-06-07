@@ -35,6 +35,7 @@ How to use it (example):
 #define IMU_H
 
 #include <Arduino.h>
+#include "mmc5883ma.h"
 
 // IMU state
 enum { IMU_RUN, IMU_CAL_COM };
@@ -151,6 +152,7 @@ private:
   void readADXL345B();
   void readHMC5883L();
   void readMMC5883MA();
+  mmc5883ma compass;
   boolean foundNewMinMax;
 };
 

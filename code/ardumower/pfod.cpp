@@ -778,8 +778,12 @@ void RemoteControl::sendImuMenu(boolean update){
   serialPort->print(F("|g00~Use "));
   sendYesNo(robot->imuUse);
 
+
+  float myHeading2 = (  robot->imu.ypr.yaw/PI*180);
+  if (myHeading2 < 0) myHeading2 += 360;
+
   serialPort->print(F("|g01~Yaw "));
-  serialPort->print(robot->imu.ypr.yaw/PI*180);
+  serialPort->print(myHeading2);
 
 
   float myHeading = (robot->imu.comYaw/PI*180);
@@ -1168,14 +1172,13 @@ void RemoteControl::sendCommandMenu(boolean update){
 	serialPort->print(F("|rb~Battery "));
   serialPort->print(robot->batVoltage);	
 	serialPort->print(" V");
-	serialPort->print(F("|rs~Last trigger "));
+  serialPort->print(F("|rs~Case in temp: "));
+  serialPort->print(robot->imu.comTemperature);
+	serialPort->print(" deg C");
+  serialPort->print(F("|rs~Last trigger "));
 	serialPort->print(robot->lastSensorTriggeredName());
   serialPort->print(F("|rs~Last error "));
   serialPort->print(robot->errorName(robot->lastErrType));
-  
-  serialPort->print(F("|rs~Case temperature: "));
-  serialPort->print(robot->imu.comTemperature);
-  
   serialPort->print(F("|rr~Auto rotate is "));
   serialPort->print(robot->motorLeftPWMCurr);
   serialPort->print(F("|r1~User switch 1 is "));

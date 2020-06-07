@@ -29,42 +29,16 @@
 #include "config.h"
 #include "flashmem.h"
 #include "buzzer.h"
+#include "math.h"
+#include "mmc5883ma.h"
 
 // -------------I2C addresses ------------------------
 #define ADXL345B (0x53)          // ADXL345B acceleration sensor (GY-80 PCB)
 #define HMC5883L (0x1E)          // COMPASSTOUSE = 0; HMC5883L compass sensor (GY-80 PCB)
 #define L3G4200D (0xD2 >> 1)     // L3G4200D gyro sensor (GY-80 PCB)
-#define MMC5883MA (0x30)         // Sensor I2C address
 
 #define ADDR 600
 #define MAGIC 6
-
-//*****************************************************
-// MMC5883MA Register map
-//*****************************************************
-#define XOUT_LSB    (0x00)
-#define XOUT_MSB    (0x01)
-#define YOUT_LSB    (0x02)
-#define YOUT_MSB    (0x03)
-#define ZOUT_LSB    (0x04)
-#define ZOUT_MSB    (0x05)
-#define TEMPERATURE (0x06)
-#define STATUS      (0x07)
-#define INT_CTRL0   (0x08)
-#define INT_CTRL1   (0x09)
-#define INT_CTRL2   (0x0A)
-#define X_THRESHOLD (0x0B)
-#define Y_THRESHOLD (0x0C)
-#define Z_THRESHOLD (0x0D)
-#define PROD_ID1    (0x2F)
-
-#define MMC5883MA_OFFSET      32768
-#define MMC5883MA_SENSITIVITY   4096
-//*****************************************************
-// MMC5883MA Register map end
-//*****************************************************
-
-
 
 struct {
   uint8_t xl;
@@ -95,7 +69,7 @@ IMU::IMU(){
   accPitch = 0;
   accRoll = 0;
   ypr.yaw=ypr.pitch=ypr.roll = 0;
-  
+  mmc5883ma compass;
   accMin.x=accMin.y=accMin.z = 0;
   accMax.x=accMax.y=accMax.z = 0;  
   accOfs.x=accOfs.y=accOfs.z = 0;
@@ -188,9 +162,23 @@ void IMU::loadCalib(){
   calibrationAvail = true;
   Console.println(F("IMU: found calib data"));
   loadSaveCalib(true);
+
+  compass.setCalibOffsetX(comOfs.x);
+  compass.setCalibOffsetY(comOfs.y);
+  compass.setCalibOffsetZ(comOfs.z);
+  compass.setCalibScaleX(comScale.x);
+  compass.setCalibScaleY(comScale.y);
+  compass.setCalibScaleZ(comScale.z);
 }
 
 void IMU::saveCalib(){
+//MR  comOfs.x = compass.getCalibOffsetX();
+//MR  comOfs.y = compass.getCalibOffsetY();
+//MR  comOfs.z = compass.getCalibOffsetZ();
+//MR  comScale.x = compass.getCalibScaleX();
+//MR  comScale.y = compass.getCalibScaleY();
+//MR  comScale.z = compass.getCalibScaleZ();
+
   loadSaveCalib(false);
 }
 
@@ -267,11 +255,25 @@ void IMU::calibGyro(){
   Console.println(F("------------"));  
 }      
 
+#define ADXL345B_RANGE2G 0x01  
+#define ADXL345B_RANGE4G 0x02  
+#define ADXL345B_RANGE8G 0x03  
+#define ADXL345B_RANGE16G 0x04 
+
+byte adxl345b_range = ADXL345B_RANGE16G;
+
+byte adxl345b_fullResolutionBit = 0x08; // sets the full 13 bit resolution
+uint8_t adxl345b_resolution = 13;
+
 // ADXL345B acceleration sensor driver
 void  IMU::initADXL345B(){
   I2CwriteTo(ADXL345B, 0x2D, 0);
   I2CwriteTo(ADXL345B, 0x2D, 16);
-  I2CwriteTo(ADXL345B, 0x2D, 8);         
+  I2CwriteTo(ADXL345B, 0x2D, 8); 
+  //  I2CwriteTo(ADXL345B, 0x2C, 0x0C); // 400Hz data transfer rate        
+  //  delay(1);
+  //  I2CwriteTo(ADXL345B, 0x31, (adxl345b_range & adxl345b_fullResolutionBit));  // sets the sensor range and full resolution bits      
+  //  delay(5);
 }
 
 void IMU::readADXL345B(){  
@@ -287,6 +289,11 @@ void IMU::readADXL345B(){
   float x=(int16_t) (((uint16_t)buf[1]) << 8 | buf[0]); 
   float y=(int16_t) (((uint16_t)buf[3]) << 8 | buf[2]); 
   float z=(int16_t) (((uint16_t)buf[5]) << 8 | buf[4]); 
+  
+//  x = x * adxl345b_range / (pow(2,(adxl345b_resolution-1)));
+//  y = y * adxl345b_range / (pow(2,(adxl345b_resolution-1)));
+//  z = z * adxl345b_range / (pow(2,(adxl345b_resolution-1)));
+
   //Console.println(z);
   if (useAccCalibration){
     x -= accOfs.x;
@@ -296,7 +303,6 @@ void IMU::readADXL345B(){
     y /= accScale.y*0.5;    
     z /= accScale.z*0.5;
     acc.x = x;
-    //Console.println(z);
     acc.y = y;
     acc.z = z;
   } else {
@@ -317,11 +323,11 @@ void IMU::readADXL345B(){
 // L3G4200D gyro sensor driver
 boolean IMU::initL3G4200D(){
   Console.println(F("initL3G4200D"));
-  uint8_t buf[6];    
+  uint8_t gyroBuffer[6];    
   int retry = 0;
   while (true){
-    I2CreadFrom(L3G4200D, 0x0F, 1, (uint8_t*)buf);
-    if (buf[0] != 0xD3) {        
+    I2CreadFrom(L3G4200D, 0x0F, 1, (uint8_t*)gyroBuffer);
+    if (gyroBuffer[0] != 0xD3) {        
       Console.println(F("gyro read error"));
       retry++;
       if (retry > 2){
@@ -335,8 +341,8 @@ boolean IMU::initL3G4200D(){
   I2CwriteTo(L3G4200D, 0x20, 0b00001100);    
   // 2000 dps (degree per second)
   I2CwriteTo(L3G4200D, 0x23, 0b00100000);      
-  I2CreadFrom(L3G4200D, 0x23, 1, (uint8_t*)buf);
-  if (buf[0] != 0b00100000){
+  I2CreadFrom(L3G4200D, 0x23, 1, (uint8_t*)gyroBuffer);
+  if (gyroBuffer[0] != 0b00100000){
       Console.println(F("gyro write error")); 
       while(true);
   }  
@@ -414,6 +420,7 @@ void IMU::readHMC5883L(){
   float x = (int16_t) (((uint16_t)buf[0]) << 8 | buf[1]);
   float y = (int16_t) (((uint16_t)buf[4]) << 8 | buf[5]);
   float z = (int16_t) (((uint16_t)buf[2]) << 8 | buf[3]);  
+  
   if (useComCalibration){
     x -= comOfs.x;
     y -= comOfs.y;
@@ -432,353 +439,6 @@ void IMU::readHMC5883L(){
   }  
 }
 
-float xBridgeOffset, yBridgeOffset, zBridgeOffset;
-uint8_t bridgeOffsetDone = 0;
-
-void  IMU::initMMC5883MA(){
-
-  delay(50);  // allow the chip to online for sure
-
-/* continuous reading test  
-  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x03);  // set cmd resolution to 16bit, 10ms*3, 100HZ
-  delay(1);
-
-  uint8_t buf[6]; 
-  uint8_t buf2[2];  
-
-  if (bridgeOffsetDone < 1) {   // Not in use at the moment
-    ///////////////////////////////
-    // Bridge offset calculation //
-    ///////////////////////////////
-  
-    // set 
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);  
-    delay(1);
-  
-    //measurement 1
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
-    delay(1);
-
-    byte mask = 0x01;
-  
-    I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    while ( (buf2[0] & mask) != 1 ) {  
-      I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    }
-
-    I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf);
-    
-    float x = (uint16_t)(buf[1]<< 8 | buf[0]);
-    float y = (uint16_t)(buf[3]<< 8 | buf[2]);
-    float z = (uint16_t)(buf[5]<< 8 | buf[4]);
-    
-    x = ((float)x - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    y = ((float)y - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    z = ((float)z - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-  
-    // reset
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x10);
-    delay(1);
-
-    //measurement 2
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
-    delay(1);
-
-    I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    while ( (buf2[0] & mask) != 1 ) {  
-      I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    }
-
-    I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf);
-
-    float x2 = (uint16_t)(buf[1]<< 8 | buf[0]);
-    float y2 = (uint16_t)(buf[3]<< 8 | buf[2]);
-    float z2 = (uint16_t)(buf[5]<< 8 | buf[4]);
-    
-    x2 = ((float)x2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    y2 = ((float)y2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    z2 = ((float)z2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-
-    xBridgeOffset = (x2+x)/2;
-    yBridgeOffset = (y2+y)/2;
-    zBridgeOffset = (z2+y)/2;
-
-    bridgeOffsetDone = 1;
-  }
-
-
-  Console.print("Offsets x,y,z:");
-  Console.print(xBridgeOffset);
-  Console.print(",");
-  Console.print(yBridgeOffset);
-  Console.print(",");
-  Console.println(zBridgeOffset);
-
-  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x00);  // set cmd resolution to none
-  delay(1);
-
-
-  I2CwriteTo(MMC5883MA, INT_CTRL2, 0x43);  // start continuous measurement at 14Hz with INT_Meas_Done_En interrupt
-  delay(1);
-*/
-
- // I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
- // delay(1);
-
-  // Read serial number 
-  uint8_t serialNumber[1];  
-  I2CreadFrom(MMC5883MA, 0x2F, 1, (uint8_t*)serialNumber);
-  Serial.print("Compass serialNumber: ");
-  Serial.print(serialNumber[0]);
-
-  // 0x00 set cmd resolution to 16bit,  10 ms*3, 100HZ
-  // 0x01 set cmd resolution to 16bit,   5 ms*3, 200HZ
-  // 0x02 set cmd resolution to 16bit, 2.5 ms*3, 400HZ
-  // 0x03 set cmd resolution to 16bit, 1.6 ms*3, 600HZ
-  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x03);  
-  delay(1);
-
-
-}
-
-#include "math.h"
-int lastReadTime = 0;
-uint8_t compassReadWait = 100; //ms
-
-
-void IMU::readMMC5883MA(){    
-/* continuous test
-  uint8_t buf[2];  
-  uint8_t buf2[2];  
-
-  byte mask = 0x01;
-  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-  if ( (buf2[0] & mask) == 1 ) {  
-
-    I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf);
-    
-    float x = (uint16_t)(buf[1]<< 8 | buf[0]);
-    float y = (uint16_t)(buf[3]<< 8 | buf[2]);
-    float z = (uint16_t)(buf[5]<< 8 | buf[4]);
-    
-    x = ((float)x - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY - xBridgeOffset;
-    y = ((float)y - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY - yBridgeOffset;
-    z = ((float)z - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY - zBridgeOffset;
-
-    if (useComCalibration){
-        x -= comOfs.x;
-        y -= comOfs.y;
-        z -= comOfs.z;
-        x /= comScale.x*0.5;    
-        y /= comScale.y*0.5;    
-        z /= comScale.z*0.5;
-        com.x = x;
-        com.y = y;
-        com.z = z;
-      } else {
-       com.x = x;
-       com.y = y;
-       com.z = z;
-      }
-
-  }
-
-
-  I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-  if ( (buf2[0] & mask) == mask ) {  
-    I2CreadFrom(MMC5883MA, 0x06, 1, (uint8_t*)buf);
-    comTemperature = (uint8_t)(((float)buf[0]-71,2)/0,69);
-  }
-*/
-
-    uint8_t buf[2];  
-    uint8_t buf2[1];  
-    byte mask = 0xFF;
-
-    mask = 0x02;        
-    I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    if ( (buf2[0] & mask) == mask ) {  
-      I2CreadFrom(MMC5883MA, 0x06, 1, (uint8_t*)buf);
-      //comTemperature = (uint8_t)(((float)buf[0]-71,2)/0,69);
-      comTemperature = (uint8_t)(((float)buf[0]-71,2)/0,69);
-    }
-
-    // reset 
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x10);  
-    delay(1);
-  
-    //measurement 1
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
-    delay(1);
-
-    mask = 0x01;
-  
-    I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    while ( (buf2[0] & mask) != mask ) {  
-      I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    }
-
-    I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf);
-    
-    float x = (uint16_t)(buf[1]<< 8 | buf[0]);
-    float y = (uint16_t)(buf[3]<< 8 | buf[2]);
-    float z = (uint16_t)(buf[5]<< 8 | buf[4]);
-    
-    x = ((float)x - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    y = ((float)y - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    z = ((float)z - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-  
-    // set
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);
-    delay(1);
-
-    //measurement 2
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
-    delay(1);
-
-    I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    while ( (buf2[0] & mask) != 1 ) {  
-      I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)buf2);
-    }
-
-    I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf);
-
-    float x2 = (uint16_t)(buf[1]<< 8 | buf[0]);
-    float y2 = (uint16_t)(buf[3]<< 8 | buf[2]);
-    float z2 = (uint16_t)(buf[5]<< 8 | buf[4]);
-    
-    x2 = ((float)x2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    y2 = ((float)y2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    z2 = ((float)z2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-
-    x = (x2 - x) / 2;
-    y = (y2 - y) / 2;
-    z = (z2 - z) / 2;
-
-    if (useComCalibration){
-        x -= comOfs.x;
-        y -= comOfs.y;
-        z -= comOfs.z;
-        x /= comScale.x*0.5;    
-        y /= comScale.y*0.5;    
-        z /= comScale.z*0.5;
-        com.x = x;
-        com.y = y;
-        com.z = z;
-      } else {
-       com.x = x;
-       com.y = y;
-       com.z = z;
-      }
-
-/*
-  if (lastReadTime+compassReadWait < millis() || (state == IMU_CAL_COM)){
-    lastReadTime = millis();
-
-//    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x02);
-//    delay(20);
-//    uint8_t tempBuf[1];
-//    I2CreadFrom(MMC5883MA, 0x06, 1, (uint8_t*)tempBuf);
-//    Console.print("temp: ");
-//    Console.println(tempBuf[0]*0,71-75);
-
-    uint8_t statusreq[1];
-    I2CreadFrom(MMC5883MA, STATUS, 1,(uint8_t*)statusreq);
-    
-//    Console.print("STATASREQ: ");
-//    Console.print((statusreq[0] & 1));
-//    Console.print(" - ");
-//    Console.println(statusreq[0]);
-  
-    if( (statusreq[0] & 1) == 1) {
-      uint8_t buf[6];  
-      
-      if ( I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)buf) != 6){
-        errorCounter++;
-        return;
-      }
-    
-//      Serial.print((float)buf[0]);
-//      Serial.print(" : ");
-//      Serial.print((float)buf[1]);
-//      Serial.print(" : ");
-//      Serial.print((float)buf[2]);
-//      Serial.print(" : ");
-//      Serial.print((float)buf[3]);
-//      Serial.print(" : ");
-//      Serial.print((float)buf[4]);
-//      Serial.print(" : ");
-//      Serial.println((float)buf[5]);
-
-
-      float x = (uint16_t)(buf[1]<< 8 | buf[0]);
-      float y = (uint16_t)(buf[3]<< 8 | buf[2]);
-      float z = (uint16_t)(buf[5]<< 8 | buf[4]);
-    
-      x = ((float)x - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY - xBridgeOffset;
-      y = ((float)y - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY - yBridgeOffset;
-      z = ((float)z - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY - zBridgeOffset;
-
-
-
-//      x = (float)(((uint16_t)buf[1]) << 8 | buf[0]);
-//      x = ((float)x - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY + xBridgeOffset; //unit Gauss
-     // x = ConvertTwosComplementByteToInteger(x);
-      //x = x - 0x07FF;
-//      y = (float)(((uint16_t)buf[3]) << 8 | buf[2]);
-//      y = ((float)y - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY + yBridgeOffset; //unit Gauss
-
-   //   y = ConvertTwosComplementByteToInteger(y);
-      //y = y - 0x07FF;
-//      z = (float)(((uint16_t)buf[5]) << 8 | buf[4]);
-//      z = ((float)z - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY + zBridgeOffset; //unit Gauss
-
-   //   z = ConvertTwosComplementByteToInteger(z);
-      //z = z - 0x07FF;
-    
-       
-//      float magFieldd = atan2(y,x);
-//      float magFieldi = atan(sqrt(pow(x,2) + pow(y,2)) / z);
-//      float magFieldf = sqrt(pow(x,2) + pow(y,2) + pow(z,2));
-
-//      Serial.print("magFieldd: ");
-//      Serial.print(magFieldd);
-//      Serial.print(" - magFieldi: ");
-//      Serial.print(magFieldi);
-//      Serial.print(" - magFieldf: ");
-//      Serial.println(magFieldf);
-//
-      //Print out values of each axis
-//      Serial.print("x: ");
-//      Serial.print(x);
-//      Serial.print("  y: ");
-//      Serial.print(y);
-//      Serial.print("  z: ");
-//      Serial.println(z);
-
-    if (useComCalibration){
-        x -= comOfs.x;
-        y -= comOfs.y;
-        z -= comOfs.z;
-        x /= comScale.x*0.5;    
-        y /= comScale.y*0.5;    
-        z /= comScale.z*0.5;
-        com.x = x;
-        com.y = y;
-        com.z = z;
-      } else {
-       com.x = x;
-       com.y = y;
-       com.z = z;
-      }
-
-    }
-
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
-  
-  }
-*/
-}
 
 
 float IMU::sermin(float oldvalue, float newvalue){
@@ -812,6 +472,17 @@ void IMU::calibComStartStop(){
     comScale.x = xrange;
     comScale.y = yrange;  
     comScale.z = zrange;
+    
+
+    compass.setCalibOffsetX(comOfs.x);
+    compass.setCalibOffsetY(comOfs.y);
+    compass.setCalibOffsetZ(comOfs.z);
+    compass.setCalibScaleX(comScale.x);
+    compass.setCalibScaleY(comScale.y);
+    compass.setCalibScaleZ(comScale.z);
+
+
+
     saveCalib();  
     printCalib();
     useComCalibration = true; 
@@ -834,6 +505,13 @@ void IMU::calibComStartStop(){
     state = IMU_CAL_COM;  
     comMin.x = comMin.y = comMin.z = 9999999;
     comMax.x = comMax.y = comMax.z = -9999999;
+    
+//MR    // Calibrate MMC5883MA
+//MR      compass.calibrate();
+//MR      saveCalib();  
+//MR      printCalib();
+//MR      useComCalibration = true; 
+//MR      state = IMU_RUN;    
   }
 }
 
@@ -842,13 +520,24 @@ boolean IMU::newMinMaxFound(){
   foundNewMinMax = false;
   return res;
 }  
-  
+
+
 void IMU::calibComUpdate(){
   comLast = com;
   delay(20);
-  //if (COMPASSTOUSE == 0) readHMC5883L();
-  //if (COMPASSTOUSE == 1) 
-  readMMC5883MA();
+  //readHMC5883L();
+
+  //readMMC5883MA:
+  if (compass.readMags(false) == true) {
+    com.x = compass.x();
+    com.y = compass.y();
+    com.z = compass.z();
+    Serial.println("normal calib read ok ");
+  } else {
+    Serial.println("Calibration mode: ERROR reading MMC5883MA");
+  }
+
+
   boolean newfound = false;
   if ( (abs(com.x-comLast.x)<10) &&  (abs(com.y-comLast.y)<10) &&  (abs(com.z-comLast.z)<10) ){
     if (com.x < comMin.x) { 
@@ -894,6 +583,8 @@ void IMU::calibComUpdate(){
     } else Buzzer.noTone();   
   }    
 }
+
+
 
 // calculate acceleration sensor offsets
 boolean IMU::calibAccNextAxis(){  
@@ -1032,11 +723,6 @@ float scalePIangles(float setAngle, float currAngle){
     else return setAngle;
 }
 
-void IMU::update(){
-  read();  
-  now = millis();
-  int looptime = (now - lastAHRSTime);
-  lastAHRSTime = now;
 /*
   Serial.print("Gyro x,y: ");
   Serial.print(gyro.x);
@@ -1060,7 +746,195 @@ void IMU::update(){
   Serial.println(com.z);
 */
 
+const float alpha = 0.5;
+ 
+double fXg = 0;
+double fYg = 0;
+double fZg = 0;
+
+
+//void IMU::update(){
+//  read();  
+//  now = millis();
+//  int looptime = (now - lastAHRSTime);
+//  lastAHRSTime = now;
+//  
+//  if (state == IMU_RUN){
+//    // ------ roll, pitch --------------  
+///*
+//    double pitch, roll, Xg, Yg, Zg;
+//    Xg = acc.x; 
+//    Yg = acc.y;
+//    Zg = acc.z;
+//   
+//    fXg = Xg * alpha + (fXg * (1.0 - alpha));
+//    fYg = Yg * alpha + (fYg * (1.0 - alpha));
+//    fZg = Zg * alpha + (fZg * (1.0 - alpha));
+//    accPitch  = atan2(-fYg, fZg);
+//    accRoll   = atan2(fXg, sqrt(fYg*fYg + fZg*fZg));
+//    */
+//
+////    accRoll  = atan2(-acc.y, acc.z);
+////    accPitch   = atan2(acc.x, sqrt(acc.y*acc.y + acc.z*acc.z));
+//
+//    accRoll  = atan2(acc.y, acc.z);
+//    //float Gz2 = acc.y * sin( accRoll ) + acc.z * cos( accRoll );
+//    //accPitch = atan2( -acc.x , Gz2);
+//    accPitch = atan2(acc.x, acc.z);
+//
+//
+//    ypr.pitch = accPitch;
+//    ypr.roll = accRoll;
+//
+//    //comTilt.x = acc.x * cos(accPitch) - acc.x * sin(accPitch);
+//    //comTilt.y = acc.x * cos(accRoll) * sin(accPitch) + acc.y * cos(accRoll) + acc.z * sin(accRoll) * cos(accPitch);
+//
+//    comTilt.x = acc.x * cos(accPitch) + acc.y * sin(accRoll) * sin(accPitch) - acc.z * cos(accRoll) * sin(accPitch);
+//    comTilt.y = acc.y * cos(accRoll) + acc.z * sin(accRoll);
+//
+//    Serial.print("comTilt.x: ");
+//    Serial.print(comTilt.x);
+//    Serial.print(" - comTilt.y: ");
+//    Serial.println(comTilt.y);
+//
+//    ypr.yaw = atan2(acc.x+abs(accPitch), acc.y+abs(accRoll));
+//
+//  /*  
+//    float By2 = com.z * sin(accPitch) - com.y * cos( accPitch );
+//    float Bz2 = com.y * sin(accPitch) + com.z * cos( accPitch ); 
+//    float Bx3 = com.x * cos(accRoll) + Bz2 * sin(accRoll); 
+//    ypr.yaw = atan2( By2 , Bx3) ;
+//
+//    
+//    Serial.print("accPitch: ");
+//    Serial.print(accPitch);
+//    Serial.print(" - accRoll: ");
+//    Serial.println(accPitch);
+//    
+//    accPitch = scalePIangles(accPitch, ypr.pitch);
+//    accRoll  = scalePIangles(accRoll, ypr.roll);
+//    
+//    Serial.print("accPitch: ");
+//    Serial.print(accPitch);
+//    Serial.print(" - accRoll: ");
+//    Serial.println(accPitch);
+//
+//   // complementary filter            
+//    ypr.pitch = Kalman(accPitch, gyro.x, looptime, ypr.pitch);  
+//    ypr.roll  = Kalman(accRoll,  gyro.y, looptime, ypr.roll);            
+//
+//   // ypr.pitch = accPitch;
+//   // ypr.roll = accRoll;
+//
+//    Serial.print("ypr.pitch: ");
+//    Serial.print(ypr.pitch);
+//    Serial.print(" - ypr.roll: ");
+//    Serial.println(ypr.roll);
+//
+//
+//    ypr.pitch=scalePI(ypr.pitch);
+//    ypr.roll=scalePI(ypr.roll);
+//
+//    Serial.print("ypr.pitch: ");
+//    Serial.print(ypr.pitch);
+//    Serial.print(" - ypr.roll: ");
+//    Serial.println(ypr.roll);
+//
+//
+//
+//  //  ypr.pitch = acc.x * 90;
+//  //  ypr.roll  = acc.y * 90;
+//    
+//    // ------ yaw --------------
+//    // tilt-compensated yaw
+//    comTilt.x =  com.x  * cos(ypr.pitch) + com.z * sin(ypr.pitch);
+//    comTilt.y =  com.x  * sin(ypr.roll)         * sin(ypr.pitch) + com.y * cos(ypr.roll) - com.z * sin(ypr.roll) * cos(ypr.pitch);
+//
+//    comYaw = scalePI( atan2(comTilt.y, comTilt.x)  );  
+//    comYaw = scalePIangles(comYaw, ypr.yaw);
+//    //comYaw = atan2(com.y, com.x);  // assume pitch, roll are 0
+//    // complementary filter
+//    ypr.yaw = Complementary2(comYaw, -gyro.z, looptime, ypr.yaw);
+//    ypr.yaw = scalePI(ypr.yaw);
+//
+//
+//    */
+//  } 
+//  else if (state == IMU_CAL_COM) {
+//    calibComUpdate();
+//  }
+//}  
+
+
+/*
+void IMU::update(){
+  read();  
+  now = millis();
+  int looptime = (now - lastAHRSTime);
+  lastAHRSTime = now;
+
   if (state == IMU_RUN){
+    // ------ roll, pitch --------------  
+    float forceMagnitudeApprox = abs(acc.x) + abs(acc.y) + abs(acc.z);    
+    //if (forceMagnitudeApprox < 1.2) {
+      //Console.println(forceMagnitudeApprox);      
+      accPitch   = atan2(-acc.x , sqrt(sq(acc.y) + sq(acc.z)));         
+      accRoll    = atan2(acc.y , acc.z);       
+
+      accPitch = scalePIangles(accPitch, ypr.pitch);
+      accRoll  = scalePIangles(accRoll, ypr.roll);
+      // complementary filter            
+      ypr.pitch = Kalman(accPitch, gyro.x, looptime, ypr.pitch);  
+      ypr.roll  = Kalman(accRoll,  gyro.y, looptime, ypr.roll);            
+//    } else {
+//      //Console.print("too much acceleration ");
+//      //Console.println(forceMagnitudeApprox);
+//      ypr.pitch = ypr.pitch + gyro.y * ((float)(looptime))/1000.0;
+//      ypr.roll  = ypr.roll  + gyro.x * ((float)(looptime))/1000.0;
+//    }
+    ypr.pitch=scalePI(ypr.pitch);
+    ypr.roll=scalePI(ypr.roll);
+    // ------ yaw --------------
+    // tilt-compensated yaw HMC5883L
+    comTilt.x =  com.x  * cos(ypr.pitch) + com.z * sin(ypr.pitch);
+    comTilt.y =  com.x  * sin(ypr.roll)         * sin(ypr.pitch) + com.y * cos(ypr.roll) - com.z * sin(ypr.roll) * cos(ypr.pitch);
+    comTilt.z = -com.x  * cos(ypr.roll)         * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);     
+    comYaw = scalePI( atan2(comTilt.y, comTilt.x)  );  
+
+    // tilt-compensated yaw MMC5883MA
+    //comTilt.x =  com.x  * cos(ypr.pitch) - com.x * sin(ypr.pitch);
+    //comTilt.y =  com.x  * cos(ypr.roll) * sin(ypr.pitch) + com.y * cos(ypr.roll) + com.z * sin(ypr.roll) * cos(ypr.pitch);
+    //comTilt.z = -com.x  * cos(ypr.roll)         * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);     
+    //comYaw = scalePI( atan2(comTilt.y, comTilt.x) );  
+
+    if (comTilt.x > 0) comYaw = scalePI( atan(-(comTilt.y/comTilt.x))) ;  
+    if (comTilt.x < 0 && comTilt.y >= 0 ) comYaw = scalePI( atan(-(comTilt.y/comTilt.x))+M_PI);  
+    if (comTilt.x < 0 && comTilt.y  < 0 ) comYaw = scalePI( atan(-(comTilt.y/comTilt.x))-M_PI);  
+    if (comTilt.x == 0 && comTilt.y > 0 ) comYaw = scalePI(+M_PI/2);
+    if (comTilt.x == 0 && comTilt.y < 0 ) comYaw = scalePI(-M_PI/2);
+    if (comTilt.x == 0 && comTilt.y == 0 ) comYaw = 0;
+
+
+    comYaw = scalePIangles(comYaw, ypr.yaw);
+    //comYaw = atan2(com.y, com.x);  // assume pitch, roll are 0
+    // complementary filter
+    ypr.yaw = Complementary2(comYaw, -gyro.z, looptime, ypr.yaw);
+    ypr.yaw = scalePI(ypr.yaw);
+  } 
+  else if (state == IMU_CAL_COM) {
+    calibComUpdate();
+  }
+}  
+*/
+
+
+void IMU::update(){
+  now = millis();
+  int looptime = (now - lastAHRSTime);
+  lastAHRSTime = now;
+  
+  if (state == IMU_RUN){
+    read();  
     // ------ roll, pitch --------------  
     float forceMagnitudeApprox = abs(acc.x) + abs(acc.y) + abs(acc.z);    
     //if (forceMagnitudeApprox < 1.2) {
@@ -1072,36 +946,20 @@ void IMU::update(){
       // complementary filter            
       ypr.pitch = Kalman(accPitch, gyro.x, looptime, ypr.pitch);  
       ypr.roll  = Kalman(accRoll,  gyro.y, looptime, ypr.roll);            
-    /*} else {
-      //Console.print("too much acceleration ");
-      //Console.println(forceMagnitudeApprox);
-      ypr.pitch = ypr.pitch + gyro.y * ((float)(looptime))/1000.0;
-      ypr.roll  = ypr.roll  + gyro.x * ((float)(looptime))/1000.0;
-    }*/
+//   } else {
+//     //Console.print("too much acceleration ");
+//      //Console.println(forceMagnitudeApprox);
+//      ypr.pitch = ypr.pitch + gyro.y * ((float)(looptime))/1000.0;
+//      ypr.roll  = ypr.roll  + gyro.x * ((float)(looptime))/1000.0;
+//    }
     ypr.pitch=scalePI(ypr.pitch);
     ypr.roll=scalePI(ypr.roll);
     // ------ yaw --------------
-    // tilt-compensated yaw HMC5883L
-    //comTilt.x =  com.x  * cos(ypr.pitch) + com.z * sin(ypr.pitch);
-    //comTilt.y =  com.x  * sin(ypr.roll)         * sin(ypr.pitch) + com.y * cos(ypr.roll) - com.z * sin(ypr.roll) * cos(ypr.pitch);
-    //comTilt.z = -com.x  * cos(ypr.roll)         * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);     
-    //comYaw = scalePI( atan2(comTilt.y, comTilt.x)  );  
-
-    // tilt-compensated yaw MMC5883MA
-    comTilt.x =  com.x  * cos(ypr.pitch) - com.x * sin(ypr.pitch);
-    comTilt.y =  com.x  * cos(ypr.roll) * sin(ypr.pitch) + com.y * cos(ypr.roll) + com.z * sin(ypr.roll) * cos(ypr.pitch);
+    // tilt-compensated yaw
+    comTilt.x =  com.x  * cos(ypr.pitch) + com.z * sin(ypr.pitch);
+    comTilt.y =  com.x  * sin(ypr.roll)         * sin(ypr.pitch) + com.y * cos(ypr.roll) - com.z * sin(ypr.roll) * cos(ypr.pitch);
     comTilt.z = -com.x  * cos(ypr.roll)         * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);     
-    comYaw = scalePI( atan2(comTilt.y, comTilt.x) );  
-
-/*
-    if (comTilt.x > 0) comYaw = scalePI( atan(-(comTilt.y/comTilt.x))) ;  
-    if (comTilt.x < 0 && comTilt.y >= 0 ) comYaw = scalePI( atan(-(comTilt.y/comTilt.x))+M_PI);  
-    if (comTilt.x < 0 && comTilt.y  < 0 ) comYaw = scalePI( atan(-(comTilt.y/comTilt.x))-M_PI);  
-    if (comTilt.x == 0 && comTilt.y > 0 ) comYaw = scalePI(+M_PI/2);
-    if (comTilt.x == 0 && comTilt.y < 0 ) comYaw = scalePI(-M_PI/2);
-    if (comTilt.x == 0 && comTilt.y == 0 ) comYaw = 0;
-*/
-
+    comYaw = scalePI( atan2(comTilt.y, comTilt.x)  );  
     comYaw = scalePIangles(comYaw, ypr.yaw);
     //comYaw = atan2(com.y, com.x);  // assume pitch, roll are 0
     // complementary filter
@@ -1118,10 +976,9 @@ boolean IMU::init(){
   printCalib();    
   if (!initL3G4200D()) return false;
   initADXL345B();
-  //if (COMPASSTOUSE == 0) initHMC5883L();
-  //if (COMPASSTOUSE == 1) 
-  initMMC5883MA();
-
+  // initHMC5883L();
+  compass.init();
+  
   now = 0;  
   hardwareInitialized = true;
   return true;
@@ -1147,9 +1004,22 @@ void IMU::read(){
   callCounter++;    
   readL3G4200D(true);
   readADXL345B();
-  //if (COMPASSTOUSE == 0) readHMC5883L();
-  //if (COMPASSTOUSE == 1) 
-  readMMC5883MA();
+  //readHMC5883L();
+  
+  //readMMC5883MA();
+  if (compass.readMags(false) == true) {
+    com.x = compass.x();
+    com.y = compass.y();
+    com.z = compass.z();
+  } else {
+    Serial.println("ERROR reading MMC5883MA");
+  }
+
+  Serial.print("normal read: ");
+  Serial.print(com.x);
+  Serial.print(com.y);
+  Serial.println(com.z);
+
   //calcComCal();
 }
 

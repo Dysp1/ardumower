@@ -349,7 +349,8 @@ void Mower::setup(){
   Buzzer.begin();
 	Console.begin(CONSOLE_BAUDRATE);  
 	I2Creset();	
-  Wire.begin();            			
+  Wire.begin();
+  Wire.setClock(400000);               			
   unsigned long timeout = millis() + 10000;
 	while (millis() < timeout){
     if (!checkAT24C32()){
