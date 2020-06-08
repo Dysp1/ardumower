@@ -669,8 +669,11 @@ void RemoteControl::processRainMenu(String pfodCmd){
 
 void RemoteControl::sendGPSMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS`1000"));
+  //if (update) serialPort->print("{:"); else serialPort->println(F("{^GPS`1000"));
+
   serialPort->print(F("|q00~Use "));
   sendYesNo(robot->gpsUse);
+  sendSlider("q03", F("GPS Declination"), robot->gpsDeclination, "", 0.01, 90, -90);
   sendSlider("q01", F("Stuck if GPS speed is below"), robot->stuckIfGpsSpeedBelow, "", 0.1, 3); 
   sendSlider("q02", F("GPS speed ignore time"), robot->gpsSpeedIgnoreTime, "", 1, 10000, robot->motorReverseTime);
   if (robot->gpsUse) {
@@ -710,11 +713,11 @@ void RemoteControl::sendGPSMenu(boolean update){
   serialPort->println("}");
 }
 
-
 void RemoteControl::processGPSMenu(String pfodCmd){      
   if (pfodCmd == "q00") robot->gpsUse = !robot->gpsUse;
   else if (pfodCmd.startsWith("q01")) processSlider(pfodCmd, robot->stuckIfGpsSpeedBelow, 0.1);  
   else if (pfodCmd.startsWith("q02")) processSlider(pfodCmd, robot->gpsSpeedIgnoreTime, 1);  
+  else if (pfodCmd.startsWith("q03")) processSlider(pfodCmd, robot->gpsDeclination, 0.01);  
   sendGPSMenu(true);
 }
 
@@ -777,26 +780,18 @@ void RemoteControl::sendImuMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.IMU`1000"));
   serialPort->print(F("|g00~Use "));
   sendYesNo(robot->imuUse);
-
-
+  serialPort->print(F("|g01~Yaw "));
   float myHeading2 = (  robot->imu.ypr.yaw/PI*180);
   if (myHeading2 < 0) myHeading2 += 360;
-
-  serialPort->print(F("|g01~Yaw "));
   serialPort->print(myHeading2);
+  serialPort->print(F(" deg"));
 
-
+  serialPort->print(F("|g09~DriveHeading "));
   float myHeading = (robot->imu.comYaw/PI*180);
   if (myHeading < 0) myHeading += 360;
-  serialPort->print(F(" deg"));
-  serialPort->print(F("|g09~DriveHeading "));
   serialPort->print(myHeading);
-
-
   serialPort->print(F(" deg"));
-  serialPort->print(F("|g21~MMC5883MA Heading "));
-  serialPort->print(robot->imu.MMC5883MAHeading);
-  serialPort->print(F(" deg"));
+
   serialPort->print(F("|g02~Pitch "));
   serialPort->print(robot->imu.ypr.pitch/PI*180);
   serialPort->print(F(" deg"));
@@ -815,6 +810,14 @@ void RemoteControl::sendImuMenu(boolean update){
   serialPort->print(robot->imu.com.y);
   serialPort->print(", ");
   serialPort->print(robot->imu.com.z);  
+
+  serialPort->print(F("|g10~Gyro x,y,z "));
+  serialPort->print(robot->imu.gyro.x);
+  serialPort->print(", ");
+  serialPort->print(robot->imu.gyro.y);
+  serialPort->print(", ");
+  serialPort->print(robot->imu.gyro.z);  
+
   serialPort->print(F("|g04~Correct dir "));
   sendYesNo(robot->imuCorrectDir);  
   sendPIDSlider("g05", F("Dir"), robot->imuDirPID, 0.1, 20);
@@ -1172,9 +1175,9 @@ void RemoteControl::sendCommandMenu(boolean update){
 	serialPort->print(F("|rb~Battery "));
   serialPort->print(robot->batVoltage);	
 	serialPort->print(" V");
-  serialPort->print(F("|rs~Case in temp: "));
-  serialPort->print(robot->imu.comTemperature);
-	serialPort->print(" deg C");
+  serialPort->print(F("|rs~Case temperature "));
+  serialPort->print(robot->imu.compass.getTemperature());
+  serialPort->print(F("C"));
   serialPort->print(F("|rs~Last trigger "));
 	serialPort->print(robot->lastSensorTriggeredName());
   serialPort->print(F("|rs~Last error "));
@@ -1248,7 +1251,7 @@ void RemoteControl::processCommandMenu(String pfodCmd){
 
 
 void RemoteControl::sendManualMenu(boolean update){
-  if (update) serialPort->print("{:"); else serialPort->println(F("{^Manual navigation`1000"));
+  if (update) serialPort->print("{:"); else serialPort->println(F("{Manual navigation`1000"));
   serialPort->print(F("|nl~Left|nr~Right|nf~Forward"));
   if (   ((robot->motorLeftSpeedRpmSet  < 5)  && (robot->motorLeftSpeedRpmSet  > -5))
      &&  ((robot->motorRightSpeedRpmSet < 5)  && (robot->motorRightSpeedRpmSet > -5))  ){

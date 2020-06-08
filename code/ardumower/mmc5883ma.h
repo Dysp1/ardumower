@@ -57,15 +57,29 @@ class mmc5883ma
   private:
     float _bridgeOffsetX, _bridgeOffsetY, _bridgeOffsetZ;
     void calculateBridgeOffsets();
-    float _magx;
-    float _magy;
-    float _magz;
-    float _comOfsx;
-    float _comOfsy;
-    float _comOfsz;
-    float _comScalex;
-    float _comScaley;
-    float _comScalez;
+  
+    float _magX;
+    float _magY;
+    float _magZ;
+    
+    float _maxX;
+    float _maxY;
+    float _maxZ;
+    
+    float _minX;
+    float _minY;
+    float _minZ;
+
+    float _accX;
+    float _accY;
+    float _accZ;
+    
+    float _declination = 10.48;
+    
+    float _nextTimeMeasureTemperature;
+    float _temperatureMeasureInterval = 1000.0; // x ms between temperature measurements
+    float _caseTemperature;
+
     uint8_t _readingMode;
     int initManualMode();
     int initContinuousMode();
@@ -76,7 +90,8 @@ class mmc5883ma
     int init(uint8_t);
     int init();
     bool readMags(bool);
-    uint8_t readTemperature();
+    float getTemperature();
+    float getHeading();
 
     void calibrate();
 
@@ -84,19 +99,30 @@ class mmc5883ma
     float y();
     float z();
 
-    void setCalibOffsetX(float);
-    void setCalibOffsetY(float);
-    void setCalibOffsetZ(float);
-    float getCalibOffsetX();
-    float getCalibOffsetY();
-    float getCalibOffsetZ();
+    void setMaxX(float);
+    void setMaxY(float);
+    void setMaxZ(float);
 
-    void setCalibScaleX(float);
-    void setCalibScaleY(float);
-    void setCalibScaleZ(float);
-    float getCalibScaleX();
-    float getCalibScaleY();
-    float getCalibScaleZ();
+    float getMaxX();
+    float getMaxY();
+    float getMaxZ();
+
+    void setMinX(float);
+    void setMinY(float);
+    void setMinZ(float);
+
+    float getMinX();
+    float getMinY();
+    float getMinZ();
+
+    void setAccX(float);
+    void setAccY(float);
+    void setAccZ(float);
+
+    void setDeclination(float);
+
+
+
 };
 
 #endif

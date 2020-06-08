@@ -151,7 +151,7 @@ Robot::Robot(){
   robotIsStuckCounter = 0;
   gpsAchievedSpeed = 0;
   gpsSpeedUpdatedTime = 0;
-
+  gpsDeclination = 0;
   imuDriveHeading = 0;
   imuRollHeading = 0;
   imuRollDir = LEFT;  
@@ -314,6 +314,7 @@ void Robot::setup()  {
   setMotorPWM(0, 0, false);
   loadSaveErrorCounters(true);
   loadUserSettings();
+  imu.compass.setDeclination(gpsDeclination);
   if (!statsOverride) loadSaveRobotStats(true);
   else loadSaveRobotStats(false);
   setUserSwitches();	
@@ -616,7 +617,7 @@ void Robot::readSensors(){
 		Console.println(time2str(datetime.time));  
   }
 
-  
+/*  // this seems to be handled now a days by the IMU class directly from main loop
   if ((imuUse) && (millis() >= nextTimeIMU)) {
     // IMU
     readSensor(SEN_IMU);
@@ -631,7 +632,7 @@ void Robot::readSensors(){
       setNextState(STATE_ERROR, 0);
     }
   }
-
+*/
 
   if (millis() >= nextTimeBattery){
     // read battery
@@ -1197,8 +1198,6 @@ void Robot::checkIfStuck(){
 
 void Robot::processGPSData()
 {
-  if (millis() < nextTimeGPS) return;
-  nextTimeGPS = millis() + 500;
   float nlat, nlon;
   unsigned long age;
   gps.f_get_position(&nlat, &nlon, &age);
@@ -1477,13 +1476,19 @@ void Robot::loop()  {
   checkTilt(); 
   
   if (imuUse) { 
-    imu.update();  
-    checkIfImuAccelerationMaxed();
+    if (millis() > nextTimeIMU) {
+      nextTimeIMU = millis() + 500;
+      imu.update();  
+      checkIfImuAccelerationMaxed();
+    }
   }
   
   if (gpsUse) { 
-    gps.feed();
-    processGPSData();    
+    if (millis() > nextTimeGPS) {
+      nextTimeGPS = millis() + 100;
+      gps.feed();
+      processGPSData();
+    }
   }
 
   if (millis() >= nextTimePfodLoop){

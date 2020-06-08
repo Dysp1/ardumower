@@ -7,67 +7,114 @@
 
 
 float mmc5883ma::x(){
-  return _magx;
+  return _magX;
 }    
 
 float mmc5883ma::y(){
-  return _magy;
+  return _magY;
 }    
 
 float mmc5883ma::z(){
-  return _magz;
+  return _magZ;
 }    
 
-void mmc5883ma::setCalibOffsetX(float myComOfsx){
-  _comOfsx = myComOfsx;
+void mmc5883ma::setMaxX(float myMaxX){
+  _maxX = myMaxX;
 }
 
-void mmc5883ma::setCalibOffsetY(float myComOfsy){
-  _comOfsy = myComOfsy;
+void mmc5883ma::setMaxY(float myMaxY){
+  _maxY = myMaxY;
 }
 
-void mmc5883ma::setCalibOffsetZ(float myComOfsz){
-  _comOfsz = myComOfsz;
+void mmc5883ma::setMaxZ(float myMaxZ){
+  _maxZ = myMaxZ;
 }
 
-float mmc5883ma::getCalibOffsetX(){
-  return _comOfsx;
+float mmc5883ma::getMaxX(){
+  return _maxX;
 }
 
-float mmc5883ma::getCalibOffsetY(){
-  return _comOfsy;
+float mmc5883ma::getMaxY(){
+  return _maxY;
 }
 
-float mmc5883ma::getCalibOffsetZ(){
-  return _comOfsz;
+float mmc5883ma::getMaxZ(){
+  return _maxZ;
 }
 
-void mmc5883ma::setCalibScaleX(float mycomScalex){
-  _comScalex = mycomScalex;
+void mmc5883ma::setMinX(float myMinX){
+  _minX = myMinX;
 }
 
-void mmc5883ma::setCalibScaleY(float mycomScaley){
-  _comScaley = mycomScaley;
+void mmc5883ma::setMinY(float myMinY){
+  _minY = myMinY;
 }
 
-void mmc5883ma::setCalibScaleZ(float mycomScalez){
-  _comScalez = mycomScalez;
+void mmc5883ma::setMinZ(float myMinZ){
+  _minZ = myMinZ;
 }
 
-float mmc5883ma::getCalibScaleX(){
-  return _comScalex;
+float mmc5883ma::getMinX(){
+  return _minX;
 }
 
-float mmc5883ma::getCalibScaleY(){
-  return _comScaley;
+float mmc5883ma::getMinY(){
+  return _minY;
 }
 
-float mmc5883ma::getCalibScaleZ(){
-  return _comScalez;
+float mmc5883ma::getMinZ(){
+  return _minZ;
 }
+
+void mmc5883ma::setAccX(float myAccX){
+  _accX = myAccX;
+}
+
+void mmc5883ma::setAccY(float myAccY){
+  _accY = myAccY;
+}
+
+void mmc5883ma::setAccZ(float myAccZ){
+  _accZ = myAccZ;
+}
+
+void mmc5883ma::setDeclination(float myDeclination) {
+  _declination = myDeclination;
+}
+
+float mmc5883ma::getHeading(){
+  
+  //Normalize accelerometer raw values.
+  float accXnorm = _accX/sqrt(_accX * _accX + _accY * _accY + _accZ * _accZ);
+  float accYnorm = _accY/sqrt(_accX * _accX + _accY * _accY + _accZ * _accZ);
+
+    //Calculate pitch and roll
+  float pitch = asin(accXnorm);
+  float roll = -asin(accYnorm/cos(pitch));
+
+    //Calculate the new tilt compensated values
+  float magXcomp = _magX*cos(pitch)+_magZ*sin(pitch);
+  float magYcomp = _magX*sin(roll)*sin(pitch)+_magY*cos(roll)-_magZ*sin(roll)*cos(pitch); // LSM9DS1
+
+  //Calculate heading
+  float heading = 180*atan2(magYcomp,magXcomp)/M_PI;
+
+  //Convert heading to 0 - 360
+  if(heading < 0)
+    heading += 360;
+
+  if (_declination != 0) heading += _declination;
+
+  if(heading > 360)
+    heading -= 360;
+
+  return heading*M_PI/180;
+}
+
 
 
 void  mmc5883ma::calculateBridgeOffsets(){
+
   uint8_t buf[6]; 
   uint8_t buf2[2];  
 
@@ -131,80 +178,109 @@ void  mmc5883ma::calculateBridgeOffsets(){
 //  Serial.print(_bridgeOffsetY);
 //  Serial.print(",");
 //  Serial.println(_bridgeOffsetZ);
+  
 }
 
 void mmc5883ma::calibrate() 
 {
-  uint16_t ii = 0, sample_count = 0;
-  float mag_bias[3] = {0, 0, 0}, mag_scale[3] = {0, 0, 0};
-  float mag_max[3] = {-132767, -132767, -132767}, mag_min[3] = {132767, 132767, 132767}, mag_temp[3] = {0, 0, 0};
-  float dest1[3];
-  float dest2[3];
+
+  _maxX = -128000; 
+  _maxY = -128000;
+  _maxZ = -128000;
+
+  _minX = 128000;
+  _minY = 128000;
+  _minZ = 128000;
+
+  float endTimeAfterNoMoreFound = 20000;   // end calibration if no new max/min found in x ms
+  float informFrequencyOfCalibStop = 5000; // Inform about ending calibration in x ms
+  float stoppingSteps = informFrequencyOfCalibStop; // first reminder after after no new found
+
+  Serial.println("MMC5883MA Compass calibration:");
+  Serial.println("Please move the compass slowly 360 degrees around all three axes.");
+  Serial.println("Calibration will end automaticly after 120 seconds");
+  Serial.print("or after maximum of ");
+  Serial.print((endTimeAfterNoMoreFound/1000));
+  Serial.println(" seconds of no new points found (beebs)");
+  Serial.println("------------------------------------");
+  Serial.println("Calibration will start in 5 seconds.");
   
-  Serial.println("Mag Calibration: Wave device in a figure eight until done!");
-  delay(4000);
-  
-  // shoot for ~30 seconds of mag data
-  sample_count = 400;  // at 14 Hz ODR, new mag data is available every 71,4 ms
-  
-  for(ii = 0; ii < sample_count; ii++) {
-    readMags(false);  // Read the mag data
-    mag_temp[0] = _magx;
-    mag_temp[1] = _magy;
-    mag_temp[2] = _magz;   
-    for (int jj = 0; jj < 3; jj++) {
-      if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
-      if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
-      Serial.print(mag_temp[jj]);
-      Serial.print(" ");
-    }
-    Serial.println();
-    delay(75);  // at 14 Hz ODR, new mag data is available every 71,4 ms
-    Buzzer.tone(440);
+  // Little countdown until starting calibration
+  for (uint8_t i=4; i>0; i--){
+    delay(1000);
+    Serial.println(i);
   }
-    
-  // Get hard iron correction
-  mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
-  mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
-  mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
-  
-  dest1[0] = (float) mag_bias[0];//*0.25;  // save mag biases in G for main program
-  dest1[1] = (float) mag_bias[1];//*0.25;   
-  dest1[2] = (float) mag_bias[2];//*0.25;   //the full scale range of ±8 gauss (G), with 0.25mG per LSB resolution 
-                                            //for 16 bits operation mode and 0.4mG total RMS noise level,
-                                            //enabling heading accuracy of 1°in electronic compass applications.
-    
-  // Get soft iron correction estimate
-  mag_scale[0]  = (mag_max[0] - mag_min[0])/2;  // get average x axis max chord length in counts
-  mag_scale[1]  = (mag_max[1] - mag_min[1])/2;  // get average y axis max chord length in counts
-  mag_scale[2]  = (mag_max[2] - mag_min[2])/2;  // get average z axis max chord length in counts
-  
-  float avg_rad = mag_scale[0] + mag_scale[1] + mag_scale[2];
-  avg_rad /= 3.0;
-  
-  dest2[0] = avg_rad/((float)mag_scale[0]);
-  dest2[1] = avg_rad/((float)mag_scale[1]);
-  dest2[2] = avg_rad/((float)mag_scale[2]);
-  
-  Serial.print(dest1[0]);
-  Serial.print(" , ");
-  Serial.print(dest1[1]);
-  Serial.print(" , ");
-  Serial.print(dest1[2]);
-  Serial.print(" , ");
-  Serial.print(dest2[0]);
-  Serial.print(" , ");
-  Serial.print(dest2[1]);
-  Serial.print(" , ");
-  Serial.println(dest2[2]);
 
-  _comOfsx = dest1[0];
-  _comOfsy = dest1[1];
-  _comOfsz = dest1[2];
-  _comScalex = dest2[0];
-  _comScaley = dest2[1];
-  _comScalez = dest2[2];
+  Serial.println("Start moving the Compass!");
 
+  float calibStartTime = millis();
+  float lastNewFoundTime = millis();
+
+  while (millis() < (calibStartTime + 120000)) { // end calibration after maximum of x ms
+    delay(200);
+    Buzzer.noTone();
+
+    readMags(false);
+    
+    bool newFound = false;
+
+    if (_magX > _maxX) { _maxX = _magX; newFound = true; }
+    if (_magY > _maxY) { _maxY = _magY; newFound = true; }
+    if (_magZ > _maxZ) { _maxZ = _magZ; newFound = true; }
+
+    if (_magX < _minX) { _minX = _magX; newFound = true; }
+    if (_magY < _minY) { _minY = _magY; newFound = true; }
+    if (_magZ < _minZ) { _minZ = _magZ; newFound = true; }
+
+    if (newFound == true) {
+      lastNewFoundTime = millis();
+      stoppingSteps = informFrequencyOfCalibStop;
+      Buzzer.tone(440); //beeb if new min/max found
+      Serial.print("X max/min: ");
+      Serial.print(_maxX);
+      Serial.print(",");
+      Serial.print(_minX);
+      Serial.print(" - Y max/min: ");
+      Serial.print(_maxY);
+      Serial.print(",");
+      Serial.print(_minY);
+      Serial.print(" - Z max/min: ");
+      Serial.print(_maxZ);
+      Serial.print(",");
+      Serial.println(_minZ);
+    } else {
+      // informing between 5 seconds that the calibration is about to end
+      if ((millis() - lastNewFoundTime) > stoppingSteps) {
+        Buzzer.tone(800);
+        if ( stoppingSteps > 500) {
+          Serial.print("Auto stopping calibration if no new points found in ");
+          Serial.print(round((endTimeAfterNoMoreFound - stoppingSteps) / 1000));
+          Serial.println(" seconds");
+        }
+        stoppingSteps += informFrequencyOfCalibStop;
+      }
+    }
+
+    if (millis() > (lastNewFoundTime + endTimeAfterNoMoreFound)) {
+          break;
+    }
+  }
+  
+  Serial.println("-----------------------------");
+  Serial.println("Calibration values:");
+  Serial.print("X max/min: ");
+  Serial.print(_maxX);
+  Serial.print(",");
+  Serial.println(_minX);
+  Serial.print("Y max/min: ");
+  Serial.print(_maxY);
+  Serial.print(",");
+  Serial.println(_minY);
+  Serial.print("Z max/min: ");
+  Serial.print(_maxZ);
+  Serial.print(",");
+  Serial.println(_minZ);
+  
   // completed sound
   Buzzer.tone(600);
   delay(200); 
@@ -213,10 +289,9 @@ void mmc5883ma::calibrate()
   Buzzer.tone(1320);              
   delay(200); 
   Buzzer.noTone();
-
+  
   Serial.println("Mag Calibration done!");
- }
-
+}
 
 // Manual reading mode = 1
 // Continuous mode = 2
@@ -237,8 +312,12 @@ int mmc5883ma::init(){
 }
 
 int mmc5883ma::initManualMode(){
- 
-  delay(5);  // allow the chip to online for sure
+  
+  I2CwriteTo(MMC5883MA, INT_CTRL1, 0x80);  // software reset 5ms at least.
+  delay(10);
+
+  calculateBridgeOffsets();
+  delay(10);
 
   // Read serial number 
   uint8_t serialNumber[2];  
@@ -247,24 +326,27 @@ int mmc5883ma::initManualMode(){
   if (serialNumber[0] != 12){
     Serial.print("MMC5883MA manual mode initialization failed. Expected productID 12, got: ");
     Serial.println(serialNumber[0]);
-    return 0;
-  }
+    return false;
+  } 
 
+  // Initialize manual mode reading
+  //
   // 0x00 set cmd resolution to 16bit,  10 ms*3, 100HZ
   // 0x01 set cmd resolution to 16bit,   5 ms*3, 200HZ
   // 0x02 set cmd resolution to 16bit, 2.5 ms*3, 400HZ
   // 0x03 set cmd resolution to 16bit, 1.6 ms*3, 600HZ
+  //
   I2CwriteTo(MMC5883MA, INT_CTRL1, 0x01);  
   delay(1);
 
   Serial.print("MMC5883MA manual mode initialisation successful. Compass serialNumber: ");
   Serial.println(serialNumber[0]);
 
-  return 1;
+  return true;
 }
 
 int mmc5883ma::initContinuousMode(){
-
+/*
   // continuous measurement mode
   delay(5);  // allow the chip to online for sure
 
@@ -292,24 +374,49 @@ int mmc5883ma::initContinuousMode(){
 
   Serial.print("MMC5883MA continuous mode initialisation successful. Compass serialNumber: ");
   Serial.println(serialNumber[0]);
-
+*/
   return true;
 }
 
 
 
-uint8_t mmc5883ma::readTemperature(){    
+float mmc5883ma::getTemperature(){    
+
+  if(_nextTimeMeasureTemperature > millis()) {
+    return _caseTemperature;
+  } else {
+    _nextTimeMeasureTemperature = millis() + _temperatureMeasureInterval;
+  }
 
   uint8_t temperatureBuffer[1];
   uint8_t temperatureStatusBuffer[1];
   byte temperatureMask = 0x02;
+  float startTime = millis();
 
+  // We must not call INT_CTRL0 if we are in continuous reading mode
+  if (_readingMode != 2) {
+    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x02);
+    delay(1);
+  }
+  
   I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)temperatureStatusBuffer);
-  if ( (temperatureStatusBuffer[0] & temperatureMask) == temperatureMask ) {  
-    I2CreadFrom(MMC5883MA, TEMPERATURE, 1, (uint8_t*)temperatureBuffer);
+  while ( (temperatureStatusBuffer[0] & temperatureMask) != temperatureMask && (millis() < (startTime+50))) {  
+    delay(2);
+    I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)temperatureStatusBuffer);
   }
 
-  return (uint8_t)round(temperatureBuffer[0]*0.69-71.2);
+  if ((temperatureStatusBuffer[0] & temperatureMask) == temperatureMask) {
+    if (I2CreadFrom(MMC5883MA, TEMPERATURE, 1, (uint8_t*)temperatureBuffer) == 1) {
+      _caseTemperature = ((float)temperatureBuffer[0]*0.69-71.2);
+      return _caseTemperature;
+    } else {
+      _nextTimeMeasureTemperature = millis() + 100; //Something went wrong with the measurement, let's try again a bit faster.
+    }
+  } else {
+    _nextTimeMeasureTemperature = millis() + 100; //Something went wrong with the measurement, let's try again a bit faster.
+  }
+
+  return _caseTemperature;  // returning the last known temperature, in case we weren't able to update.
 }
 
 
@@ -331,7 +438,7 @@ bool mmc5883ma::readMags(bool _useComCalibration){
 
 
 bool mmc5883ma::readMagsContinuousMode(bool _useComCalibration){    
-
+/*
   uint8_t magnetometerBuffer[7];  
   uint8_t magnetometerStatusBuffer[2];  
   byte magnetometerMask = 0x01;
@@ -341,21 +448,21 @@ bool mmc5883ma::readMagsContinuousMode(bool _useComCalibration){
   
         if( I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)magnetometerBuffer) == 6) {
         
-        _magx = (uint16_t)(magnetometerBuffer[1]<< 8 | magnetometerBuffer[0]);
-        _magy = (uint16_t)(magnetometerBuffer[3]<< 8 | magnetometerBuffer[2]);
-        _magz = (uint16_t)(magnetometerBuffer[5]<< 8 | magnetometerBuffer[4]);
+        _magX = (uint16_t)(magnetometerBuffer[1]<< 8 | magnetometerBuffer[0]);
+        _magY = (uint16_t)(magnetometerBuffer[3]<< 8 | magnetometerBuffer[2]);
+        _magZ = (uint16_t)(magnetometerBuffer[5]<< 8 | magnetometerBuffer[4]);
     
-        _magx = ((float)_magx - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetX;
-        _magy = ((float)_magy - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetY;
-        _magz = ((float)_magz - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetZ;
+        _magX = ((float)_magX - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetX;
+        _magY = ((float)_magY - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetY;
+        _magZ = ((float)_magZ - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetZ;
     
         if (_useComCalibration){
-          _magx -= _comOfsx;
-          _magy -= _comOfsy;
-          _magz -= _comOfsz;
-          if (_comScalex != 0) _magx /= _comScalex*0.5;    
-          if (_comScaley != 0) _magy /= _comScaley*0.5;    
-          if (_comScalez != 0) _magz /= _comScalez*0.5;
+        //  _magx -= _comOfsx;
+        //  _magy -= _comOfsy;
+        //  _magz -= _comOfsz;
+        //  if (_comScalex != 0) _magx /= _comScalex*0.5;    
+        //  if (_comScaley != 0) _magy /= _comScaley*0.5;    
+        //  if (_comScalez != 0) _magz /= _comScalez*0.5; 
         }
       } else {
         Serial.println("MMC5883MA Could not read 6 bytes from mag x,y,z registers.");
@@ -368,107 +475,71 @@ bool mmc5883ma::readMagsContinuousMode(bool _useComCalibration){
   } else {
     Serial.println("MMC5883MA Status buffer 0");
     return false;
-  }
+  }*/
   return true;
 }
 
 bool mmc5883ma::readMagsManualMode(bool _useComCalibration){    
-    float magnetoX1;
-    float magnetoY1;
-    float magnetoZ1;
-    float magnetoX2;
-    float magnetoY2;
-    float magnetoZ2;
 
-    // reset 
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x08);  
-    delay(1);
+  I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+  delay(2);
   
-    //measurement 1
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
+  uint8_t measure1Buffer[6];  
+  uint8_t measure1bufferStatus[6];  
+  byte measureMask = 0x01;
+  float startTime = millis();
+  measure1bufferStatus[0] = 0;
+
+  while ( ((measure1bufferStatus[0] & measureMask) != measureMask) && (millis() < (startTime+50))) {  
     delay(2);
-
-    uint8_t measure1Buffer[6];  
-    uint8_t measure1bufferStatus[6];  
-    byte measure1Mask = 0x01;
-
-    float startTime = millis();
-    measure1bufferStatus[0] = 0;
-
-    while ( (measure1bufferStatus[0] & measure1Mask) != measure1Mask || millis() > startTime+50) {  
-      if (I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)measure1bufferStatus) != 1) {
-        return false;
-      } 
-    }
-
-    if ((measure1bufferStatus[0] & measure1Mask) != measure1Mask) return false;
-
-    if (I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)measure1Buffer) == 6) {
-      magnetoX1 = (uint16_t)(measure1Buffer[1]<< 8 | measure1Buffer[0]);
-      magnetoY1 = (uint16_t)(measure1Buffer[3]<< 8 | measure1Buffer[2]);
-      magnetoZ1 = (uint16_t)(measure1Buffer[5]<< 8 | measure1Buffer[4]);
-    } else {
-      return false;
-    }
-
-    magnetoX1 = -1 * ((float)magnetoX1 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    magnetoY1 = -1 * ((float)magnetoY1 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    magnetoZ1 = -1 * ((float)magnetoZ1 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
+    I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)measure1bufferStatus);
+  }
   
-    // set
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x10);
-    delay(1);
+  if ((measure1bufferStatus[0] & measureMask) == measureMask) 
+  {
+    if (I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)measure1Buffer) == 6) 
+    {
+      float magnetoX1 = (uint16_t)(measure1Buffer[1]<< 8 | measure1Buffer[0]);
+      float magnetoY1 = (uint16_t)(measure1Buffer[3]<< 8 | measure1Buffer[2]);
+      float magnetoZ1 = (uint16_t)(measure1Buffer[5]<< 8 | measure1Buffer[4]);
+    
+      if (abs(magnetoX1 - MMC5883MA_OFFSET) < 10000     // I Find MMC5883MA to be very unreliable at times
+       && abs(magnetoY1 - MMC5883MA_OFFSET) < 10000     // the scale should be in -2048 to 2048 range.
+       && abs(magnetoZ1 - MMC5883MA_OFFSET) < 10000) {  // That is why we will skip all clearly (faulty) readings. Especially important when calibrating!
 
-    //measurement 2
-    I2CwriteTo(MMC5883MA, INT_CTRL0, 0x01);
-    delay(2);
+        magnetoX1 = ((float)magnetoX1 - MMC5883MA_OFFSET); // /MMC5883MA_SENSITIVITY;
+        magnetoY1 = ((float)magnetoY1 - MMC5883MA_OFFSET); // /MMC5883MA_SENSITIVITY;
+        magnetoZ1 = ((float)magnetoZ1 - MMC5883MA_OFFSET); // /MMC5883MA_SENSITIVITY;
 
-    uint8_t measure2Buffer[6];  
-    uint8_t measure2bufferStatus[6];  
-    byte measure2Mask = 0x01;
+        if (_useComCalibration){
 
-    startTime = millis();
-    measure2bufferStatus[0] = 0;
+          //hard iron
+          magnetoX1 -= ((_minX + _maxX)/2) / (_maxX - _minX) * 2 - 1;
+          magnetoY1 -= ((_minY + _maxY)/2) / (_maxY - _minY) * 2 - 1;
+          magnetoZ1 -= ((_minZ + _maxZ)/2) / (_maxZ - _minZ) * 2 - 1;
 
-    while ( (measure2bufferStatus[0] & measure2Mask) != measure2Mask || millis() > startTime+50 ) {  
-      if (I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)measure2bufferStatus) != 1) {
-        return false;
+          //soft iron
+          _magX = (magnetoX1 - _minX) / (_maxX - _minX) * 2 - 1;
+          _magY = (magnetoY1 - _minY) / (_maxY - _minY) * 2 - 1;
+          _magZ = (magnetoZ1 - _minZ) / (_maxZ - _minZ) * 2 - 1;
+
+        } else {
+          _magX = magnetoX1;
+          _magY = magnetoY1;
+          _magZ = magnetoZ1;
+        }
       }
-    }
+    } else return false;
+  } else return false;
+  
+/*
+  Serial.print("x,y,z: ");
+  Serial.print(_magX);
+  Serial.print(" , ");
+  Serial.print(_magY);
+  Serial.print(" , ");
+  Serial.println(_magZ);
+*/
 
-    if ((measure2bufferStatus[0] & measure2Mask) != measure2Mask) return false;
-
-    if (I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)measure2Buffer) == 6) {
-      magnetoX2 = (uint16_t)(measure2Buffer[1]<< 8 | measure2Buffer[0]);
-      magnetoY2 = (uint16_t)(measure2Buffer[3]<< 8 | measure2Buffer[2]);
-      magnetoZ2 = (uint16_t)(measure2Buffer[5]<< 8 | measure2Buffer[4]);
-    } else {
-      return false;
-    }
-
-    magnetoX2 = -1 * ((float)magnetoX2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    magnetoY2 = -1 * ((float)magnetoY2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-    magnetoZ2 = -1 * ((float)magnetoZ2 - MMC5883MA_OFFSET)/MMC5883MA_SENSITIVITY;
-
-    float magnetoFinalX = (magnetoX2 - magnetoX1) / 2;
-    float magnetoFinalY = (magnetoY2 - magnetoY1) / 2;
-    float magnetoFinalZ = (magnetoZ2 - magnetoZ1) / 2;
-
-    if (_useComCalibration){
-      magnetoFinalX -= _comOfsx;
-      magnetoFinalY -= _comOfsy;
-      magnetoFinalZ -= _comOfsz;
-      magnetoFinalX /= _comScalex*0.5;    
-      magnetoFinalY /= _comScaley*0.5;    
-      magnetoFinalZ /= _comScalez*0.5;
-      _magx = magnetoFinalX;
-      _magy = magnetoFinalY;
-      _magz = magnetoFinalZ;
-    } else {
-      _magx = magnetoFinalX;
-      _magy = magnetoFinalY;
-      _magz = magnetoFinalZ;
-    }
-
-    return true;
+  return true;
 }

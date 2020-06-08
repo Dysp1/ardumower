@@ -35,7 +35,11 @@ How to use it (example):
 #define IMU_H
 
 #include <Arduino.h>
-#include "mmc5883ma.h"
+#define COMPASSMODEL MMC5883MA
+
+#if COMPASSMODEL == MMC5883MA
+  #include "mmc5883ma.h"
+#endif
 
 // IMU state
 enum { IMU_RUN, IMU_CAL_COM };
@@ -78,7 +82,6 @@ public:
   int getCallCounter();
   int getErrorCounter();
   void deleteCalib();  
-  float MMC5883MAHeading;
 
   int callCounter;
   int errorCounter;
@@ -119,6 +122,10 @@ public:
   point_float_t comScale;
   uint8_t comTemperature;
 
+  #if COMPASSMODEL == MMC5883MA
+    mmc5883ma compass;
+  #endif
+
   float comYaw;         // compass heading (radiant, raw)
   boolean useComCalibration;
   // calibrate compass sensor  
@@ -147,12 +154,10 @@ private:
   void initADXL345B();
   boolean initL3G4200D();
   void initHMC5883L();
-  void initMMC5883MA();
   void readL3G4200D(boolean useTa);
   void readADXL345B();
   void readHMC5883L();
-  void readMMC5883MA();
-  mmc5883ma compass;
+
   boolean foundNewMinMax;
 };
 

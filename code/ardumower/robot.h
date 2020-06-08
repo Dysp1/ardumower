@@ -218,6 +218,7 @@ class Robot
     const char *mowPatternName();
     // -------- gps state -------------------------------
     GPS gps;
+    float gpsDeclination;
     char gpsUse            ;       // use GPS?        
     char gpsPerimeterUse            ;       // use GPS Perimeter?        
     gpsMap gpsMapPerimeter;
