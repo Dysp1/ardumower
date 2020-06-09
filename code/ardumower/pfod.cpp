@@ -722,18 +722,18 @@ void RemoteControl::processGPSMenu(String pfodCmd){
 }
 
 
-void RemoteControl::sendGPSPerimeterMenu(boolean update){
+void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS Perimeter`1000"));
   serialPort->print(F("|0gpsPMmm00~Use "));
   sendYesNo(robot->gpsPerimeterUse);
   if (robot->gpsPerimeterUse) {
-	  serialPort->print(F("|sgpsPMma~Main Area|sgpsPMea1~Exclude Area 1|sgpsPMea2~Exclude Area 2"));
+	  serialPort->print(F("|sgpsPMamma1~Main Area|sgpsPMamea1~Exclude Area 1|sgpsPMamea2~Exclude Area 2"));
 
-	  serialPort->print(F("|sgpsPMma~Lat: "));
-    serialPort->print(robot->gpsLat,6);
-	  serialPort->print(F("|sgpsPMma~Lon: "));
-    serialPort->print(robot->gpsLon,6);
-	  serialPort->print(F("|sgpsPMma~Inside Area: "));
+	  serialPort->print(F("|sgpsPMam~Lat: "));
+    serialPort->print(robot->gpsLat,8);
+	  serialPort->print(F("|sgpsPMam~Lon: "));
+    serialPort->print(robot->gpsLon,8);
+	  serialPort->print(F("|sgpsPMam~Inside Area: "));
     serialPort->print(robot->gpsMapPerimeter.insidePerimeter(robot->gpsLat, robot->gpsLon));
   }
 
@@ -742,24 +742,23 @@ void RemoteControl::sendGPSPerimeterMenu(boolean update){
   serialPort->println("}");
 }
 
-void RemoteControl::processGPSPerimeterMenu(String pfodCmd){      
+void RemoteControl::processGPSPerimeterMainMenu(String pfodCmd){      
   if (pfodCmd == "0gpsPMmm00") {
   	robot->gpsPerimeterUse = !robot->gpsPerimeterUse;
   }
-  sendGPSPerimeterMenu(true);
+  sendGPSPerimeterMainMenu(true);
 }
 
-void RemoteControl::sendGPSPerimeterMainArea(boolean update){      
+void RemoteControl::sendGPSPerimeterAreaMenu(boolean update){      
   if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS P Main Area`1000"));
   
   float lat, lon;
   unsigned long age;
-  robot->gps.f_get_position(&lat, &lon, &age);
-  serialPort->print(F("|0gpsPMmaCom1~lat "));
-  serialPort->print(lat);
-  serialPort->print(F("|0gpsPMmaCom2~lon "));
-  serialPort->print(lon);
-	serialPort->print(F("|0gpsPMmaCom3~Save as edge point"));
+  serialPort->print(F("|0gpsPMamCom1~lat "));
+  serialPort->print(robot->gpsLat,8);
+  serialPort->print(F("|0gpsPMamCom2~lon "));
+  serialPort->print(robot->gpsLon,8);
+	serialPort->print(F("|0gpsPMamCom3~Save as edge point"));
 	
 
 	serialPort->print(F("|0~-----------------"));
@@ -767,23 +766,19 @@ void RemoteControl::sendGPSPerimeterMainArea(boolean update){
 	int areaPoints = robot->gpsMapPerimeter.getNumberOfMainAreaPoints();
 	int i=0;
 	while (i <= areaPoints) {
-		robot->gpsMapPerimeter.getMainAreaPointY(i);
 		serialPort->print(F("|0~"));
-		serialPort->print(robot->gpsMapPerimeter.getMainAreaPointX(i));
+		serialPort->print(robot->gpsMapPerimeter.getMainAreaPointX(i),8);
 		serialPort->print(",");
-		serialPort->print(robot->gpsMapPerimeter.getMainAreaPointY(i));
+		serialPort->print(robot->gpsMapPerimeter.getMainAreaPointY(i),8);
 		i++;
 	}
 	serialPort->println("}");
 
 }
 
-void RemoteControl::processGPSPerimeterMainArea(String pfodCmd){      
-  float lat, lon;
-  unsigned long age;
-  robot->gps.f_get_position(&lat, &lon, &age);
-	robot->gpsMapPerimeter.addMainAreaPoint(lat,lon);	
-  sendGPSPerimeterMainArea(true);
+void RemoteControl::processGPSPerimeterAreaMenu(String pfodCmd){      
+	robot->gpsMapPerimeter.addMainAreaPoint(robot->gpsLat,robot->gpsLon);	
+  sendGPSPerimeterAreaMenu(true);
 }
 
 void RemoteControl::sendImuMenu(boolean update){
@@ -1262,7 +1257,7 @@ void RemoteControl::processCommandMenu(String pfodCmd){
 
 
 void RemoteControl::sendManualMenu(boolean update){
-  if (update) serialPort->print("{:"); else serialPort->println(F("{Manual navigation`1000"));
+  if (update) serialPort->print("{:"); else serialPort->println(F("{^Manual navigation`1000"));
   serialPort->print(F("|nl~Left|nr~Right|nf~Forward"));
   if (   ((robot->motorLeftSpeedRpmSet  < 5)  && (robot->motorLeftSpeedRpmSet  > -5))
      &&  ((robot->motorRightSpeedRpmSet < 5)  && (robot->motorRightSpeedRpmSet > -5))  ){
@@ -1362,10 +1357,8 @@ void RemoteControl::processSettingsMenu(String pfodCmd){
       else if (pfodCmd == "s13") sendRainMenu(false);            
       else if (pfodCmd == "s15") sendDropMenu(false);
       else if (pfodCmd == "s14") sendGPSMenu(false);
-      else if (pfodCmd == "sgpsPMmm") sendGPSPerimeterMenu(false);
-      else if (pfodCmd == "sgpsPMma") sendGPSPerimeterMainArea(false);
-      else if (pfodCmd == "sgpsPMea1") sendGPSPerimeterMainArea(false);
-      else if (pfodCmd == "sgpsPMea1") sendGPSPerimeterMainArea(false);
+      else if (pfodCmd == "sgpsPMmm") sendGPSPerimeterMainMenu(false);
+      else if (pfodCmd == "sgpsPMam") sendGPSPerimeterAreaMenu(false);
       else if (pfodCmd == "s16") sendFreeWheelMenu(false);
       else if (pfodCmd == "sx") sendFactorySettingsMenu(false);
       else if (pfodCmd == "sz") { robot->saveUserSettings(); sendSettingsMenu(true); }
@@ -1756,8 +1749,8 @@ bool RemoteControl::readSerial(){
         else if (pfodCmd.startsWith("l")) processOdometryMenu(pfodCmd);  
         else if (pfodCmd.startsWith("m")) processRainMenu(pfodCmd);               
         else if (pfodCmd.startsWith("q")) processGPSMenu(pfodCmd);
-        else if (pfodCmd.startsWith("0gpsPMmm")) processGPSPerimeterMenu(pfodCmd);
-        else if (pfodCmd.startsWith("0gpsPMma")) processGPSPerimeterMainArea(pfodCmd);
+        else if (pfodCmd.startsWith("0gpsPMmm")) processGPSPerimeterMainMenu(pfodCmd);
+        else if (pfodCmd.startsWith("0gpsPMam")) processGPSPerimeterAreaMenu(pfodCmd);
         else if (pfodCmd.startsWith("t")) processDateTimeMenu(pfodCmd);  
         else if (pfodCmd.startsWith("i")) processTimerMenu(pfodCmd);      
         else if (pfodCmd.startsWith("p")) processTimerDetailMenu(pfodCmd);      
