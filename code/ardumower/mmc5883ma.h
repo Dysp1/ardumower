@@ -77,8 +77,8 @@ class mmc5883ma
     float _declination = 10.48;
     
     float _nextTimeMeasureTemperature;
-    float _temperatureMeasureInterval = 1000.0; // x ms between temperature measurements
-    float _caseTemperature;
+    float _temperatureMeasureInterval = 100.0; // x ms between temperature measurements
+    float _caseTemperature = -999;
 
     uint8_t _readingMode;
     int initManualMode();

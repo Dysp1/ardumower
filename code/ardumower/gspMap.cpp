@@ -34,7 +34,7 @@ int gpsMap::isLeft( Point P0, Point P1, Point P2 )
 //      Input:   P = a point,
 //               V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
 //      Return:  wn = the winding number (=0 only when P is outside)
-int gpsMap::wn_PnPoly(float x, float y)
+int gpsMap::insidePerimeter(float x, float y)
 {
     int    wn = 0;    // the  winding number counter
     Point _currentLocation = {x,y};

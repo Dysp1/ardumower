@@ -39,7 +39,7 @@ class gpsMap
         uint8_t _numberOfMainAreaPoints = 0;
         void loadSaveMapData(boolean readflag);
     public:
-        int wn_PnPoly(float x, float y);
+        int insidePerimeter(float x, float y);
         float distanceToClosestWall(float x, float y);
         uint8_t addMainAreaPoint( float x, float y);
         uint8_t removeMainAreaPoint( int pointNro);

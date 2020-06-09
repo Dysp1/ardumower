@@ -386,6 +386,8 @@ class Robot
     unsigned long nextTimeIMU ; //read IMU data
     unsigned long nextTimeCheckIfImuMaxed ;
     unsigned long nextTimeCheckTilt; // check if
+    float nextTimeTemperatureCheck;
+    float caseTemperature;
     // ------- perimeter state --------------------------
     Perimeter perimeter;
     char perimeterUse       ;      // use perimeter?    

@@ -232,7 +232,9 @@ Robot::Robot(){
   nextTimeMotorPerimeterControl = 0;
   nextTimeMotorMowControl = 0;
   nextTimeRotationChange = 0;
-
+  nextTimeTemperatureCheck = 0;
+  caseTemperature = -999;
+  
   nextTimeRobotStats = 0;
   statsMowTimeMinutesTripCounter = 0;
   statsBatteryChargingCounter = 0;
@@ -932,6 +934,25 @@ void Robot::checkBumpersPerimeter(){
 
 // check perimeter as a boundary
 void Robot::checkPerimeterBoundary(){
+  
+  if (gpsPerimeterUse) {
+  
+    if (millis() >= nextTimeRotationChange){
+      nextTimeRotationChange = millis() + 60000;
+      rotateLeft = !rotateLeft;
+    }
+
+    if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
+      if (gpsMapPerimeter.insidePerimeter(gpsLon, gpsLat) != 0) {
+        if(rotateLeft){  
+          setNextState(STATE_PERI_OUT_REV, LEFT);
+        } else {
+          setNextState(STATE_PERI_OUT_REV, RIGHT);
+        }  
+      }
+    }
+  }
+  
   if (!perimeterUse) return;
   if (millis() >= nextTimeRotationChange){
       nextTimeRotationChange = millis() + 60000;

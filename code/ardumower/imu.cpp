@@ -783,6 +783,12 @@ void IMU::read(){
     compass.setAccX(acc.x);
     compass.setAccY(acc.y);
     compass.setAccZ(acc.z);
+
+    if (millis() > robot.nextTimeTemperatureCheck){
+      robot.nextTimeTemperatureCheck = millis() + 1000;
+      robot.caseTemperature = compass.getTemperature();
+    }
+
   #else 
     readHMC5883L();  
   #endif

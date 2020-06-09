@@ -381,7 +381,7 @@ int mmc5883ma::initContinuousMode(){
 
 
 float mmc5883ma::getTemperature(){    
-
+  // failsafe for not measuring temperature too often 
   if(_nextTimeMeasureTemperature > millis()) {
     return _caseTemperature;
   } else {
@@ -393,30 +393,29 @@ float mmc5883ma::getTemperature(){
   byte temperatureMask = 0x02;
   float startTime = millis();
 
-  // We must not call INT_CTRL0 if we are in continuous reading mode
-  if (_readingMode != 2) {
+  // We must not change control register 0 when automatic mode enabled
+  if (_readingMode != 2) { 
+    //if we are in manual mode, we will need set control register 0 bit 2 to begin temperature measurement
     I2CwriteTo(MMC5883MA, INT_CTRL0, 0x02);
     delay(1);
   }
   
+  // we will read the STATUS register and monitor bit 2. When bit 2 is set to 1, measurement is ready to read
   I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)temperatureStatusBuffer);
   while ( (temperatureStatusBuffer[0] & temperatureMask) != temperatureMask && (millis() < (startTime+50))) {  
     delay(2);
     I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)temperatureStatusBuffer);
   }
 
+  //We will read 1 byte from the TEMPERATURE register 0x06
   if ((temperatureStatusBuffer[0] & temperatureMask) == temperatureMask) {
     if (I2CreadFrom(MMC5883MA, TEMPERATURE, 1, (uint8_t*)temperatureBuffer) == 1) {
-      _caseTemperature = ((float)temperatureBuffer[0]*0.69-71.2);
+      _caseTemperature = ((float)temperatureBuffer[0]*0.69-71.2); //each step is about 0,69 degrees C and steps start from about 71.2 degrees C
       return _caseTemperature;
-    } else {
-      _nextTimeMeasureTemperature = millis() + 100; //Something went wrong with the measurement, let's try again a bit faster.
-    }
-  } else {
-    _nextTimeMeasureTemperature = millis() + 100; //Something went wrong with the measurement, let's try again a bit faster.
-  }
+    }  
+  } 
 
-  return _caseTemperature;  // returning the last known temperature, in case we weren't able to update.
+  return -999;  // returning invalid temperature if measurement failed for any reason.
 }
 
 
@@ -438,31 +437,46 @@ bool mmc5883ma::readMags(bool _useComCalibration){
 
 
 bool mmc5883ma::readMagsContinuousMode(bool _useComCalibration){    
-/*
-  uint8_t magnetometerBuffer[7];  
-  uint8_t magnetometerStatusBuffer[2];  
+
+  uint8_t measureBuffer[6];  
+  uint8_t magnetometerStatusBuffer[1];  
   byte magnetometerMask = 0x01;
 
   if (I2CreadFrom(MMC5883MA, STATUS, 1, (uint8_t*)magnetometerStatusBuffer) == 1) {
+
     if ( (magnetometerStatusBuffer[0] & magnetometerMask) == magnetometerMask ) {  
   
-        if( I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)magnetometerBuffer) == 6) {
-        
-        _magX = (uint16_t)(magnetometerBuffer[1]<< 8 | magnetometerBuffer[0]);
-        _magY = (uint16_t)(magnetometerBuffer[3]<< 8 | magnetometerBuffer[2]);
-        _magZ = (uint16_t)(magnetometerBuffer[5]<< 8 | magnetometerBuffer[4]);
-    
-        _magX = ((float)_magX - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetX;
-        _magY = ((float)_magY - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetY;
-        _magZ = ((float)_magZ - MMC5883MA_OFFSET) / MMC5883MA_SENSITIVITY - _bridgeOffsetZ;
-    
-        if (_useComCalibration){
-        //  _magx -= _comOfsx;
-        //  _magy -= _comOfsy;
-        //  _magz -= _comOfsz;
-        //  if (_comScalex != 0) _magx /= _comScalex*0.5;    
-        //  if (_comScaley != 0) _magy /= _comScaley*0.5;    
-        //  if (_comScalez != 0) _magz /= _comScalez*0.5; 
+      if (I2CreadFrom(MMC5883MA, 0x00, 6, (uint8_t*)measureBuffer) == 6) 
+      {
+        float magnetoX1 = (uint16_t)(measureBuffer[1]<< 8 | measureBuffer[0]);
+        float magnetoY1 = (uint16_t)(measureBuffer[3]<< 8 | measureBuffer[2]);
+        float magnetoZ1 = (uint16_t)(measureBuffer[5]<< 8 | measureBuffer[4]);
+      
+        if (abs(magnetoX1 - MMC5883MA_OFFSET) < 10000     // I Find MMC5883MA to be very unreliable at times
+         && abs(magnetoY1 - MMC5883MA_OFFSET) < 10000     // the scale should be in -2048 to 2048 range.
+         && abs(magnetoZ1 - MMC5883MA_OFFSET) < 10000) {  // That is why we will skip all clearly (faulty) readings. Especially important when calibrating!
+  
+          magnetoX1 = ((float)magnetoX1 - MMC5883MA_OFFSET); // /MMC5883MA_SENSITIVITY;
+          magnetoY1 = ((float)magnetoY1 - MMC5883MA_OFFSET); // /MMC5883MA_SENSITIVITY;
+          magnetoZ1 = ((float)magnetoZ1 - MMC5883MA_OFFSET); // /MMC5883MA_SENSITIVITY;
+  
+          if (_useComCalibration){
+  
+            //hard iron
+            magnetoX1 -= ((_minX + _maxX)/2) / (_maxX - _minX) * 2 - 1;
+            magnetoY1 -= ((_minY + _maxY)/2) / (_maxY - _minY) * 2 - 1;
+            magnetoZ1 -= ((_minZ + _maxZ)/2) / (_maxZ - _minZ) * 2 - 1;
+  
+            //soft iron
+            _magX = (magnetoX1 - _minX) / (_maxX - _minX) * 2 - 1;
+            _magY = (magnetoY1 - _minY) / (_maxY - _minY) * 2 - 1;
+            _magZ = (magnetoZ1 - _minZ) / (_maxZ - _minZ) * 2 - 1;
+  
+          } else {
+            _magX = magnetoX1;
+            _magY = magnetoY1;
+            _magZ = magnetoZ1;
+          }
         }
       } else {
         Serial.println("MMC5883MA Could not read 6 bytes from mag x,y,z registers.");
@@ -475,7 +489,7 @@ bool mmc5883ma::readMagsContinuousMode(bool _useComCalibration){
   } else {
     Serial.println("MMC5883MA Status buffer 0");
     return false;
-  }*/
+  }
   return true;
 }
 

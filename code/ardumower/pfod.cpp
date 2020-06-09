@@ -691,9 +691,9 @@ void RemoteControl::sendGPSMenu(boolean update){
     serialPort->print(F("|q08~altitude "));
     serialPort->print(robot->gps.f_altitude()*100000);
     serialPort->print(F("|q09~lat "));
-    serialPort->print(lat*100000);
+    serialPort->print(lat,8);
     serialPort->print(F("|q09~lon "));
-    serialPort->print(lon*100000);
+    serialPort->print(lon,8);
     serialPort->print(F("|q09~stuck count "));
     serialPort->print(robot->robotIsStuckCounter);
   }
@@ -728,7 +728,17 @@ void RemoteControl::sendGPSPerimeterMenu(boolean update){
   sendYesNo(robot->gpsPerimeterUse);
   if (robot->gpsPerimeterUse) {
 	  serialPort->print(F("|sgpsPMma~Main Area|sgpsPMea1~Exclude Area 1|sgpsPMea2~Exclude Area 2"));
+
+	  serialPort->print(F("|sgpsPMma~Lat: "));
+    serialPort->print(robot->gpsLat,6);
+	  serialPort->print(F("|sgpsPMma~Lon: "));
+    serialPort->print(robot->gpsLon,6);
+	  serialPort->print(F("|sgpsPMma~Inside Area: "));
+    serialPort->print(robot->gpsMapPerimeter.insidePerimeter(robot->gpsLat, robot->gpsLon));
   }
+
+
+
   serialPort->println("}");
 }
 
@@ -746,9 +756,9 @@ void RemoteControl::sendGPSPerimeterMainArea(boolean update){
   unsigned long age;
   robot->gps.f_get_position(&lat, &lon, &age);
   serialPort->print(F("|0gpsPMmaCom1~lat "));
-  serialPort->print(lat*100000);
+  serialPort->print(lat);
   serialPort->print(F("|0gpsPMmaCom2~lon "));
-  serialPort->print(lon*100000);
+  serialPort->print(lon);
 	serialPort->print(F("|0gpsPMmaCom3~Save as edge point"));
 	
 
@@ -772,7 +782,7 @@ void RemoteControl::processGPSPerimeterMainArea(String pfodCmd){
   float lat, lon;
   unsigned long age;
   robot->gps.f_get_position(&lat, &lon, &age);
-	robot->gpsMapPerimeter.addMainAreaPoint(lat*100000,lon*100000);	
+	robot->gpsMapPerimeter.addMainAreaPoint(lat,lon);	
   sendGPSPerimeterMainArea(true);
 }
 
@@ -1176,7 +1186,8 @@ void RemoteControl::sendCommandMenu(boolean update){
   serialPort->print(robot->batVoltage);	
 	serialPort->print(" V");
   serialPort->print(F("|rs~Case temperature "));
-  serialPort->print(robot->imu.compass.getTemperature());
+  if (robot->caseTemperature < -200) serialPort->print("N/A ");
+  else serialPort->print(robot->caseTemperature);
   serialPort->print(F("C"));
   serialPort->print(F("|rs~Last trigger "));
 	serialPort->print(robot->lastSensorTriggeredName());
