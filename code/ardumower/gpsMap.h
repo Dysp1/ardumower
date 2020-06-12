@@ -29,7 +29,7 @@
 #define MAGIC 1
 #define ADDR_GPSMAP_DATA 900
 
-typedef struct {int x, y;} Point;
+typedef struct {float x, y;} Point;
 
 class gpsMap
 {
