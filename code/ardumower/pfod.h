@@ -123,8 +123,8 @@ class RemoteControl
     void sendOdometryMenu(boolean update);
     void sendRainMenu(boolean update);    
     void sendGPSMenu(boolean update);
-    void sendGPSPerimeterMenu(boolean update); 
-    void sendGPSPerimeterMainArea(boolean update);
+    void sendGPSPerimeterMainMenu(boolean update); 
+    void sendGPSPerimeterAreaMenu(boolean update);
     void sendDateTimeMenu(boolean update);
     void sendFactorySettingsMenu(boolean update);    
     void sendADCMenu(boolean update);
@@ -140,8 +140,8 @@ class RemoteControl
     void processRainMenu(String pfodCmd);       
     void processDropMenu(String pfodCmd);    
     void processGPSMenu(String pfodCmd);           
-    void processGPSPerimeterMenu(String pfodCmd);
-    void processGPSPerimeterMainArea(String pfodCmd);      
+    void processGPSPerimeterMainMenu(String pfodCmd);
+    void processGPSPerimeterAreaMenu(String pfodCmd);      
     void processImuMenu(String pfodCmd);         
     void processRemoteMenu(String pfodCmd);      
     void processBatteryMenu(String pfodCmd);

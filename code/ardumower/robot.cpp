@@ -1227,6 +1227,9 @@ void Robot::processGPSData()
     gpsLon = nlon;  // this is xy (0,0)
     gpsLat = nlat;
     return;
+  } else {
+    gpsLon = nlon; // storing lon and lat for others to use
+    gpsLat = nlat;
   }
   gpsX = (float)gps.distance_between(nlat,  gpsLon,  gpsLat, gpsLon);
   gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
