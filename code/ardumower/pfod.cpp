@@ -1358,7 +1358,7 @@ void RemoteControl::processSettingsMenu(String pfodCmd){
       else if (pfodCmd == "s15") sendDropMenu(false);
       else if (pfodCmd == "s14") sendGPSMenu(false);
       else if (pfodCmd == "sgpsPMmm") sendGPSPerimeterMainMenu(false);
-      else if (pfodCmd == "sgpsPMam") sendGPSPerimeterAreaMenu(false);
+      else if (pfodCmd.startsWith("sgpsPMam")) sendGPSPerimeterAreaMenu(false);
       else if (pfodCmd == "s16") sendFreeWheelMenu(false);
       else if (pfodCmd == "sx") sendFactorySettingsMenu(false);
       else if (pfodCmd == "sz") { robot->saveUserSettings(); sendSettingsMenu(true); }

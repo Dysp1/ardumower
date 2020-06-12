@@ -316,7 +316,9 @@ void Robot::setup()  {
   setMotorPWM(0, 0, false);
   loadSaveErrorCounters(true);
   loadUserSettings();
-  imu.compass.setDeclination(gpsDeclination);
+
+  //imu.compass.setDeclination(gpsDeclination);
+
   if (!statsOverride) loadSaveRobotStats(true);
   else loadSaveRobotStats(false);
   setUserSwitches();	
@@ -1498,7 +1500,7 @@ void Robot::loop()  {
   checkButton(); 
   motorMowControl(); 
   checkTilt(); 
-  
+
   if (imuUse) { 
     if (millis() > nextTimeIMU) {
       nextTimeIMU = millis() + 500;
@@ -1506,7 +1508,7 @@ void Robot::loop()  {
       checkIfImuAccelerationMaxed();
     }
   }
-  
+
   if (gpsUse) { 
     if (millis() > nextTimeGPS) {
       nextTimeGPS = millis() + 100;
