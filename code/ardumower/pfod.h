@@ -124,7 +124,7 @@ class RemoteControl
     void sendRainMenu(boolean update);    
     void sendGPSMenu(boolean update);
     void sendGPSPerimeterMainMenu(boolean update); 
-    void sendGPSPerimeterAreaMenu(boolean update);
+    void sendGPSPerimeterAreaMenu(boolean update, String pfodCmd);
     void sendDateTimeMenu(boolean update);
     void sendFactorySettingsMenu(boolean update);    
     void sendADCMenu(boolean update);

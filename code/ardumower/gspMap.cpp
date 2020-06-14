@@ -10,6 +10,12 @@
 #include "gpsMap.h"
 #include "flashmem.h"
 
+
+gpsMap::gpsMap()
+{
+  //loadSaveMapData(true);
+
+};
 // a Point is defined by its coordinates {int x, y;}
 //===================================================================
 //typedef struct {int x, y;} Point;
@@ -34,6 +40,7 @@ int gpsMap::isLeft( Point P0, Point P1, Point P2 )
 //      Input:   P = a point,
 //               V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
 //      Return:  wn = the winding number (=0 only when P is outside)
+/*
 int gpsMap::insidePerimeter(float x, float y)
 {
     int    wn = 0;    // the  winding number counter
@@ -54,6 +61,56 @@ int gpsMap::insidePerimeter(float x, float y)
     }
     return wn;
 }
+*/
+
+int gpsMap::insidePerimeter(float x, float y)
+{
+  int    wn = 0;    // the  winding number counter
+  Point _currentLocation = {x,y};
+
+
+  if (_numberOfExclusionAreas > 0) {
+    for (int j=0; j < _numberOfExclusionAreas; j++) {
+      // loop through all edges of the polygon
+      for (int i=0; i<_exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
+          if (_exclusionAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
+              if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
+                   if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
+                       ++wn;            // have  a valid up intersect
+          }
+          else {                        // start y > _currentLocation.y (no test needed)
+              if (_exclusionAreas[j].point[i+1].y  <= _currentLocation.y)     // a downward crossing
+                   if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) < 0)  // P right of  edge
+                       --wn;            // have  a valid down intersect
+          }
+      }
+      if (wn != 0) return 0; // we are inside of at least one exclusion area, no need to check others 
+                             // return 0 = because we are outside of perimeter when we are inside one of the exclusion areas
+    }
+  }
+
+  if (_numberOfMainAreas > 0) {
+    for (int j=0; j < _numberOfMainAreas; j++) {
+      // loop through all edges of the polygon
+      for (int i=0; i<_mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
+          if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
+              if (_mainAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
+                   if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
+                       ++wn;            // have  a valid up intersect
+          }
+          else {                        // start y > _currentLocation.y (no test needed)
+              if (_mainAreas[j].point[i+1].y  <= _currentLocation.y)     // a downward crossing
+                   if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) < 0)  // P right of  edge
+                       --wn;            // have  a valid down intersect
+          }
+      }
+      if (wn != 0) return wn; // we are inside of one main area, no need to check others
+    }
+  }
+
+  return wn;
+}
+
 
 float gpsMap::distanceToClosestWall(float x, float y)
 {
@@ -89,7 +146,8 @@ float gpsMap::distanceToClosestWall(float x, float y)
     return distanceToClosestWall;
 }
 
-uint8_t gpsMap::addMainAreaPoint( float x, float y) {
+/*
+uint8_t gpsMap::addMainAreaPointDELETEME( float x, float y) {
     if (_numberOfMainAreaPoints >= MAXMAINAREAPOINTS-1) {
         return 1;
     } else {
@@ -100,7 +158,32 @@ uint8_t gpsMap::addMainAreaPoint( float x, float y) {
     return 0;
 }
 
-uint8_t gpsMap::removeMainAreaPoint(int pointNro) {
+*/
+int gpsMap::addMainAreaPoint(int areaNumber, float lat, float lon) {
+    if (_mainAreas[areaNumber].numPoints >= MAXMAINAREAPOINTS-1) {
+        return 1;
+    } else {
+        _mainAreas[areaNumber].point[_mainAreas[areaNumber].numPoints] = {lat , lon};
+        _mainAreas[areaNumber].point[_mainAreas[areaNumber].numPoints + 1] = _mainAreas[areaNumber].point[0]; // last point of area must be equal to first
+        _mainAreas[areaNumber].numPoints++;
+    }
+    return 0;
+}
+
+int gpsMap::addExclusionAreaPoint(int areaNumber, float lat, float lon) {
+    if (_exclusionAreas[areaNumber].numPoints >= MAXEXCLUSIONAREAPOINTS-1) {
+        return 1;
+    } else {
+        _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints] = {lat , lon};
+        _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints + 1] = _exclusionAreas[areaNumber].point[0]; // last point of area must be equal to first
+        _exclusionAreas[areaNumber].numPoints++;
+    }
+    return 0;
+}
+
+
+int gpsMap::removeMainAreaPoint(int pointNro) {
+/*
     if (_numberOfMainAreaPoints <= 1) {
         _numberOfMainAreaPoints = 0;
         return 1;
@@ -113,20 +196,35 @@ uint8_t gpsMap::removeMainAreaPoint(int pointNro) {
         _numberOfMainAreaPoints--;
 
     }
+*/
     return 0;
 }
 
-float gpsMap::getMainAreaPointX(int pointNro) {
-  return _mainAreaPointList[pointNro].x;
+float gpsMap::getMainAreaPointX(int areaNumber, int pointNumber) {
+  _mainAreas[areaNumber].point[pointNumber].x;
 }
 
-float gpsMap::getMainAreaPointY(int pointNro) {
-  return _mainAreaPointList[pointNro].y;
+float gpsMap::getMainAreaPointY(int areaNumber, int pointNumber) {
+  _mainAreas[areaNumber].point[pointNumber].y;
 }
 
-uint8_t gpsMap::getNumberOfMainAreaPoints() {
-  return _numberOfMainAreaPoints;
+int gpsMap::getNumberOfMainAreaPoints(int areaNumber) {
+  return _mainAreas[areaNumber].numPoints;
 }
+
+
+float gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
+  _exclusionAreas[areaNumber].point[pointNumber].x;
+}
+
+float gpsMap::getExclusionAreaPointY(int areaNumber, int pointNumber) {
+  _exclusionAreas[areaNumber].point[pointNumber].y;
+}
+
+int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
+  return _exclusionAreas[areaNumber].numPoints;
+}
+
 
 void gpsMap::loadSaveMapData(boolean readflag){
   if (readflag) Serial.println(F("loadSavegpsMapData:: read"));
@@ -140,6 +238,9 @@ void gpsMap::loadSaveMapData(boolean readflag){
     return;
   }
 
+  eereadwrite(readflag, addr, _mainAreas);  
+  eereadwrite(readflag, addr, _exclusionAreas);  
+
   int i=0;
   while (i < MAXMAINAREAPOINTS) {
     eereadwrite(readflag, addr, _mainAreaPointList[i].x);  
@@ -150,6 +251,40 @@ void gpsMap::loadSaveMapData(boolean readflag){
   Serial.print(F("loadSaveMapData addrstop="));
   Serial.println(addr);
 }
+
+
+void gpsMap::doUnitTest() {
+  addMainAreaPoint(0,0,0);
+  addMainAreaPoint(0,0,100);
+  addMainAreaPoint(0,100,100);
+  addMainAreaPoint(0,100,0);
+  addMainAreaPoint(0,0,0);
+
+  addExclusionAreaPoint(0,20,20);
+  addExclusionAreaPoint(0,20,40);
+  addExclusionAreaPoint(0,40,40);
+  addExclusionAreaPoint(0,40,20);
+  addExclusionAreaPoint(0,20,20);
+
+  if (insidePerimeter(50,50) != 0 ) {
+    Serial.println("Test 1: - Success - We are inside of area.");
+  } else {
+    Serial.println("Test 1: - Failed  - We should be inside, got outside. Wrong result.");
+  }
+
+  if (insidePerimeter(30,30) == 0 ) {
+    Serial.println("Test 2: - Success - We are inside of exclusion area = outside of perimeter.");
+  } else {
+    Serial.println("Test 2: - Failed  - We should be outside, got inside. Wrong result.");
+  }
+
+  if (insidePerimeter(0,130) == 0 ) {
+    Serial.println("Test 3: - Success - We are outside of any main area.");
+  } else {
+    Serial.println("Test 3: - Failed  - We should be outside, got inside. Wrong result.");
+  }
+}
+
 
 
 /*

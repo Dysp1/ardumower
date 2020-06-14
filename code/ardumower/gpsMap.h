@@ -18,34 +18,65 @@
   You are free to use the code in this classs for commercial or personal use at your will.
 */
 
-
-
 #ifndef gpsMap_h
 #define gpsMap_h
 
 #include "Arduino.h"
 
-#define MAXMAINAREAPOINTS 31
+#define MAXMAINAREAS 4
+#define MAXEXCLUSIONAREAS 10
+
+#define MAXMAINAREAPOINTS 31 // 30 + 1 extra. last point must be = first point
+#define MAXEXCLUSIONAREAPOINTS 11 // 10 + 1 extra. last point must be = first point
+
 #define MAGIC 1
 #define ADDR_GPSMAP_DATA 900
 
 typedef struct {int x, y;} Point;
 
+typedef struct  {
+                  int numPoints = 0; 
+                  Point point[MAXEXCLUSIONAREAPOINTS] = {};
+                } mainArea;
+
+typedef struct  {
+                  int numPoints = 0; 
+                  Point point[MAXEXCLUSIONAREAPOINTS] = {};
+                } exclusionArea;
+
 class gpsMap
 {
     private:
+        mainArea _mainAreas[MAXMAINAREAS];
+        exclusionArea _exclusionAreas[MAXEXCLUSIONAREAS];
+
+        int _numberOfMainAreas = 1; // we must have at least one main area
+        int _numberOfExclusionAreas = 1;
+
         int isLeft( Point P0, Point P1, Point P2 );
-        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
-        uint8_t _numberOfMainAreaPoints = 0;
         void loadSaveMapData(boolean readflag);
+
+        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
+        int _numberOfMainAreaPoints = 0;
     public:
+        gpsMap();
+        void doUnitTest(); 
         int insidePerimeter(float x, float y);
         float distanceToClosestWall(float x, float y);
-        uint8_t addMainAreaPoint( float x, float y);
-        uint8_t removeMainAreaPoint( int pointNro);
-        float getMainAreaPointX(int pointNro);
-        float getMainAreaPointY(int pointNro);
-        uint8_t getNumberOfMainAreaPoints();
+        int addMainAreaPoint(int areaNum, float lat, float lon);
+        int removeMainAreaPoint( int pointNro);
+
+        float getMainAreaPointX(int areaNumber, int pointNumber);
+        float getMainAreaPointY(int areaNumber, int pointNumber);
+        int getNumberOfMainAreaPoints(int areaNumber);
+
+
+        int addExclusionAreaPoint(int areaNum, float lat, float lon);
+        //int removeExclusionAreaPoint( int pointNro);
+        
+        float getExclusionAreaPointX(int areaNumber, int pointNumber);
+        float getExclusionAreaPointY(int areaNumber, int pointNumber);
+        int getNumberOfExclusionAreaPoints(int areaNumber);
 
 };
 

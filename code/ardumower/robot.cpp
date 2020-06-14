@@ -1489,6 +1489,8 @@ void Robot::loop()  {
     rc.readSerial();
   }
   
+  //gpsMapPerimeter.doUnitTest();
+
   readSensors(); 
   checkBattery(); 
   checkIfStuck();
