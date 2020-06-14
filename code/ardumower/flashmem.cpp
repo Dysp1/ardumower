@@ -8,7 +8,7 @@
 #endif  
 
 // size we use (actual size is 4K)
-#define EEPROM_SIZE 1024
+#define EEPROM_SIZE 4096
 
 FlashClass Flash;
 

@@ -96,9 +96,27 @@ uint8_t gpsMap::addMainAreaPoint( float x, float y) {
         _mainAreaPointList[_numberOfMainAreaPoints] = {x,y};
         _mainAreaPointList[_numberOfMainAreaPoints+1] = _mainAreaPointList[0]; // last point of area must be equal to first
         _numberOfMainAreaPoints++;
+        loadSaveMapData(false);
     }
     return 0;
 }
+
+uint8_t gpsMap::setTemporaryArea( float x, float y) {
+    _tempAreaStartTime = millis(); // We will reset the timer everytime we find long grass in the temp area.
+    if (_longGrassTeamAreaInUse > 0) {  // we are already working on temp area, do not change temp area coordinates
+      return 1;  
+    } else {
+      _longGrassTempArea[0] = {x - _tempAreaSize, y - _tempAreaSize};
+      _longGrassTempArea[1] = {x - _tempAreaSize, y + _tempAreaSize};
+      _longGrassTempArea[2] = {x + _tempAreaSize, y + _tempAreaSize};
+      _longGrassTempArea[3] = {x + _tempAreaSize, y - _tempAreaSize};
+      _longGrassTempArea[4] = _longGrassTempArea[0];
+      _longGrassTeamAreaInUse = 1;
+    }
+
+    return 0;
+}
+
 
 uint8_t gpsMap::removeMainAreaPoint(int pointNro) {
     if (_numberOfMainAreaPoints <= 1) {
@@ -140,12 +158,11 @@ void gpsMap::loadSaveMapData(boolean readflag){
     return;
   }
 
-  int i=0;
-  while (i < MAXMAINAREAPOINTS) {
-    eereadwrite(readflag, addr, _mainAreaPointList[i].x);  
-    eereadwrite(readflag, addr, _mainAreaPointList[i].y);  
-    i++;
-  }
+//  int i=0;
+//  while (i < _numberOfMainAreaPoints) {
+    eereadwrite(readflag, addr, _mainAreaPointList[0]);  
+//    i++;
+//  }
 
   Serial.print(F("loadSaveMapData addrstop="));
   Serial.println(addr);

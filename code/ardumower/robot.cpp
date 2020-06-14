@@ -101,6 +101,7 @@ Robot::Robot(){
   odometryLeftLastState = odometryLeftLastState2 = odometryRightLastState = odometryRightLastState2 = LOW;
   odometryTheta = odometryX = odometryY = 0;
 
+  //gpsMapPerimeter.loadSaveMapData(true);
     
   motorRightRpmCurr = motorLeftRpmCurr = 0;
   lastMotorRpmTime = 0;

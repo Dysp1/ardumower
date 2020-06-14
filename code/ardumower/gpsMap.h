@@ -27,7 +27,7 @@
 
 #define MAXMAINAREAPOINTS 31
 #define MAGIC 1
-#define ADDR_GPSMAP_DATA 900
+#define ADDR_GPSMAP_DATA 2049
 
 typedef struct {float x, y;} Point;
 
@@ -37,8 +37,14 @@ class gpsMap
         int isLeft( Point P0, Point P1, Point P2 );
         Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
         uint8_t _numberOfMainAreaPoints = 0;
-        void loadSaveMapData(boolean readflag);
+        
+        Point _longGrassTempArea[5] = {{0.0,0.0},{0.0,0.0},{0.0,0.0},{0.0,0.0},{0.0,0.0}};
+        bool _longGrassTeamAreaInUse = 0;
+        float _tempAreaStartTime;
+        float _tempAreaSize = 0.00020;
+        float _tempAreaTimeIfNoLongGrassFound = 300000;
     public:
+        void loadSaveMapData(boolean readflag);
         int insidePerimeter(float x, float y);
         float distanceToClosestWall(float x, float y);
         uint8_t addMainAreaPoint( float x, float y);
@@ -46,6 +52,7 @@ class gpsMap
         float getMainAreaPointX(int pointNro);
         float getMainAreaPointY(int pointNro);
         uint8_t getNumberOfMainAreaPoints();
+        uint8_t setTemporaryArea( float x, float y);
 
 };
 

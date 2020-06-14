@@ -733,12 +733,18 @@ void IMU::update(){
   now = millis();
   int looptime = (now - lastAHRSTime);
   lastAHRSTime = now;
-  
+
   if (state == IMU_RUN){
     read(); // not reading imu data while calibrating compass
-    // ------ roll, pitch --------------  
-    float forceMagnitudeApprox = abs(acc.x) + abs(acc.y) + abs(acc.z);    
-    //if (forceMagnitudeApprox < 1.2) {
+
+    #if IMUMODEL == MPU9250
+      ypr.pitch = mpu.getPitch();
+      ypr.roll  = mpu.getRoll();
+      ypr.yaw   = mpu.getYaw();
+    #else
+      // ------ roll, pitch --------------  
+      float forceMagnitudeApprox = abs(acc.x) + abs(acc.y) + abs(acc.z);    
+      //if (forceMagnitudeApprox < 1.2) {
       //Console.println(forceMagnitudeApprox);      
       accPitch   = atan2(-acc.x , sqrt(sq(acc.y) + sq(acc.z)));         
       accRoll    = atan2(acc.y , acc.z);       
@@ -747,31 +753,31 @@ void IMU::update(){
       // complementary filter            
       ypr.pitch = Kalman(accPitch, gyro.x, looptime, ypr.pitch);  
       ypr.roll  = Kalman(accRoll,  gyro.y, looptime, ypr.roll);            
-    /*} else {
-      //Console.print("too much acceleration ");
-      //Console.println(forceMagnitudeApprox);
-      ypr.pitch = ypr.pitch + gyro.y * ((float)(looptime))/1000.0;
-      ypr.roll  = ypr.roll  + gyro.x * ((float)(looptime))/1000.0;
-    }*/
-    ypr.pitch=scalePI(ypr.pitch);
-    ypr.roll=scalePI(ypr.roll);
-    // ------ yaw --------------
-    // tilt-compensated yaw
-    comTilt.x =  com.x  * cos(ypr.pitch) + com.z * sin(ypr.pitch);
-    comTilt.y =  com.x  * sin(ypr.roll)         * sin(ypr.pitch) + com.y * cos(ypr.roll) - com.z * sin(ypr.roll) * cos(ypr.pitch);
-    comTilt.z = -com.x  * cos(ypr.roll)         * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);     
-    //comYaw = atan2(com.y, com.x);  // assume pitch, roll are 0
-    // complementary filter
-    #if COMPASSMODEL == MMC5883MA
-      comYaw = compass.getHeading();
-      ypr.yaw = comYaw;
-    #else 
-      comYaw = scalePI( atan2(comTilt.y, comTilt.x)  );  
-      comYaw = scalePIangles(comYaw, ypr.yaw);
-      ypr.yaw = Complementary2(comYaw, -gyro.z, looptime, ypr.yaw);
-      ypr.yaw = scalePI(ypr.yaw);
+      /*} else {
+        //Console.print("too much acceleration ");
+        //Console.println(forceMagnitudeApprox);
+        ypr.pitch = ypr.pitch + gyro.y * ((float)(looptime))/1000.0;
+        ypr.roll  = ypr.roll  + gyro.x * ((float)(looptime))/1000.0;
+      }*/
+      ypr.pitch=scalePI(ypr.pitch);
+      ypr.roll=scalePI(ypr.roll);
+      // ------ yaw --------------
+      // tilt-compensated yaw
+      comTilt.x =  com.x  * cos(ypr.pitch) + com.z * sin(ypr.pitch);
+      comTilt.y =  com.x  * sin(ypr.roll)         * sin(ypr.pitch) + com.y * cos(ypr.roll) - com.z * sin(ypr.roll) * cos(ypr.pitch);
+      comTilt.z = -com.x  * cos(ypr.roll)         * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);     
+      //comYaw = atan2(com.y, com.x);  // assume pitch, roll are 0
+      // complementary filter
+      #if COMPASSMODEL == MMC5883MA
+        comYaw = compass.getHeading();
+        ypr.yaw = comYaw;
+      #else 
+        comYaw = scalePI( atan2(comTilt.y, comTilt.x)  );  
+        comYaw = scalePIangles(comYaw, ypr.yaw);
+        ypr.yaw = Complementary2(comYaw, -gyro.z, looptime, ypr.yaw);
+        ypr.yaw = scalePI(ypr.yaw);
+      #endif
     #endif
-
   } 
   else if (state == IMU_CAL_COM) {
     calibComUpdate();
@@ -832,19 +838,20 @@ void IMU::read(){
 
   #if IMUMODEL == MPU9250
     mpu.update();
-    mpu.print();
+    //mpu.print();
 
     if (millis() > robot.nextTimeTemperatureCheck){
       robot.nextTimeTemperatureCheck = millis() + 1000;
       //robot.caseTemperature = mpu.readTempData();
     }
-
-    Serial.print("roll  (x-forward (north)) : ");
-    Serial.println(mpu.getRoll());
-    Serial.print("pitch (y-right (east))    : ");
-    Serial.println(mpu.getPitch());
-    Serial.print("yaw   (z-down (down))     : ");
+/*
+    Serial.print("pitch: ");
+    Serial.print(mpu.getPitch());
+    Serial.print(" roll: ");
+    Serial.print(mpu.getRoll());
+    Serial.print(" yaw: ");
     Serial.println(mpu.getYaw());
+*/
   #else
     readL3G4200D(true);
     readADXL345B();
