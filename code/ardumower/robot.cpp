@@ -1492,8 +1492,6 @@ void Robot::loop()  {
     rc.readSerial();
   }
   
-  //gpsMapPerimeter.doUnitTest();
-
   readSensors(); 
   checkBattery(); 
   checkIfStuck();
@@ -1531,6 +1529,8 @@ void Robot::loop()  {
   }
   if (millis() >= nextTimeInfo) {        
     nextTimeInfo = millis() + 1000; 
+    gpsMapPerimeter.doUnitTest();
+
 	if (rmcsUse == false) { 
 	  printInfo(Console); 
     printErrors();

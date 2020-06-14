@@ -55,14 +55,16 @@ class gpsMap
 
         int isLeft( Point P0, Point P1, Point P2 );
 
-        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
-        uint8_t _numberOfMainAreaPoints = 0;
+//        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
+//        uint8_t _numberOfMainAreaPoints = 0;
         
         Point _longGrassTempArea[5] = {};
-        bool _longGrassTeamAreaInUse;
+        uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
-        float _tempAreaSize = 0.00020;
+        float _tempAreaSize = 2;
         float _tempAreaTimeIfNoLongGrassFound = 300000;
+        void doTest(uint8_t testNum, float lat, float lon, bool expectZero);
+
     public:
         void doUnitTest(); 
         void loadSaveMapData(boolean readflag);
@@ -79,7 +81,6 @@ class gpsMap
         float getExclusionAreaPointY(int areaNumber, int pointNumber);
         int getNumberOfExclusionAreaPoints(int areaNumber);
         //int removeExclusionAreaPoint( int pointNro);
-
 };
 
 #endif

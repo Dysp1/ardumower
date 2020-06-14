@@ -61,14 +61,19 @@ int gpsMap::insidePerimeter(float x, float y)
 int gpsMap::insidePerimeter(float x, float y)
 {
   int    wn = 0;    // the  winding number counter
+  int    wnTempArea = 0;    // the  winding number counter
   Point _currentLocation = {x,y};
-
 
   if (_numberOfExclusionAreas > 0) {
     for (int j=0; j < _numberOfExclusionAreas; j++) {
       // loop through all edges of the polygon
       for (int i=0; i<_exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
           if (_exclusionAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
+/*              Serial.print("y: ");
+              Serial.print(_exclusionAreas[j].point[i].y,10);
+              Serial.print(" ycl: ");
+              Serial.println(_currentLocation.y,10);
+*/
               if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
                        ++wn;            // have  a valid up intersect
@@ -79,10 +84,13 @@ int gpsMap::insidePerimeter(float x, float y)
                        --wn;            // have  a valid down intersect
           }
       }
+      Serial.print("exwn: ");
+      Serial.println(wn);
       if (wn != 0) return 0; // we are inside of at least one exclusion area, no need to check others 
                              // return 0 = because we are outside of perimeter when we are inside one of the exclusion areas
     }
   }
+Serial.println("exclusions done");
 
   if (_numberOfMainAreas > 0) {
     for (int j=0; j < _numberOfMainAreas; j++) {
@@ -99,17 +107,48 @@ int gpsMap::insidePerimeter(float x, float y)
                        --wn;            // have  a valid down intersect
           }
       }
-      if (wn != 0) return wn; // we are inside of one main area, no need to check others
+      Serial.print("main are wn: ");
+      Serial.println(wn);
+
+      if (wn != 0) break; //return wn; // we are inside of one main area, no need to check others
     }
   }
 
-  return wn;
+  //checking if we are inside the temporary area
+  if ( _longGrassTempAreaInUse > 0) {
+    if (millis() > _tempAreaStartTime + _tempAreaTimeIfNoLongGrassFound) {
+      _longGrassTempAreaInUse = 0;
+    } else {
+
+      for (int i=0; i<5; i++) {   // edge from area[i] to  area[i+1]
+          if (_longGrassTempArea[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
+              if (_longGrassTempArea[i].y  > _currentLocation.y)      // an upward crossing
+                   if (isLeft( _longGrassTempArea[i], _longGrassTempArea[i+1], _currentLocation) > 0)  // P left of  edge
+                       ++wnTempArea;            // have  a valid up intersect
+          }
+          else {                        // start y > _currentLocation.y (no test needed)
+              if (_longGrassTempArea[i+1].y  <= _currentLocation.y)     // a downward crossing
+                   if (isLeft( _longGrassTempArea[i], _longGrassTempArea[i+1], _currentLocation) < 0)  // P right of  edge
+                       --wnTempArea;            // have  a valid down intersect
+          }
+      }
+    }
+  }
+
+Serial.print(" wnTempArea: ");
+Serial.println(wnTempArea);
+
+  if (_longGrassTempAreaInUse > 0) {
+    if(wn !=0 && wnTempArea !=0) return wn;
+    else return 0; 
+  }
+  else return wn;
 }
 
 
 float gpsMap::distanceToClosestWall(float x, float y)
 {
-    float distanceToClosestWall = 100000;
+/*    float distanceToClosestWall = 100000;
      Point _currentLocation = {x,y};
 
     for (int i=0; i<_numberOfMainAreaPoints; i++) {   // edge from V[i] to  V[i+1]
@@ -139,6 +178,7 @@ float gpsMap::distanceToClosestWall(float x, float y)
     }
 
     return distanceToClosestWall;
+*/
 }
 
 /*
@@ -156,7 +196,7 @@ uint8_t gpsMap::addMainAreaPointDELETEME( float x, float y) {
 */
 uint8_t gpsMap::setTemporaryArea( float x, float y) {
     _tempAreaStartTime = millis(); // We will reset the timer everytime we find long grass in the temp area.
-    if (_longGrassTeamAreaInUse > 0) {  // we are already working on temp area, do not change temp area coordinates
+    if (_longGrassTempAreaInUse > 0) {  // we are already working on temp area, do not change temp area coordinates
       return 1;  
     } else {
       _longGrassTempArea[0] = {x - _tempAreaSize, y - _tempAreaSize};
@@ -164,7 +204,7 @@ uint8_t gpsMap::setTemporaryArea( float x, float y) {
       _longGrassTempArea[2] = {x + _tempAreaSize, y + _tempAreaSize};
       _longGrassTempArea[3] = {x + _tempAreaSize, y - _tempAreaSize};
       _longGrassTempArea[4] = _longGrassTempArea[0];
-      _longGrassTeamAreaInUse = 1;
+      _longGrassTempAreaInUse = 1;
     }
 }
 
@@ -245,12 +285,12 @@ void gpsMap::loadSaveMapData(boolean readflag){
     Serial.println(F("EEPROM ERROR DATA: NO gpsMap DATA FOUND"));    
     return;
   }
+  eereadwrite(readflag, addr, _numberOfMainAreas);  
+  eereadwrite(readflag, addr, _numberOfExclusionAreas);  
 
-//  int i=0;
-//  while (i < _numberOfMainAreaPoints) {
-    eereadwrite(readflag, addr, _mainAreaPointList[0]);  
-//    i++;
-//  }
+  for (int i=0; i < _numberOfMainAreas; i++) {
+    eereadwrite(readflag, addr, _mainAreas);  
+  }
 
   Serial.print(F("loadSaveMapData addrstop="));
   Serial.println(addr);
@@ -270,24 +310,51 @@ void gpsMap::doUnitTest() {
   addExclusionAreaPoint(0,40,20);
   addExclusionAreaPoint(0,20,20);
 
-  if (insidePerimeter(50,50) != 0 ) {
-    Serial.println("Test 1: - Success - We are inside of area.");
-  } else {
-    Serial.println("Test 1: - Failed  - We should be inside, got outside. Wrong result.");
-  }
+  _longGrassTempAreaInUse = 0;
 
-  if (insidePerimeter(30,30) == 0 ) {
-    Serial.println("Test 2: - Success - We are inside of exclusion area = outside of perimeter.");
-  } else {
-    Serial.println("Test 2: - Failed  - We should be outside, got inside. Wrong result.");
-  }
+  doTest(1,50,50,false); // inside of main area / not in exclusion areas
 
-  if (insidePerimeter(0,130) == 0 ) {
-    Serial.println("Test 3: - Success - We are outside of any main area.");
-  } else {
-    Serial.println("Test 3: - Failed  - We should be outside, got inside. Wrong result.");
-  }
+  doTest(2,30,30,true);  // inside of exclusion area
+
+  doTest(3,0,101, true); // outside of main areas
+
+  setTemporaryArea(70, 70);
+
+  doTest(4,71,71, false); // inside of temporary area
+  
+  doTest(5,88,88, true);  // outside of temporary area
 }
+
+void gpsMap::doTest(uint8_t testNum, float lat, float lon, bool expectZero) {
+  Serial.println(" ");
+  Serial.print("Test ");
+  Serial.print(testNum);
+  Serial.println(" --------------------------------");
+  int temppi = insidePerimeter(lat,lon);
+
+  Serial.print("Test ");
+  Serial.print(testNum);
+  Serial.print(": ");
+  if (expectZero == true) {
+    if (temppi == 0 ) {
+      Serial.print("- Success - waited 0 got ");
+      Serial.println(temppi);
+    } else {
+      Serial.print("- Failed - waited 0 got ");
+      Serial.println(temppi);
+    }
+  } else {
+    if (temppi != 0 ) {
+      Serial.print("- Success - waited non zero got ");
+      Serial.println(temppi);
+    } else {
+      Serial.print("- Failed - waited non zero got ");
+      Serial.println(temppi);
+    }
+  }
+  Serial.println(" ");
+}
+
 
 
 
