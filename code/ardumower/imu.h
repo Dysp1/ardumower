@@ -35,10 +35,15 @@ How to use it (example):
 #define IMU_H
 
 #include <Arduino.h>
-#define COMPASSMODEL MMC5883MA
+//#define COMPASSMODEL MMC5883MA
+#define IMUMODEL MPU9250
 
 #if COMPASSMODEL == MMC5883MA
   #include "mmc5883ma.h"
+#endif
+
+#if IMUMODEL == MPU9250
+  #include "MPU9250.h"
 #endif
 
 // IMU state
@@ -125,6 +130,12 @@ public:
   #if COMPASSMODEL == MMC5883MA
     mmc5883ma compass;
   #endif
+
+
+  #if IMUMODEL == MPU9250
+    MPU9250 mpu;
+  #endif
+
 
   float comYaw;         // compass heading (radiant, raw)
   boolean useComCalibration;
