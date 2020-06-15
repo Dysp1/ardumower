@@ -101,7 +101,7 @@ Robot::Robot(){
   odometryLeftLastState = odometryLeftLastState2 = odometryRightLastState = odometryRightLastState2 = LOW;
   odometryTheta = odometryX = odometryY = 0;
 
-  //gpsMapPerimeter.loadSaveMapData(true);
+  gpsMap gpsMapPerimeter;
     
   motorRightRpmCurr = motorLeftRpmCurr = 0;
   lastMotorRpmTime = 0;
@@ -801,6 +801,7 @@ void Robot::checkCurrent(){
       && abs(perimeterMag) < 800
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
        setSensorTriggered(SEN_MOW_POWER);
+       gpsPerimeter.setTemporaryArea(gpsLat, gpsLon);
        setNextState(STATE_CIRCLE, 0);
   }
 
@@ -946,7 +947,7 @@ void Robot::checkPerimeterBoundary(){
     }
 
     if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
-      if (gpsMapPerimeter.insidePerimeter(gpsLon, gpsLat) != 0) {
+      if (gpsPerimeter.insidePerimeter(gpsLon, gpsLat) != 0) {
         if(rotateLeft){  
           setNextState(STATE_PERI_OUT_REV, LEFT);
         } else {
@@ -1529,7 +1530,8 @@ void Robot::loop()  {
   }
   if (millis() >= nextTimeInfo) {        
     nextTimeInfo = millis() + 1000; 
-    gpsMapPerimeter.doUnitTest();
+
+//    gpsMapPerimeter.doUnitTest();
 
 	if (rmcsUse == false) { 
 	  printInfo(Console); 

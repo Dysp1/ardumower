@@ -44,7 +44,6 @@
 #include "gpsMap.h"
 #include "pfod.h"
 #include "RunningMedian.h"
-#include "gpsMap.h"
 //#include "QueueList.h"
 //#include <limits.h>
 
@@ -221,7 +220,7 @@ class Robot
     float gpsDeclination;
     char gpsUse            ;       // use GPS?        
     char gpsPerimeterUse            ;       // use GPS Perimeter?        
-    gpsMap gpsMapPerimeter;
+    gpsMap gpsPerimeter;
     float gpsLat;
     float gpsLon;
     float gpsX ;   // X position (m)

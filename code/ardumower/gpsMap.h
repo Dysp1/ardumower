@@ -36,7 +36,7 @@ typedef struct {float x, y;} Point;
 
 typedef struct  {
                   int numPoints = 0; 
-                  Point point[MAXEXCLUSIONAREAPOINTS] = {};
+                  Point point[MAXMAINAREAPOINTS] = {};
                 } mainArea;
 
 typedef struct  {
@@ -51,9 +51,7 @@ class gpsMap
         exclusionArea _exclusionAreas[MAXEXCLUSIONAREAS];
 
         int _numberOfMainAreas = 1; // we must have at least one main area
-        int _numberOfExclusionAreas = 1;
-
-        int isLeft( Point P0, Point P1, Point P2 );
+        int _numberOfExclusionAreas = 2;
 
 //        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
 //        uint8_t _numberOfMainAreaPoints = 0;
@@ -61,25 +59,34 @@ class gpsMap
         Point _longGrassTempArea[5] = {};
         uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
-        float _tempAreaSize = 2;
+        float _tempAreaSize = 0.0002;
         float _tempAreaTimeIfNoLongGrassFound = 300000;
+
+        float isLeft( Point P0, Point P1, Point P2 );
         void doTest(uint8_t testNum, float lat, float lon, bool expectZero);
+        void loadSaveMapData(boolean readflag);
 
     public:
         void doUnitTest(); 
-        void loadSaveMapData(boolean readflag);
-        int insidePerimeter(float x, float y);
-        float distanceToClosestWall(float x, float y);
+        void init();
+
+
         int addMainAreaPoint(int areaNum, float lat, float lon);
-        uint8_t removeMainAreaPoint( int pointNro);
+        int getNumberOfMainAreaPoints(int areaNumber);
         float getMainAreaPointX(int areaNumber, int pointNumber);
         float getMainAreaPointY(int areaNumber, int pointNumber);
-        int getNumberOfMainAreaPoints(int areaNumber);
-        uint8_t setTemporaryArea( float x, float y);
+        void deleteMainAreaPoints(int areaNumber);
+
         int addExclusionAreaPoint(int areaNum, float lat, float lon);
+        int getNumberOfExclusionAreaPoints(int areaNumber);
         float getExclusionAreaPointX(int areaNumber, int pointNumber);
         float getExclusionAreaPointY(int areaNumber, int pointNumber);
-        int getNumberOfExclusionAreaPoints(int areaNumber);
+        void deleteExclusionAreaPoints(int areaNumber);
+
+        int insidePerimeter(float x, float y);
+        float distanceToClosestWall(float x, float y);
+        uint8_t removeMainAreaPoint( int pointNro);
+        uint8_t setTemporaryArea( float x, float y);
         //int removeExclusionAreaPoint( int pointNro);
 };
 

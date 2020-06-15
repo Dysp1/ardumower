@@ -179,7 +179,7 @@ Mower::Mower(){
     DiodeD9                    = 0.36;       // Spannungsabfall an der Diode D9 auf den 1.3 Board (Die Spannungsanzeige ist zu niedrig verursacht durch die Diode D9) **UZ**							  
   #endif
   
-	 batChargingCurrentMax       = 1.6;       // maximum current your charger can devliver  
+	 batChargingCurrentMax       = 4.0;       // maximum current your charger can devliver  
   
   // ------  charging station ---------------------------
   stationRevTime             = 1800;       // charge station reverse time (ms)
@@ -191,9 +191,9 @@ Mower::Mower(){
   odometryUse                = 1;          // use odometry?    
   
 	#if defined (ROBOT_ARDUMOWER)
-	  odometryTicksPerRevolution = 1060;       // encoder ticks per one full resolution (without any divider)
+	  odometryTicksPerRevolution = 700;       // encoder ticks per one full resolution (without any divider)
 		wheelDiameter              = 250;        // wheel diameter (mm)
-		odometryWheelBaseCm        = 36;         // wheel-to-wheel distance (cm)
+		odometryWheelBaseCm        = 25;         // wheel-to-wheel distance (cm)
 		odoLeftRightCorrection     = true;       // left-right correction for straight lines?
   #else  // ROBOT_MINI		
 		odometryTicksPerRevolution = 20;      // encoder ticks per one full resolution
@@ -471,6 +471,8 @@ void Mower::setup(){
   imu.init();
 	  
   gps.init();
+
+  gpsPerimeter.init();
 
   Robot::setup();  
 

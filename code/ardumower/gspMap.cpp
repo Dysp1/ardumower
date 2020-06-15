@@ -24,7 +24,7 @@
 //    See: Algorithm 1 "Area of Triangles and Polygons"
 //inline int isLeft(Point P0, Point P1, Point P2) __attribute__((always_inline));
 
-int gpsMap::isLeft( Point P0, Point P1, Point P2 )
+float gpsMap::isLeft( Point P0, Point P1, Point P2 )
 {
     return ( (P1.x - P0.x) * (P2.y - P0.y)
             - (P2.x -  P0.x) * (P1.y - P0.y) );
@@ -69,11 +69,6 @@ int gpsMap::insidePerimeter(float x, float y)
       // loop through all edges of the polygon
       for (int i=0; i<_exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
           if (_exclusionAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
-/*              Serial.print("y: ");
-              Serial.print(_exclusionAreas[j].point[i].y,10);
-              Serial.print(" ycl: ");
-              Serial.println(_currentLocation.y,10);
-*/
               if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
                        ++wn;            // have  a valid up intersect
@@ -84,13 +79,10 @@ int gpsMap::insidePerimeter(float x, float y)
                        --wn;            // have  a valid down intersect
           }
       }
-      Serial.print("exwn: ");
-      Serial.println(wn);
       if (wn != 0) return 0; // we are inside of at least one exclusion area, no need to check others 
                              // return 0 = because we are outside of perimeter when we are inside one of the exclusion areas
     }
   }
-Serial.println("exclusions done");
 
   if (_numberOfMainAreas > 0) {
     for (int j=0; j < _numberOfMainAreas; j++) {
@@ -107,9 +99,6 @@ Serial.println("exclusions done");
                        --wn;            // have  a valid down intersect
           }
       }
-      Serial.print("main are wn: ");
-      Serial.println(wn);
-
       if (wn != 0) break; //return wn; // we are inside of one main area, no need to check others
     }
   }
@@ -134,9 +123,6 @@ Serial.println("exclusions done");
       }
     }
   }
-
-Serial.print(" wnTempArea: ");
-Serial.println(wnTempArea);
 
   if (_longGrassTempAreaInUse > 0) {
     if(wn !=0 && wnTempArea !=0) return wn;
@@ -216,6 +202,7 @@ int gpsMap::addMainAreaPoint(int areaNumber, float lat, float lon) {
         _mainAreas[areaNumber].point[_mainAreas[areaNumber].numPoints + 1] = _mainAreas[areaNumber].point[0]; // last point of area must be equal to first
         _mainAreas[areaNumber].numPoints++;
     }
+    loadSaveMapData(false);
     return 0;
 }
 
@@ -227,6 +214,7 @@ int gpsMap::addExclusionAreaPoint(int areaNumber, float lat, float lon) {
         _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints + 1] = _exclusionAreas[areaNumber].point[0]; // last point of area must be equal to first
         _exclusionAreas[areaNumber].numPoints++;
     }
+    loadSaveMapData(false);
     return 0;
 }
 
@@ -249,11 +237,11 @@ uint8_t gpsMap::removeMainAreaPoint(int pointNro) {
 }
 
 float gpsMap::getMainAreaPointX(int areaNumber, int pointNumber) {
-  _mainAreas[areaNumber].point[pointNumber].x;
+  return _mainAreas[areaNumber].point[pointNumber].x;
 }
 
 float gpsMap::getMainAreaPointY(int areaNumber, int pointNumber) {
-  _mainAreas[areaNumber].point[pointNumber].y;
+  return _mainAreas[areaNumber].point[pointNumber].y;
 }
 
 int gpsMap::getNumberOfMainAreaPoints(int areaNumber) {
@@ -262,21 +250,36 @@ int gpsMap::getNumberOfMainAreaPoints(int areaNumber) {
 
 
 float gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
-  _exclusionAreas[areaNumber].point[pointNumber].x;
+  return _exclusionAreas[areaNumber].point[pointNumber].x;
 }
 
 float gpsMap::getExclusionAreaPointY(int areaNumber, int pointNumber) {
-  _exclusionAreas[areaNumber].point[pointNumber].y;
+  return _exclusionAreas[areaNumber].point[pointNumber].y;
 }
 
 int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
   return _exclusionAreas[areaNumber].numPoints;
 }
 
+void gpsMap::deleteMainAreaPoints(int areaNumber) {
+  _mainAreas[areaNumber].numPoints = 0; 
+  loadSaveMapData(false);
+}
+
+void gpsMap::deleteExclusionAreaPoints(int areaNumber) {
+  _exclusionAreas[areaNumber].numPoints = 0;
+  loadSaveMapData(false);
+}
+
+void gpsMap::init() {
+  loadSaveMapData(true);
+}
+
 
 void gpsMap::loadSaveMapData(boolean readflag){
   if (readflag) Serial.println(F("loadSavegpsMapData:: read"));
-    else Serial.println(F("loadSavegpsMapData: write"));
+  else Serial.println(F("loadSavegpsMapData: write"));
+
   int addr = ADDR_GPSMAP_DATA;
   short magic = 0;
   if (!readflag) magic = MAGIC;  
@@ -285,15 +288,45 @@ void gpsMap::loadSaveMapData(boolean readflag){
     Serial.println(F("EEPROM ERROR DATA: NO gpsMap DATA FOUND"));    
     return;
   }
+
   eereadwrite(readflag, addr, _numberOfMainAreas);  
+
+  for (int i=0; i <= _numberOfMainAreas; i++) {
+    eereadwrite(readflag, addr, _mainAreas[i].numPoints);  
+    int j=0;
+    if (_mainAreas[i].numPoints > 0) {
+      for (j; j <= _mainAreas[i].numPoints; j++) {
+        eereadwrite(readflag, addr, _mainAreas[i].point[j].x);      
+        eereadwrite(readflag, addr, _mainAreas[i].point[j].y);      
+      }
+      if (readflag) {
+        _mainAreas[i].point[j+1].x = _mainAreas[i].point[0].x;
+        _mainAreas[i].point[j+1].y = _mainAreas[i].point[0].y;
+      }
+    }
+  }
+
   eereadwrite(readflag, addr, _numberOfExclusionAreas);  
 
-  for (int i=0; i < _numberOfMainAreas; i++) {
-    eereadwrite(readflag, addr, _mainAreas);  
+  for (int i=0; i <= _numberOfExclusionAreas; i++) {
+    eereadwrite(readflag, addr, _exclusionAreas[i].numPoints);  
+    int j=0;
+    if (_exclusionAreas[i].numPoints > 0) {
+      for (j; j <= _exclusionAreas[i].numPoints; j++) {
+        eereadwrite(readflag, addr, _exclusionAreas[i].point[j].x);      
+        eereadwrite(readflag, addr, _exclusionAreas[i].point[j].y);      
+      }
+      if (readflag) {
+        _exclusionAreas[i].point[j+1].x = _exclusionAreas[i].point[0].x;
+        _exclusionAreas[i].point[j+1].y = _exclusionAreas[i].point[0].y;
+      }
+    }
   }
+
 
   Serial.print(F("loadSaveMapData addrstop="));
   Serial.println(addr);
+  
 }
 
 
