@@ -727,6 +727,13 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
   serialPort->print(F("|0gpsPMmm00~Use "));
   sendYesNo(robot->gpsPerimeterUse);
   if (robot->gpsPerimeterUse) {
+	  
+		if (robot->gpsPerimeter.getLongGrassTempAreaInUse()) serialPort->print(F("|sgpsPMmm~Tall grass area in use"));
+		else serialPort->print(F("|0gpsPMmm~No tall grass area in use"));
+
+    //sendSlider(String cmd, String title, float value, String unit, double scale, float maxvalue, float minvalue)
+    sendSlider("0gpsPMmm01", F("Long grass temp area size"), robot->longGrassTempAreaSize, "", 1.0, 20.0, 5.0);       
+  
 	  serialPort->print(F("|sgpsPMamMA0~Main Area"));
 	  serialPort->print(F("|sgpsPMamEA0~Exclude Area 1"));
 	  serialPort->print(F("|sgpsPMamEA1~Exclude Area 2"));
@@ -736,7 +743,9 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 	  serialPort->print(F("|sgpsPMmm~Lon: "));
     serialPort->print(robot->gpsLon,8);
 	  serialPort->print(F("|sgpsPMmm~Inside Area: "));
-    serialPort->print(robot->gpsPerimeter.insidePerimeter(robot->gpsLat, robot->gpsLon));
+		float insidePerim = robot->gpsPerimeter.insidePerimeter(robot->gpsLat, robot->gpsLon);
+    if (insidePerim != 0) serialPort->print("Yes");
+    else serialPort->print("No");
   }
 
 
@@ -748,6 +757,12 @@ void RemoteControl::processGPSPerimeterMainMenu(String pfodCmd){
   if (pfodCmd == "0gpsPMmm00") {
   	robot->gpsPerimeterUse = !robot->gpsPerimeterUse;
   }
+  
+	if (pfodCmd.startsWith("0gpsPMmm01")) {
+		processSlider(pfodCmd, robot->longGrassTempAreaSize, 1);  
+		robot->gpsPerimeter.setLongGrassTempAreaSize(robot->longGrassTempAreaSize);
+	}
+
   sendGPSPerimeterMainMenu(true);
 }
 

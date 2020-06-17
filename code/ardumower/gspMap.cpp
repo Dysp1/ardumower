@@ -202,7 +202,7 @@ int gpsMap::addMainAreaPoint(int areaNumber, float lat, float lon) {
         _mainAreas[areaNumber].point[_mainAreas[areaNumber].numPoints + 1] = _mainAreas[areaNumber].point[0]; // last point of area must be equal to first
         _mainAreas[areaNumber].numPoints++;
     }
-    loadSaveMapData(false);
+    if (!_unitTesting) loadSaveMapData(false);
     return 0;
 }
 
@@ -214,7 +214,7 @@ int gpsMap::addExclusionAreaPoint(int areaNumber, float lat, float lon) {
         _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints + 1] = _exclusionAreas[areaNumber].point[0]; // last point of area must be equal to first
         _exclusionAreas[areaNumber].numPoints++;
     }
-    loadSaveMapData(false);
+    if (!_unitTesting) loadSaveMapData(false);
     return 0;
 }
 
@@ -248,6 +248,14 @@ int gpsMap::getNumberOfMainAreaPoints(int areaNumber) {
   return _mainAreas[areaNumber].numPoints;
 }
 
+int gpsMap::getLongGrassTempAreaInUse() {
+  return _longGrassTempAreaInUse;
+}
+
+void gpsMap::setLongGrassTempAreaSize(float size) {
+  _tempAreaSize = (float)((float)size/100000); 
+}
+
 
 float gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
   return _exclusionAreas[areaNumber].point[pointNumber].x;
@@ -263,15 +271,16 @@ int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
 
 void gpsMap::deleteMainAreaPoints(int areaNumber) {
   _mainAreas[areaNumber].numPoints = 0; 
-  loadSaveMapData(false);
+  if (!_unitTesting) loadSaveMapData(false);
 }
 
 void gpsMap::deleteExclusionAreaPoints(int areaNumber) {
-  _exclusionAreas[areaNumber].numPoints = 0;
+  if (!_unitTesting) _exclusionAreas[areaNumber].numPoints = 0;
   loadSaveMapData(false);
 }
 
-void gpsMap::init() {
+void gpsMap::init(float size) {
+  _tempAreaSize = (float)((float)size/100000); 
   loadSaveMapData(true);
 }
 
@@ -281,7 +290,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
   else Serial.println(F("loadSavegpsMapData: write"));
 
   int addr = ADDR_GPSMAP_DATA;
-  short magic = 0;
+  short magic = 33;
   if (!readflag) magic = MAGIC;  
   eereadwrite(readflag, addr, magic); // magic
   if ((readflag) && (magic != MAGIC)) {
@@ -331,31 +340,33 @@ void gpsMap::loadSaveMapData(boolean readflag){
 
 
 void gpsMap::doUnitTest() {
-  addMainAreaPoint(0,0,0);
-  addMainAreaPoint(0,0,100);
-  addMainAreaPoint(0,100,100);
-  addMainAreaPoint(0,100,0);
-  addMainAreaPoint(0,0,0);
+  _unitTesting = true;
+  addMainAreaPoint(0,10.0000,10.0000);
+  addMainAreaPoint(0,10.0000,10.0010);
+  addMainAreaPoint(0,10.0010,10.0010);
+  addMainAreaPoint(0,10.0010,10.0000);
+  addMainAreaPoint(0,10.0000,10.0000);
 
-  addExclusionAreaPoint(0,20,20);
-  addExclusionAreaPoint(0,20,40);
-  addExclusionAreaPoint(0,40,40);
-  addExclusionAreaPoint(0,40,20);
-  addExclusionAreaPoint(0,20,20);
+  addExclusionAreaPoint(0,10.0002,10.0002);
+  addExclusionAreaPoint(0,10.0002,10.0004);
+  addExclusionAreaPoint(0,10.0004,10.0004);
+  addExclusionAreaPoint(0,10.0004,10.0002);
+  addExclusionAreaPoint(0,10.0002,10.0002);
 
   _longGrassTempAreaInUse = 0;
 
-  doTest(1,50,50,false); // inside of main area / not in exclusion areas
+  doTest(1,10.0005,10.0005,false); // inside of main area / not in exclusion areas
 
-  doTest(2,30,30,true);  // inside of exclusion area
+  doTest(2,10.0003,10.0003,true);  // inside of exclusion area
 
-  doTest(3,0,101, true); // outside of main areas
+  doTest(3,10.0000,10.0011, true); // outside of main areas
 
-  setTemporaryArea(70, 70);
+  setTemporaryArea(10.0007, 10.0007);
 
-  doTest(4,71,71, false); // inside of temporary area
+  doTest(4,10.00071,10.00071, false); // inside of temporary area
   
-  doTest(5,88,88, true);  // outside of temporary area
+  doTest(5,10.00095,10.00095, true);  // outside of temporary area
+  _unitTesting = false;
 }
 
 void gpsMap::doTest(uint8_t testNum, float lat, float lon, bool expectZero) {

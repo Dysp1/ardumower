@@ -59,8 +59,10 @@ class gpsMap
         Point _longGrassTempArea[5] = {};
         uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
-        float _tempAreaSize = 0.0002;
+        float _tempAreaSize = 0.0001;
         float _tempAreaTimeIfNoLongGrassFound = 300000;
+
+        bool _unitTesting = false;
 
         float isLeft( Point P0, Point P1, Point P2 );
         void doTest(uint8_t testNum, float lat, float lon, bool expectZero);
@@ -68,9 +70,11 @@ class gpsMap
 
     public:
         void doUnitTest(); 
-        void init();
+        void init(float size);
 
-
+        int getLongGrassTempAreaInUse();
+        void setLongGrassTempAreaSize(float size);
+        
         int addMainAreaPoint(int areaNum, float lat, float lon);
         int getNumberOfMainAreaPoints(int areaNumber);
         float getMainAreaPointX(int areaNumber, int pointNumber);

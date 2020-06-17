@@ -220,6 +220,7 @@ class Robot
     float gpsDeclination;
     char gpsUse            ;       // use GPS?        
     char gpsPerimeterUse            ;       // use GPS Perimeter?        
+    float longGrassTempAreaSize ;
     gpsMap gpsPerimeter;
     float gpsLat;
     float gpsLon;

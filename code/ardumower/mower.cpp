@@ -105,12 +105,14 @@ Mower::Mower(){
   sonarUse                   = 0;          // use ultra sonic sensor? (WARNING: robot will slow down, if enabled but not connected!)
   sonarLeftUse               = 1;
   sonarRightUse              = 1;
-  sonarCenterUse             = 0;
-  sonarTriggerBelow          = 0;       // ultrasonic sensor trigger distance (0=off)
-	sonarSlowBelow             = 100;     // ultrasonic sensor slow down distance
+  sonarCenterUse             = 1;
+  sonarTriggerBelow          = 15;       // ultrasonic sensor trigger distance (0=off)
+	sonarSlowBelow             = 50;     // ultrasonic sensor slow down distance
   
   // ------ perimeter ---------------------------------
   perimeterUse               = 0;          // use perimeter?    
+  gpsPerimeterUse            = 0;
+  longGrassTempAreaSize      = 10;
   perimeterTriggerTimeout    = 0;          // perimeter trigger timeout when escaping from inside (ms)  
   perimeterOutRollTimeMax    = 2000;       // roll time max after perimeter out (ms)
   perimeterOutRollTimeMin    = 750;        // roll time min after perimeter out (ms)
@@ -472,7 +474,7 @@ void Mower::setup(){
 	  
   gps.init();
 
-  gpsPerimeter.init();
+  gpsPerimeter.init(longGrassTempAreaSize);
 
   Robot::setup();  
 
