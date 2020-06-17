@@ -612,7 +612,10 @@ void RemoteControl::sendPerimeterMenu(boolean update){
 }
 
 void RemoteControl::processPerimeterMenu(String pfodCmd){        
-	if (pfodCmd == "e00") robot->perimeterUse = !robot->perimeterUse;
+	if (pfodCmd == "e00") {
+      robot->perimeterUse = !robot->perimeterUse;
+      robot->gpsPerimeter.wiredPerimeterInUse(robot->perimeterUse);
+    }
     else if (pfodCmd.startsWith("e04")) processSlider(pfodCmd, robot->perimeterTriggerTimeout, 1);  
     else if (pfodCmd.startsWith("e05")) processSlider(pfodCmd, robot->perimeterOutRollTimeMax, 1);
     else if (pfodCmd.startsWith("e06")) processSlider(pfodCmd, robot->perimeterOutRollTimeMin, 1);
@@ -1382,7 +1385,8 @@ void RemoteControl::processCompassMenu(String pfodCmd){
 void RemoteControl::processManualMenu(String pfodCmd){
   if (pfodCmd == "nl"){
     // manual: left
-    robot->setNextState(STATE_MANUAL, 0);          
+    robot->setNextState(STATE_MANUAL, 0); 
+    robot->gpsPerimeter.disableTemporaryArea();         
     float sign = 1.0;
     if (robot->motorLeftSpeedRpmSet < 0) sign = -1.0;      
     if (sign*robot->motorLeftSpeedRpmSet >= sign*robot->motorRightSpeedRpmSet) robot->motorLeftSpeedRpmSet  = sign * robot->motorSpeedMaxRpm/2;      

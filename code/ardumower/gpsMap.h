@@ -56,10 +56,12 @@ class gpsMap
 //        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
 //        uint8_t _numberOfMainAreaPoints = 0;
         
+
         Point _longGrassTempArea[5] = {};
         uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
         float _tempAreaSize = 0.0001;
+        float _wiredPerimeterInUse = 0;
         float _tempAreaTimeIfNoLongGrassFound = 300000;
 
         bool _unitTesting = false;
@@ -70,11 +72,12 @@ class gpsMap
 
     public:
         void doUnitTest(); 
-        void init(float size);
+        void init(float size, float wiredInUse);
 
         int getLongGrassTempAreaInUse();
         void setLongGrassTempAreaSize(float size);
-        
+        void wiredPerimeterInUse(float inUse);
+
         int addMainAreaPoint(int areaNum, float lat, float lon);
         int getNumberOfMainAreaPoints(int areaNumber);
         float getMainAreaPointX(int areaNumber, int pointNumber);
@@ -91,6 +94,7 @@ class gpsMap
         float distanceToClosestWall(float x, float y);
         uint8_t removeMainAreaPoint( int pointNro);
         uint8_t setTemporaryArea( float x, float y);
+        void disableTemporaryArea();
         //int removeExclusionAreaPoint( int pointNro);
 };
 

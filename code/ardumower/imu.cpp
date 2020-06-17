@@ -31,13 +31,13 @@
 #include "buzzer.h"
 
 //#define COMPASSMODEL MMC5883MA
-#define IMUMODEL MPU9250
+#define IMUMODEL XXX //MPU9250
 
-#if COMPASSMODEL == MMC5883MA
+#ifdef COMPASSMODEL == MMC5883MA
   #include "mmc5883ma.h"
 #endif
 
-#if IMUMODEL == MPU9250
+#ifdef IMUMODEL == MPU9250
   #include "MPU9250.h"
 #endif
 
@@ -92,12 +92,12 @@ IMU::IMU(){
   comOfs.x=comOfs.y=comOfs.z=0;    
   useComCalibration = true;
   
-  #if COMPASSMODEL == MMC5883MA
+  #ifdef COMPASSMODEL == MMC5883MA
     mmc5883ma compass;
   #endif
 
-  #if IMUMODEL == MPU9250
-    MPU9250 mpu;
+  #ifdef IMUMODEL == MPU9250
+    // MPU9250 mpu;
   #endif
 
 }
@@ -163,7 +163,7 @@ float IMU::fusionPI(float w, float a, float b)
 
 void IMU::loadSaveCalib(boolean readflag){
 
-  #if COMPASSMODEL == MMC5883MA
+  #ifdef COMPASSMODEL == MMC5883MA
     comOfs.x = compass.getMaxX();
     comOfs.y = compass.getMaxY();
     comOfs.z = compass.getMaxZ();
@@ -172,14 +172,14 @@ void IMU::loadSaveCalib(boolean readflag){
     comScale.z = compass.getMinZ();
   #endif
 
-  #if MPUMODEL == MPU9250
-    comOfs.x = mpu.getMagBias(0);
+  #ifdef MPUMODEL == MPU9250
+ /*   comOfs.x = mpu.getMagBias(0);
     comOfs.y = mpu.getMagBias(1);
     comOfs.z = mpu.getMagBias(2);
     comScale.x = mpu.getMagScale(0);
     comScale.y = mpu.getMagScale(1);
     comScale.z = mpu.getMagScale(2);;
-  #endif    
+ */ #endif    
 
   int addr = ADDR;
   short magic = MAGIC;
@@ -201,7 +201,7 @@ void IMU::loadCalib(){
   calibrationAvail = true;
   Console.println(F("IMU: found calib data"));
   loadSaveCalib(true);
-  #if COMPASSMODEL == MMC5883MA
+  #ifdef COMPASSMODEL == MMC5883MA
     compass.setMaxX(comOfs.x);
     compass.setMaxY(comOfs.y);
     compass.setMaxZ(comOfs.z);
@@ -210,14 +210,14 @@ void IMU::loadCalib(){
     compass.setMinZ(comScale.z);
   #endif
 
-  #if IMUMODEL == MPU9250
-    mpu.setMagBias(0,comOfs.x);
+  #ifdef IMUMODEL == MPU9250
+/*    mpu.setMagBias(0,comOfs.x);
     mpu.setMagBias(1,comOfs.y);
     mpu.setMagBias(2,comOfs.z);
     mpu.setMagScale(0,comScale.x);
     mpu.setMagScale(1,comScale.y);
     mpu.setMagScale(2,comScale.z);
-  #endif
+ */ #endif
 }
 
 void IMU::saveCalib(){
@@ -513,7 +513,7 @@ void IMU::calibComStartStop(){
     state = IMU_CAL_COM;  
     comMin.x = comMin.y = comMin.z = 9999;
     comMax.x = comMax.y = comMax.z = -9999;
-    #if COMPASSMODEL == MMC5883MA
+    #ifdef COMPASSMODEL == MMC5883MA
       compass.calibrate();
       saveCalib();  
       useComCalibration = true;
@@ -523,12 +523,12 @@ void IMU::calibComStartStop(){
       Console.println(F("Rotate sensor 360 degrees around all three axis"));
     #endif
 
-    #if IMUMODEL == MPU9250
-      mpu.calibrateMag();
+    #ifdef IMUMODEL == MPU9250
+  /*    mpu.calibrateMag();
       saveCalib();  
       useComCalibration = true;
       state = IMU_RUN;    
-    #else 
+    #else */
       Console.println(F("com calib..."));
       Console.println(F("Rotate sensor 360 degrees around all three axis"));
     #endif
@@ -737,10 +737,10 @@ void IMU::update(){
   if (state == IMU_RUN){
     read(); // not reading imu data while calibrating compass
 
-    #if IMUMODEL == MPU9250
-      ypr.pitch = mpu.getPitch();
-      ypr.roll  = mpu.getRoll();
-      ypr.yaw   = mpu.getYaw();
+    #ifdef IMUMODEL == MPU9250
+ //    ypr.pitch = mpu.getPitch();
+ //     ypr.roll  = mpu.getRoll();
+ //     ypr.yaw   = mpu.getYaw();
     #else
       // ------ roll, pitch --------------  
       float forceMagnitudeApprox = abs(acc.x) + abs(acc.y) + abs(acc.z);    
@@ -768,7 +768,7 @@ void IMU::update(){
       comTilt.z = -com.x  * cos(ypr.roll)         * sin(ypr.pitch) + com.y * sin(ypr.roll) + com.z * cos(ypr.roll) * cos(ypr.pitch);     
       //comYaw = atan2(com.y, com.x);  // assume pitch, roll are 0
       // complementary filter
-      #if COMPASSMODEL == MMC5883MA
+      #ifdef COMPASSMODEL == MMC5883MA
         comYaw = compass.getHeading();
         ypr.yaw = comYaw;
       #else 
@@ -786,17 +786,17 @@ void IMU::update(){
 
 boolean IMU::init(){
 
-  #if IMUMODEL == MPU9250
+  #ifdef IMUMODEL MPU9250
     delay(500);
-    mpu.setup();
+    // mpu.setup();
 
     delay(500);
 
     // calibrate anytime you want to
-    mpu.calibrateAccelGyro();
+    // mpu.calibrateAccelGyro();
 //    mpu.calibrateMag();
 
-    mpu.printCalibration();
+    // mpu.printCalibration();
 
     hardwareInitialized = true;
   #else    
@@ -806,7 +806,7 @@ boolean IMU::init(){
     initADXL345B();
   #endif
 
-  #if COMPASSMODEL == MMC5883MA
+  #ifdef COMPASSMODEL == MMC5883MA
     compass.init();
   #else 
     initHMC5883L();    
@@ -836,8 +836,8 @@ void IMU::read(){
   }
   callCounter++;    
 
-  #if IMUMODEL == MPU9250
-    mpu.update();
+  #ifdef IMUMODEL == MPU9250
+    //mpu.update();
     //mpu.print();
 
     if (millis() > robot.nextTimeTemperatureCheck){
@@ -857,7 +857,7 @@ void IMU::read(){
     readADXL345B();
   #endif
 
-  #if COMPASSMODEL == MMC5883MA
+  #ifdef COMPASSMODEL == MMC5883MA
     compass.readMags(true); 
     com.x = compass.x();
     com.y = compass.y();

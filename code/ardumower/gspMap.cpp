@@ -84,6 +84,7 @@ int gpsMap::insidePerimeter(float x, float y)
     }
   }
 
+  wn = 0;
   if (_numberOfMainAreas > 0) {
     for (int j=0; j < _numberOfMainAreas; j++) {
       // loop through all edges of the polygon
@@ -124,11 +125,23 @@ int gpsMap::insidePerimeter(float x, float y)
     }
   }
 
-  if (_longGrassTempAreaInUse > 0) {
-    if(wn !=0 && wnTempArea !=0) return wn;
-    else return 0; 
+//  if(_longGrassTempAreaInUse > 0 && (wn !=0 || _wiredPerimeterInUse) && wnTempArea !=0) return 6;
+/*Serial.println(wn);
+Serial.println(wnTempArea);
+Serial.println(_wiredPerimeterInUse);
+Serial.println(_longGrassTempAreaInUse);
+*/
+  if (wn == 0 && _wiredPerimeterInUse) {
+    if(_longGrassTempAreaInUse > 0) return wnTempArea;
   }
-  else return wn;
+
+  if (wn != 0) {
+    if(_longGrassTempAreaInUse > 0) return wnTempArea;
+  }
+
+  if (wn == 0 && _mainAreas[0].numPoints < 3 && _wiredPerimeterInUse) return 6;
+
+  return wn;
 }
 
 
@@ -191,7 +204,31 @@ uint8_t gpsMap::setTemporaryArea( float x, float y) {
       _longGrassTempArea[3] = {x + _tempAreaSize, y - _tempAreaSize};
       _longGrassTempArea[4] = _longGrassTempArea[0];
       _longGrassTempAreaInUse = 1;
+    
+      Serial.print(_longGrassTempArea[0].x,6);
+      Serial.print(",");
+      Serial.println(_longGrassTempArea[0].y,6);
+      Serial.print(_longGrassTempArea[1].x,6);
+      Serial.print(",");
+      Serial.println(_longGrassTempArea[1].y,6);
+      Serial.print(_longGrassTempArea[2].x,6);
+      Serial.print(",");
+      Serial.println(_longGrassTempArea[2].y,6);
+      Serial.print(_longGrassTempArea[3].x,6);
+      Serial.print(",");
+      Serial.println(_longGrassTempArea[3].y,6);
+      Serial.print(_longGrassTempArea[4].x,6);
+      Serial.print(",");
+      Serial.println(_longGrassTempArea[4].y,6);
     }
+}
+
+void gpsMap::wiredPerimeterInUse(float inUse) {
+  _wiredPerimeterInUse = inUse;
+}
+
+void gpsMap::disableTemporaryArea() {
+  _longGrassTempAreaInUse = 0;
 }
 
 int gpsMap::addMainAreaPoint(int areaNumber, float lat, float lon) {
@@ -279,8 +316,9 @@ void gpsMap::deleteExclusionAreaPoints(int areaNumber) {
   loadSaveMapData(false);
 }
 
-void gpsMap::init(float size) {
+void gpsMap::init(float size, float wiredInUse) {
   _tempAreaSize = (float)((float)size/100000); 
+  _wiredPerimeterInUse = wiredInUse;
   loadSaveMapData(true);
 }
 

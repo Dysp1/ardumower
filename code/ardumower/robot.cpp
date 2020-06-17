@@ -319,6 +319,7 @@ void Robot::setup()  {
   loadUserSettings();
 
   //imu.compass.setDeclination(gpsDeclination);
+  gpsPerimeter.init(longGrassTempAreaSize, perimeterUse);
 
   if (!statsOverride) loadSaveRobotStats(true);
   else loadSaveRobotStats(false);

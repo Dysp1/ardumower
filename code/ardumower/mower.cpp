@@ -474,8 +474,6 @@ void Mower::setup(){
 	  
   gps.init();
 
-  gpsPerimeter.init(longGrassTempAreaSize);
-
   Robot::setup();  
 
   if (esp8266Use) {
