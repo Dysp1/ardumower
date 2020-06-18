@@ -941,16 +941,11 @@ void Robot::checkBumpersPerimeter(){
 void Robot::checkPerimeterBoundary(){
   
   if (gpsPerimeterUse) {
-    if (millis() >= nextTimeRotationChange){
-      nextTimeRotationChange = millis() + 60000;
-      rotateLeft = !rotateLeft;
-    }
-
     if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
       if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) != 0) {
         ;
       } else {
-        if(rotateLeft){  
+        if ((rand() % 2) == 0){      
           reverseOrBidir(LEFT);
         } else {
           reverseOrBidir(RIGHT);
@@ -960,11 +955,11 @@ void Robot::checkPerimeterBoundary(){
   }
   
   if (!perimeterUse) return;
-  if (millis() >= nextTimeRotationChange){
+/*  if (millis() >= nextTimeRotationChange){
       nextTimeRotationChange = millis() + 60000;
       rotateLeft = !rotateLeft;
   }
-
+*/
   if (mowPatternCurr == MOW_BIDIR){
     if ((millis() < stateStartTime + 3000)) return;    
     if (!perimeterInside) {
@@ -980,11 +975,11 @@ void Robot::checkPerimeterBoundary(){
         if (millis() >= perimeterTriggerTime){        
           perimeterTriggerTime = 0;
           //if ((rand() % 2) == 0){  
-          if(rotateLeft){  
-            setNextState(STATE_PERI_OUT_REV, LEFT);
+          if ((rand() % 2) == 0){      
+            reverseOrBidir(LEFT);
           } else {
-            setNextState(STATE_PERI_OUT_REV, RIGHT);
-          }
+            reverseOrBidir(RIGHT);
+          }     
         }
       }
     } 
@@ -994,11 +989,11 @@ void Robot::checkPerimeterBoundary(){
           perimeterTriggerTime = 0;
           setMotorPWM( 0, 0, false );
           //if ((rand() % 2) == 0){
-          if (rotateLeft){    
-            setNextState(STATE_PERI_OUT_FORW, LEFT);
+          if ((rand() % 2) == 0){      
+            reverseOrBidir(LEFT);
           } else {
-            setNextState(STATE_PERI_OUT_FORW, RIGHT);
-          }  
+            reverseOrBidir(RIGHT);
+          }     
         }
       }
     }

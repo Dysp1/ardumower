@@ -161,15 +161,15 @@ void Perimeter::matchedFilter(byte idx){
   smoothMag[idx] = 0.99 * smoothMag[idx] + 0.01 * ((float)abs(mag[idx]));
 
   // perimeter inside/outside detection
-  if (getSmoothMagnitude(idx) < timedOutIfBelowSmag) {
+//  if (abs(smoothMag[idx]) < timedOutIfBelowSmag) {
     if (mag[idx] > 0){
-      signalCounter[idx] = min(signalCounter[idx]+1, 15);    
+      signalCounter[idx] = min(signalCounter[idx]+1, 50);    
     } else {
-      signalCounter[idx] = max(signalCounter[idx]-1, -15);    
+      signalCounter[idx] = max(signalCounter[idx]-1, -50);    
     }
     if (signalCounter[idx] < 0){
       lastInsideTime[idx] = millis();
-    } 
+//    } 
   }
   ADCMan.restart(idxPin[idx]);    
   if (idx == 0) callCounter++;
