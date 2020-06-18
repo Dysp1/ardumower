@@ -36,13 +36,13 @@ How to use it (example):
 
 #include <Arduino.h>
 //#define COMPASSMODEL MMC5883MA
-#define IMUMODEL xx //MPU9250
+//#define IMUMODEL MPU9250
 
-#ifdef COMPASSMODEL == MMC5883MA
+#ifdef COMPASSMODEL
   #include "mmc5883ma.h"
 #endif
 
-#ifdef IMUMODEL == MPU9250
+#ifdef IMUMODEL
   #include "MPU9250.h"
 #endif
 
@@ -127,13 +127,13 @@ public:
   point_float_t comScale;
   uint8_t comTemperature;
 
-  #ifdef COMPASSMODEL == MMC5883MA
+  #ifdef COMPASSMODEL
     mmc5883ma compass;
   #endif
 
 
-  #ifdef IMUMODEL == MPU9250
-   // MPU9250 mpu;
+  #ifdef IMUMODEL
+    MPU9250 mpu;
   #endif
 
 

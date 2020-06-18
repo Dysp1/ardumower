@@ -327,14 +327,21 @@ void gpsMap::loadSaveMapData(boolean readflag){
   if (readflag) Serial.println(F("loadSavegpsMapData:: read"));
   else Serial.println(F("loadSavegpsMapData: write"));
 
-  int addr = ADDR_GPSMAP_DATA;
-  short magic = 33;
-  if (!readflag) magic = MAGIC;  
-  eereadwrite(readflag, addr, magic); // magic
-  if ((readflag) && (magic != MAGIC)) {
-    Serial.println(F("EEPROM ERROR DATA: NO gpsMap DATA FOUND"));    
-    return;
+
+  if (readflag) {
+    short magic = 33;
+    int addr = ADDR_GPSMAP_DATA;
+    eeread(addr, magic);
+    if (magic != MAGIC) {
+      Serial.print(F("NO gpsPerimeter DATA FOUND at: "));
+      Serial.println(ADDR_GPSMAP_DATA);
+      return;  
+    }
   }
+
+  short magic = 33;
+  int addr = ADDR_GPSMAP_DATA;
+  eereadwrite(readflag, addr, magic); // magic
 
   eereadwrite(readflag, addr, _numberOfMainAreas);  
 

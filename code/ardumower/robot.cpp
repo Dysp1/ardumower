@@ -741,7 +741,7 @@ void Robot::reverseOrBidir(byte aRollDir) {
       setNextState(STATE_FORWARD, LEFT);
     }
   } else {
-    if (stateCurr == STATE_FORWARD) {
+    if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
       setNextState(STATE_REVERSE, aRollDir);
     } else {
       setNextState(STATE_FORWARD, aRollDir);
@@ -951,9 +951,9 @@ void Robot::checkPerimeterBoundary(){
         ;
       } else {
         if(rotateLeft){  
-          setNextState(STATE_PERI_OUT_REV, LEFT);
+          reverseOrBidir(LEFT);
         } else {
-          setNextState(STATE_PERI_OUT_REV, RIGHT);
+          reverseOrBidir(RIGHT);
         }  
       }
     }
@@ -963,7 +963,7 @@ void Robot::checkPerimeterBoundary(){
   if (millis() >= nextTimeRotationChange){
       nextTimeRotationChange = millis() + 60000;
       rotateLeft = !rotateLeft;
-    }
+  }
 
   if (mowPatternCurr == MOW_BIDIR){
     if ((millis() < stateStartTime + 3000)) return;    
