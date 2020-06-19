@@ -58,6 +58,7 @@ class gpsMap
         
 
         Point _longGrassTempArea[5] = {};
+        Point _longGrassTempAreaMiddlePoint;
         uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
         float _tempAreaSize = 0.0001;
@@ -76,6 +77,7 @@ class gpsMap
 
         int getLongGrassTempAreaInUse();
         void setLongGrassTempAreaSize(float size);
+        float getNewHeadingFromPerimeterDegrees( float lat, float lon);
         void wiredPerimeterInUse(float inUse);
 
         int addMainAreaPoint(int areaNum, float lat, float lon);

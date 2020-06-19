@@ -20,7 +20,8 @@ enum class MFS { M14BITS, M16BITS }; // 0.6mG, 0.15mG per LSB
 template <typename WireType, AFS AFSSEL = AFS::A16G, GFS GFSSEL = GFS::G2000DPS, MFS MFSSEL = MFS::M16BITS>
 class MPU9250_
 {
-    const uint8_t MPU9250_ADDRESS {0x69};  // Device address when ADO = 0
+    //const uint8_t MPU9250_ADDRESS {0x68};  // Device address when ADO = 0
+    const uint8_t MPU9250_ADDRESS {0x69};  // Device address when ADO = 1
     const uint8_t AK8963_ADDRESS {0x0C};   //  Address of magnetometer
 
     const uint8_t MPU9250_WHOAMI_DEFAULT_VALUE {0x71}; // 0x68????
@@ -52,7 +53,7 @@ class MPU9250_
 
     QuaternionFilter qFilter;
 
-    float magnetic_declination = -7.51; // Japan, 24th June
+    float magnetic_declination = 10.48; 
 
 public:
 
@@ -142,13 +143,13 @@ public:
         // gyro will be convert from [deg/s] to [rad/s] inside of this function
         qFilter.update(-a[0], a[1], a[2], g[0], -g[1], -g[2], m[1], -m[0], m[2], q);
 
-        if (!b_ahrs)
-        {
+       // if (!b_ahrs)
+       // {
             tempCount = readTempData();  // Read the adc values
             temperature = ((float) tempCount) / 333.87 + 21.0; // Temperature in degrees Centigrade
-        }
-        else
-        {
+       // }
+       // else
+       // {
             // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
             // In this coordinate system, the positive z-axis is down toward Earth.
             // Yaw is the angle between Sensor x-axis and Earth magnetic North (or true North if corrected for local declination, looking down on the sensor positive yaw is counterclockwise.
@@ -159,7 +160,7 @@ public:
             // applied in the correct order which for this configuration is yaw, pitch, and then roll.
             // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
             updateRPY();
-        }
+        //}
     }
 
 
@@ -175,6 +176,7 @@ public:
     float getAcc(uint8_t i) const { return (i < 3) ? a[i] : 0.f; }
     float getGyro(uint8_t i) const { return (i < 3) ? g[i] : 0.f; }
     float getMag(uint8_t i) const { return (i < 3) ? m[i] : 0.f; }
+    float getTemperature() const { return temperature; }
 
     float getAccBias(uint8_t i) const { return (i < 3) ? accelBias[i] : 0.f; }
     float getGyroBias(uint8_t i) const { return (i < 3) ? gyroBias[i] : 0.f; }

@@ -89,7 +89,8 @@ enum {
   SEN_FREE_WHEEL,        
   SEN_GPS_SPEED,         // If GPS Speed goes below user definable treshold
   SEN_IMU_ACC,           // If IMU acceleration sensors go over user definable tresholds
-  SEN_MOW_POWER          // If mower user more than user definable amount of power, start STATE_CIRCLE
+  SEN_MOW_POWER,          // If mower user more than user definable amount of power, start STATE_CIRCLE
+  SEN_GPSPERIMETER
 };
 
 // actuators
@@ -163,6 +164,7 @@ enum {
   STATE_TILT_STOP,    // tilt sensor activated, stop motors, wait for un-tilt
   STATE_BUMPER_REVERSE,      // drive reverse
   STATE_BUMPER_FORWARD,      // drive forward	
+  STATE_GPSPERIMETER_CHANGE_DIR
 };
 
 // roll types

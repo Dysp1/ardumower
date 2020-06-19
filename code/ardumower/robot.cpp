@@ -36,12 +36,12 @@
 #define ADDR_ROBOT_STATS 800
 
 const char* stateNames[] ={"OFF ", "ROS", "RC  ", "FORW", "ROLL", "REV ", "CIRC", "ERR ", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK",
-  "STREV", "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "TILT", "BUMPREV", "BUMPFORW"};
+  "STREV", "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "TILT", "BUMPREV", "BUMPFORW", "STATE_GPSPERIMETER_CHANGE_DIR"};
 
 const char* sensorNames[] ={"SEN_PERIM_LEFT", "SEN_PERIM_RIGHT", "SEN_PERIM_LEFT_EXTRA", "SEN_PERIM_RIGHT_EXTRA", "SEN_LAWN_FRONT", "SEN_LAWN_BACK", 
 	"SEN_BAT_VOLTAGE", "SEN_CHG_CURRENT", "SEN_CHG_VOLTAGE", "SEN_MOTOR_LEFT", "SEN_MOTOR_RIGHT", "SEN_MOTOR_MOW", "SEN_BUMPER_LEFT", "SEN_BUMPER_RIGHT", 
 	"SEN_DROP_LEFT", "SEN_DROP_RIGHT", "SEN_SONAR_CENTER", "SEN_SONAR_LEFT", "SEN_SONAR_RIGHT", "SEN_BUTTON", "SEN_IMU", "SEN_MOTOR_MOW_RPM", "SEN_RTC",
-  "SEN_RAIN", "SEN_TILT", "SEN_FREE_WHEEL", "SEN_GPS_SPEED", "SEN_IMU_ACC", "SEN_MOW_POWER"};
+  "SEN_RAIN", "SEN_TILT", "SEN_FREE_WHEEL", "SEN_GPS_SPEED", "SEN_IMU_ACC", "SEN_MOW_POWER", "SEN_GPSPERIMETER"};
 
 const char* errorNames[] ={"ERR_MOTOR_LEFT", "ERR_MOTOR_RIGHT", "ERR_MOTOR_MOW", "ERR_MOW_SENSE", "ERR_IMU_COMM", "ERR_IMU_TILT", "ERR_RTC_COMM",
   "ERR_RTC_DATA", "ERR_PERIMETER_TIMEOUT", "ERR_TRACKING", "ERR_ODOMETRY_LEFT", "ERR_ODOMETRY_RIGHT", "ERR_BATTERY", "ERR_CHARGER", "ERR_GPS_COMM",
@@ -797,9 +797,9 @@ void Robot::checkCurrent(){
   if ( motorMowCircleTriggerPower > 3
       && motorMowSense >= motorMowCircleTriggerPower
       && stateCurr == STATE_FORWARD
-      && millis() >= stateStartTime + 7000
+      && millis() >= stateStartTime + 5000
       && perimeter.isInside(0)
-      && abs(perimeterMag) < 800
+      && abs(perimeterMag) < 500
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
        setSensorTriggered(SEN_MOW_POWER);
        gpsPerimeter.setTemporaryArea(gpsLat, gpsLon);
@@ -945,11 +945,8 @@ void Robot::checkPerimeterBoundary(){
       if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) != 0) {
         ;
       } else {
-        if ((rand() % 2) == 0){      
-          reverseOrBidir(LEFT);
-        } else {
-          reverseOrBidir(RIGHT);
-        }  
+        setSensorTriggered(SEN_GPSPERIMETER);
+        setNextState(STATE_GPSPERIMETER_CHANGE_DIR, LEFT);
       }
     }
   }
@@ -1281,6 +1278,14 @@ void Robot::setNextState(byte stateNew, byte dir){
       stateNew = STATE_STATION_CHECK;         
     } 
   }  
+
+  if (stateNew == STATE_GPSPERIMETER_CHANGE_DIR) {
+    stateStartTime = millis();
+    stateEndTime = 0;
+    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;                    
+    return;
+  }
+  
   // evaluate new state
   stateNext = stateNew;
   rollDir = dir;
@@ -1502,7 +1507,7 @@ void Robot::loop()  {
 
   if (imuUse) { 
     if (millis() > nextTimeIMU) {
-      nextTimeIMU = millis() + 500;
+      nextTimeIMU = millis() + 100;
       imu.update();  
       checkIfImuAccelerationMaxed();
     }
@@ -1714,6 +1719,69 @@ void Robot::loop()  {
         }        
       }
       break;
+    case STATE_GPSPERIMETER_CHANGE_DIR:
+      checkErrorCounter();    
+      checkTimer();
+      checkRain();
+      checkCurrent();
+      checkFreeWheel();            
+      checkBumpers();      
+      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
+      checkSonar();             
+      //checkPerimeterBoundary(); 
+      checkLawn();      
+      checkTimeout();    
+
+      if (millis() > stateEndTime) setNextState(STATE_FORWARD,0);
+      else if (stateEndTime > 0) break;
+
+      if (millis() >= stateStartTime + motorZeroSettleTime + 300 + motorZeroSettleTime){
+        float newHeading = gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
+        float currentHeading = imu.ypr.yaw/PI*180.0;
+
+        float first = abs(newHeading - currentHeading);
+        float second = abs(newHeading - currentHeading + 360);
+        float third = abs(newHeading - currentHeading - 360);
+        int turnClockwise = 0;
+
+        if (first < second && first < third && (newHeading - currentHeading) > 0) turnClockwise = 1;
+        else if (second < first && second < third && (newHeading - currentHeading + 360) > 0) turnClockwise = 1;
+        else if (third < first && third < second && (newHeading - currentHeading - 360) > 0) turnClockwise = 1;
+
+        float minimumAngle = min(first, second);
+        minimumAngle = min(minimumAngle, third);
+        if (minimumAngle <= 20) {
+          motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+          motorRightSpeedRpmSet = motorSpeedMaxRpm;                    
+          stateEndTime = millis() + 500;
+        } else {
+          if (turnClockwise) {
+            motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+            motorRightSpeedRpmSet = -motorSpeedMaxRpm;                    
+          } else {
+            motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
+            motorRightSpeedRpmSet = motorSpeedMaxRpm;                    
+          }
+        }
+
+        break; 
+      }
+
+      if (millis() >= stateStartTime + motorZeroSettleTime + 300){
+        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+        break ;  
+      }
+
+      if (millis() >= stateStartTime + motorZeroSettleTime) {
+        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;                    
+        break
+;      } 
+
+
+//motorReverseTime
+// + motorZeroSettleTime;
+
+      break;
     case STATE_ROLL_WAIT:
       // making a roll (left/right)            
       //if (abs(distancePI(imuYaw, imuRollHeading)) < PI/36) setNextState(STATE_OFF,0);				
@@ -1732,6 +1800,7 @@ void Robot::loop()  {
       checkPerimeterBoundary(); 
       checkLawn();      
       checkTimeout();     
+      if (currentCirclingStep < 1) rollDir = ((rand() % 2) == 0);
       
       if (millis() >= mowIncreaseCircleRadiusTime) {
         float cmsPerSecond = odometryTicksPerRevolution*(motorSpeedMaxRpm/1.25)/60/odometryTicksPerCm;
@@ -1741,9 +1810,14 @@ void Robot::loop()  {
 
         float secondsToCompleteOuterWheelCircle = outerWheelCircleDiameter/cmsPerSecond;
 
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = (int)(innerWheelCircleDiameter/secondsToCompleteOuterWheelCircle/cmsPerSecond*motorSpeedMaxRpm/1.25);
-
+        if (rollDir){      
+          motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+          motorRightSpeedRpmSet = (int)(innerWheelCircleDiameter/secondsToCompleteOuterWheelCircle/cmsPerSecond*motorSpeedMaxRpm/1.25);
+        } else {
+          motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+          motorLeftSpeedRpmSet = (int)(innerWheelCircleDiameter/secondsToCompleteOuterWheelCircle/cmsPerSecond*motorSpeedMaxRpm/1.25);
+        }
+        
         mowIncreaseCircleRadiusTime = millis() + secondsToCompleteOuterWheelCircle*1000;
         currentCirclingStep = currentCirclingStep + 1;
       }
@@ -1874,7 +1948,7 @@ void Robot::loop()  {
       if (batMonitor){
         if (chgVoltage > 5.0) {
           if (batVoltage < startChargingIfBelow 
-             && (millis()-stateStartTime>2000) 
+//             && (millis()-stateStartTime>2000) 
              && (millis() >= batteryNextChargeAfterFull)) { // only try to start charging again if it's over 30mins from last time battery full
             batteryNextChargeAfterFull = 0; 
             setNextState(STATE_STATION_CHARGING,0);

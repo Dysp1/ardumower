@@ -193,18 +193,28 @@ uint8_t gpsMap::addMainAreaPointDELETEME( float x, float y) {
     return 0;
 }
 */
+
+float gpsMap::getNewHeadingFromPerimeterDegrees( float lat, float lon) {
+  if (_longGrassTempAreaInUse > 0) {
+    float degrees = atan2( (_longGrassTempAreaMiddlePoint.y - lon ), (_longGrassTempAreaMiddlePoint.x - lat) )/PI*180.0;
+    if (degrees < 0) degrees += 360; 
+    return degrees;
+  }
+}
+
 uint8_t gpsMap::setTemporaryArea( float x, float y) {
     _tempAreaStartTime = millis(); // We will reset the timer everytime we find long grass in the temp area.
     if (_longGrassTempAreaInUse > 0) {  // we are already working on temp area, do not change temp area coordinates
       return 1;  
     } else {
+      _longGrassTempAreaMiddlePoint = {x,y};
       _longGrassTempArea[0] = {x - _tempAreaSize, y - _tempAreaSize};
       _longGrassTempArea[1] = {x - _tempAreaSize, y + _tempAreaSize};
       _longGrassTempArea[2] = {x + _tempAreaSize, y + _tempAreaSize};
       _longGrassTempArea[3] = {x + _tempAreaSize, y - _tempAreaSize};
       _longGrassTempArea[4] = _longGrassTempArea[0];
       _longGrassTempAreaInUse = 1;
-    
+    /*
       Serial.print(_longGrassTempArea[0].x,6);
       Serial.print(",");
       Serial.println(_longGrassTempArea[0].y,6);
@@ -220,6 +230,7 @@ uint8_t gpsMap::setTemporaryArea( float x, float y) {
       Serial.print(_longGrassTempArea[4].x,6);
       Serial.print(",");
       Serial.println(_longGrassTempArea[4].y,6);
+    */
     }
 }
 
@@ -409,8 +420,21 @@ void gpsMap::doUnitTest() {
   setTemporaryArea(10.0007, 10.0007);
 
   doTest(4,10.00071,10.00071, false); // inside of temporary area
-  
+
   doTest(5,10.00095,10.00095, true);  // outside of temporary area
+
+  Serial.print("Test 6 - Heading from South to temp area middle (waiting 0) got:");
+  Serial.println(getNewHeadingFromPerimeterDegrees(10.00065,10.00070));
+
+  Serial.print("Test 7 - Heading from West to temp area middle (waiting 90) got:");
+  Serial.println(getNewHeadingFromPerimeterDegrees(10.00070,10.00065));
+
+  Serial.print("Test 8 - Heading from North to temp area middle (waiting 180) got:");
+  Serial.println(getNewHeadingFromPerimeterDegrees(10.00075,10.00070));
+  
+  Serial.print("Test 9 - Heading from East to temp area middle (waiting 270) got:");
+  Serial.println(getNewHeadingFromPerimeterDegrees(10.00070,10.00075));
+
   _unitTesting = false;
 }
 
@@ -443,184 +467,3 @@ void gpsMap::doTest(uint8_t testNum, float lat, float lon, bool expectZero) {
   }
   Serial.println(" ");
 }
-
-
-
-
-/*
-  Ardumower (www.ardumower.de)
-  Copyright (c) 2019 by Marko Riihimaki
-  
-  Private-use only! (you need to ask for a commercial-use)
- 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  
-  Private-use only! (you need to ask for a commercial-use)
-*/
-
-/*
-#include "gpsMap.h"
-//#include <Wire.h>
-//#include "drivers.h"
-//#include "i2c.h"
-#include "config.h"
-#include "flashmem.h"
-//#include "buzzer.h"
-
-//#include <map>
-
-
-
-
-
-
-// gpsMapData is used to map the yard which we are cutting
-//
-// Each point in the map is referenced by GPS latitude and longitude.
-// 5th decimal point is used to reach about 1 - 1,1 meters between map points
-//
-// gpsMapData integer is used to save 6 values for each point in map:
-//  1 = is within perimeter
-//  2 = is edge node of perimeter
-//  4 = connected to adjacent point to north
-//  8 = connected to adjacent point to east
-// 16 = connected to adjacent point to south
-// 32 = connected to adjacent point to west
-//std::map<std::pair<float,float>, int> gpsMapData;
-
-struct innerData {
-  int32_t longitude;
-  uint8_t pointData;
-};
- 
-struct outerData {
-  int32_t latitude;
-  innerData innerData222[3];
-};
- 
-//outerData gpsMapData[3]; 
-
-//gpsMapData[0].latitude = 0;
-//gpsMapData[0].innerData.longitude = 0;
-
-gpsMap::gpsMap() 
-{
-}
-
-//
-// public methods
-//
-void gpsMap::init(){
-  loadSaveMapData(true);
-  boolean gpsMapDataChanged = false;
-  float lastPointLongitude = 0.0;
-  float lastPointLatitude = 0.0;
-  unsigned long nextgpsMapSaveTime = 0;
-}
-
-
-void gpsMap::printMap() {
-  for(auto it = gpsMapData.begin(); it != gpsMapData.end(); ++it)
-  {
-    Console.print(it->first.first);
-    Console.print(",");
-    Console.print(it->first.second);
-    Console.print(",");
-
-    if ( bitOfPointIsOn(it->first.first,it->first.second,INSIDE_PERIMETER   ) ) Console.print("I");
-    if ( bitOfPointIsOn(it->first.first,it->first.second,PERIMETER_EDGE_NODE) ) Console.print("P");
-    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_NORTH    ) ) Console.print("N");
-    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_EAST     ) ) Console.print("E");
-    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_SOUTH    ) ) Console.print("S");
-    if ( bitOfPointIsOn(it->first.first,it->first.second,CONNECTED_WEST     ) ) Console.print("W");
-
-    Console.println("");
-  }
-}
-
-boolean gpsMap::bitOfPointIsOn(float latitude, float longitude, int bitToCompare) {
-//  return (boolean)((gpsMapData[std::make_pair(latitude,longitude)] >> bitToCompare) & 1);
-}
-
-void gpsMap::setBitOnOfPoint(float latitude, float longitude, int bitToSet) {
-  // If the point is not yet in the map, add it to map
-  if (gpsMapData[std::make_pair(latitude,longitude)]) {
-    gpsMapData[std::make_pair(latitude,longitude)] = 0;
-    gpsMapDataChanged = true;
-  }
-
-  // if the bit that we are trying to set is not yet 1, set it to 1
-  if ( !bitOfPointIsOn(latitude,longitude,bitToSet) ){
-    gpsMapData[std::make_pair(latitude,longitude)] |= 1UL << bitToSet;
-    gpsMapDataChanged = true;
-  }
-
-  // If the map has changed during the last xxx ms, save it to memory
-  if (gpsMapDataChanged && millis() > nextgpsMapSaveTime) {
-    nextgpsMapSaveTime = millis() + 10000;
-    loadSaveMapData(false);
-  }
-}
-
-void gpsMap::setPerimeterEdgePoint(float latitude, float longitude){
-  setBitOnOfPoint(latitude,longitude,PERIMETER_EDGE_NODE);
-}
-
-void gpsMap::checkPoint(float latitude, float longitude){
-
-  setBitOnOfPoint(latitude,longitude,INSIDE_PERIMETER);
-
-  if ( lastPointLongitude - longitude == 0.00001 && lastPointLatitude - latitude == 0 ) {
-    setBitOnOfPoint(latitude,longitude,CONNECTED_WEST);
-    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_EAST);
-  }
-  
-  if ( lastPointLongitude - longitude == -0.00001 && lastPointLatitude - latitude == 0 ) {
-    setBitOnOfPoint(latitude,longitude,CONNECTED_EAST);
-    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_WEST);
-  }
-  
-  if ( lastPointLongitude - longitude == 0 && lastPointLatitude - latitude == 0.00001 ) {
-    setBitOnOfPoint(latitude,longitude,CONNECTED_NORTH);
-    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_SOUTH);
-  }
-
-  if ( lastPointLongitude - longitude == 0 && lastPointLatitude - latitude == -0.00001 ) {
-    setBitOnOfPoint(latitude,longitude,CONNECTED_SOUTH);
-    setBitOnOfPoint(lastPointLatitude,lastPointLongitude,CONNECTED_NORTH);
-  }
-
-}
-
-void gpsMap::loadSaveMapData(boolean readflag){
-  if (readflag) Console.println(F("loadSavegpsMapData:: read"));
-    else Console.println(F("loadSavegpsMapData: write"));
-  int addr = ADDR_gpsMap_DATA;
-  short magic = 0;
-  if (!readflag) magic = MAGIC;  
-  eereadwrite(readflag, addr, magic); // magic
-  if ((readflag) && (magic != MAGIC)) {
-    Console.println(F("EEPROM ERROR DATA: NO gpsMap DATA FOUND"));    
-    return;
-  }
-
-  eereadwrite(readflag, addr, chargingLatitude);  
-  eereadwrite(readflag, addr, chargingLongitude);  
-  eereadwrite(readflag, addr, gpsMapData);  
-  Console.print(F("loadSaveMapData addrstop="));
-  Console.println(addr);
-  
-}
-
-*/

@@ -870,8 +870,8 @@ void RemoteControl::sendImuMenu(boolean update){
   serialPort->print(F("|g00~Use "));
   sendYesNo(robot->imuUse);
   serialPort->print(F("|g01~Yaw "));
-  float myHeading2 = (  robot->imu.ypr.yaw); // /PI*180);
-  //if (myHeading2 < 0) myHeading2 += 360;
+  float myHeading2 = (robot->imu.ypr.yaw/PI*180);
+  if (myHeading2 < 0) myHeading2 += 360;
   serialPort->print(myHeading2);
   serialPort->print(F(" deg"));
 

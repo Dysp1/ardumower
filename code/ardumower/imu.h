@@ -35,16 +35,8 @@ How to use it (example):
 #define IMU_H
 
 #include <Arduino.h>
-//#define COMPASSMODEL MMC5883MA
-//#define IMUMODEL MPU9250
 
-#ifdef COMPASSMODEL
-  #include "mmc5883ma.h"
-#endif
-
-#ifdef IMUMODEL
-  #include "MPU9250.h"
-#endif
+#include "MPU9250.h"
 
 // IMU state
 enum { IMU_RUN, IMU_CAL_COM };
@@ -98,76 +90,36 @@ public:
   // --------- gyro state -----------------------------
   point_float_t gyro;   // gyro sensor data (degree)    
   point_float_t gyroOfs; // gyro calibration data
-  float gyroNoise ;      // gyro noise
-  int gyroCounter ; 
-  boolean useGyroCalibration ; // gyro calibration flag
   unsigned long lastGyroTime;
   // --------- acceleration state ---------------------
   point_float_t acc;  // acceleration sensor data
-  point_float_t accGrav;  // acceleration sensor data (gravity corrected)
-  point_float_t accMin;
-  point_float_t accMax;
-  int accelCounter ;
-  boolean useAccCalibration ; 
-  float accPitch ;
-  float accRoll ;
   point_float_t accOfs;
   point_float_t accScale;
-  int calibAccAxisCounter;
   // calibrate acceleration sensor  
   boolean calibAccNextAxis();  
   boolean calibrationAvail;
   // --------- compass state --------------------------  
   point_float_t com; // compass sensor data (raw)
-  point_float_t comLast;
-  point_float_t comMin; // compass sensor data (raw)
-  point_float_t comMax; // compass sensor data (raw)  
-  point_float_t comTilt; // compass sensor data (tilt corrected)
   point_float_t comOfs;
   point_float_t comScale;
   uint8_t comTemperature;
 
-  #ifdef COMPASSMODEL
-    mmc5883ma compass;
-  #endif
-
-
-  #ifdef IMUMODEL
-    MPU9250 mpu;
-  #endif
-
-
+  MPU9250 mpu;
+  
   float comYaw;         // compass heading (radiant, raw)
   boolean useComCalibration;
   // calibrate compass sensor  
   void calibComStartStop();  
   void calibComUpdate();    
   boolean newMinMaxFound();
-  // --------------------------------------------------
-  // helpers
-  float scalePI(float v);
-  float scale180(float v);
-  float distancePI(float x, float w);
-  float distance180(float x, float w);
-  float fusionPI(float w, float a, float b);    
 private:  
   void read();
   void loadSaveCalib(boolean readflag);  
-  void calibGyro();
   void loadCalib();  
   // print IMU values
   void printPt(point_float_t p);
   void printCalib();
   void saveCalib();
-  float sermin(float oldvalue, float newvalue);
-  float sermax(float oldvalue, float newvalue);
-  // hardware
-  void initADXL345B();
-  boolean initL3G4200D();
-  void initHMC5883L();
-  void readL3G4200D(boolean useTa);
-  void readADXL345B();
-  void readHMC5883L();
 
   boolean foundNewMinMax;
 };
