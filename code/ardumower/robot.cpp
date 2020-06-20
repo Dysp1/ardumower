@@ -248,7 +248,7 @@ Robot::Robot(){
   rmcsInfoLastSendOdometry = 0;
   rmcsInfoLastSendPeri = 0;
   gpsPerimeterRollState = 0;
-
+  gpsPerimeterRollSubStateStartTime = 0;
 }
 
 const char *Robot::mowPatternName(){
@@ -949,25 +949,19 @@ void Robot::checkPerimeterBoundary(){
   
   if (gpsPerimeterUse) {
     if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
-      if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) != 0) {
-        ;
-      } else {
-        if (stateCurr == STATE_GPSPERIMETER_CHANGE_DIR) {
-          ;
-        } else {
+      if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) == 0) {
           setSensorTriggered(SEN_GPSPERIMETER);
           setNextState(STATE_GPSPERIMETER_CHANGE_DIR, rollDir);
-        }
       }
     }
   }
   
   if (!perimeterUse) return;
-/*  if (millis() >= nextTimeRotationChange){
+  if (millis() >= nextTimeRotationChange){
       nextTimeRotationChange = millis() + 60000;
       rotateLeft = !rotateLeft;
   }
-*/
+
   if (mowPatternCurr == MOW_BIDIR){
     if ((millis() < stateStartTime + 3000)) return;    
     if (!perimeterInside) {
@@ -1274,21 +1268,26 @@ const char* Robot::sensorName(byte nameForThisSensor){
 // called *ONCE* to set to a *NEW* state
 void Robot::setNextState(byte stateNew, byte dir){
   unsigned long stateTime = millis() - stateStartTime;
+  
   if (stateNew == stateCurr) return;
+  
   // state correction  
 	if ((stateNew == STATE_ERROR) && (stateCurr == STATE_STATION_CHARGING)) {
 		stateNew = STATE_STATION_CHARGING; // do not enter ERROR state when charging
 	}
+  
   if ((stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_PERI_TRACK)) {
     if (stateNew == STATE_ROLL) stateNew = STATE_PERI_ROLL;
     if (stateNew == STATE_REVERSE) stateNew = STATE_PERI_REV;    
-  }  
+  }
+
   if (stateNew == STATE_FORWARD) {    
     if ((stateCurr == STATE_STATION_REV) ||(stateCurr == STATE_STATION_ROLL) || (stateCurr == STATE_STATION_CHECK) ) return;  
     if ((stateCurr == STATE_STATION) || (stateCurr == STATE_STATION_CHARGING)) {
       stateNew = STATE_STATION_CHECK;         
     } 
-  }    
+  }
+
   // evaluate new state
   stateNext = stateNew;
   rollDir = dir;
@@ -1296,128 +1295,124 @@ void Robot::setNextState(byte stateNew, byte dir){
     motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;                    
     stateEndTime = millis() + stationRevTime + motorZeroSettleTime;                     
 		setActuator(ACT_CHGRELAY, 0);         
-  } else if (stateNew == STATE_STATION_ROLL){
-    motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-    motorRightSpeedRpmSet = -motorSpeedMaxRpm;						      
-    stateEndTime = millis() + stationRollTime + motorZeroSettleTime;                     
-  } else if (stateNew == STATE_STATION_FORW){
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;      
-    motorMowEnable = true;    
-    stateEndTime = millis() + stationForwTime + motorZeroSettleTime;                     
-  } else if (stateNew == STATE_STATION_CHECK){
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/2; 
-    stateEndTime = millis() + stationCheckTime + motorZeroSettleTime; 
-		setActuator(ACT_CHGRELAY, 0);         
-    motorMowEnable = false;
+  } else if (stateNew == STATE_STATION_ROLL) {
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm;
+      motorRightSpeedRpmSet = -motorSpeedMaxRpm;						      
+      stateEndTime = millis() + stationRollTime + motorZeroSettleTime;                     
+    } else if (stateNew == STATE_STATION_FORW) {
+        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;      
+        motorMowEnable = true;    
+        stateEndTime = millis() + stationForwTime + motorZeroSettleTime;                     
+      } else if (stateNew == STATE_STATION_CHECK) {
+          motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/2; 
+          stateEndTime = millis() + stationCheckTime + motorZeroSettleTime; 
+		      setActuator(ACT_CHGRELAY, 0);         
+          motorMowEnable = false;
+        } else if (stateNew == STATE_PERI_ROLL) {    
+            stateEndTime = millis() + perimeterTrackRollTime + motorZeroSettleTime;                     
+            if (dir == RIGHT){
+	            motorLeftSpeedRpmSet = motorSpeedMaxRpm/2;
+	            motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;						
+            } else {
+              motorRightSpeedRpmSet = motorSpeedMaxRpm/2;
+              motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;	
+            }
+          } 
   
-  } else if (stateNew == STATE_PERI_ROLL) {    
-    stateEndTime = millis() + perimeterTrackRollTime + motorZeroSettleTime;                     
-    if (dir == RIGHT){
-	    motorLeftSpeedRpmSet = motorSpeedMaxRpm/2;
-	    motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;						
-      } else {
-	    motorRightSpeedRpmSet = motorSpeedMaxRpm/2;
-	    motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;	
-      }
-  } if (stateNew == STATE_PERI_REV) {
+  
+  if (stateNew == STATE_PERI_REV) {
     motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/2;                    
     stateEndTime = millis() + perimeterTrackRevTime + motorZeroSettleTime;                     
-  }
-  else if (stateNew == STATE_PERI_OUT_FORW){
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;      
-    stateEndTime = millis() + perimeterOutRevTime + motorZeroSettleTime + 1000;   
-  }
-  else if (stateNew == STATE_PERI_OUT_REV){
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;                    
-    stateEndTime = millis() + perimeterOutRevTime + motorZeroSettleTime; 
-  }
-  else if (stateNew == STATE_PERI_OUT_ROLL){
-  
-  
-  
-  	//Ehl
-	//imuDriveHeading = scalePI(imuDriveHeading + PI); // toggle heading 180 degree (IMU)
-	if (imuRollDir == LEFT)
-	{
-		imuDriveHeading = scalePI(imuDriveHeading - random((PI / 2), PI )); // random toggle heading between 90 degree and 180 degrees (IMU)
-		imuRollHeading = scalePI(imuDriveHeading);
-		imuRollDir = rollDir;
-	}
-	else
-	{
-		imuDriveHeading = scalePI(imuDriveHeading + random((PI / 2), PI )); // random toggle heading between 90 degree and 180 degrees (IMU)
-		imuRollHeading = scalePI(imuDriveHeading);
-		imuRollDir = rollDir;
-	}
-	stateEndTime = millis() + random(perimeterOutRollTimeMin,perimeterOutRollTimeMax) + motorZeroSettleTime;
+  } else if (stateNew == STATE_PERI_OUT_FORW) {
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;      
+      stateEndTime = millis() + perimeterOutRevTime + motorZeroSettleTime + 1000;   
+    } else if (stateNew == STATE_PERI_OUT_REV) {
+        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;                    
+        stateEndTime = millis() + perimeterOutRevTime + motorZeroSettleTime; 
+      } else if (stateNew == STATE_PERI_OUT_ROLL) {
+    	    //Ehl
+          //imuDriveHeading = scalePI(imuDriveHeading + PI); // toggle heading 180 degree (IMU)
+	        if (imuRollDir == LEFT) {
+		        imuDriveHeading = scalePI(imuDriveHeading - random((PI / 2), PI )); // random toggle heading between 90 degree and 180 degrees (IMU)
+		        imuRollHeading = scalePI(imuDriveHeading);
+		        imuRollDir = rollDir;
+	        } else	{
+		        imuDriveHeading = scalePI(imuDriveHeading + random((PI / 2), PI )); // random toggle heading between 90 degree and 180 degrees (IMU)
+		        imuRollHeading = scalePI(imuDriveHeading);
+		        imuRollDir = rollDir;
+	        }
+      
+          stateEndTime = millis() + random(perimeterOutRollTimeMin,perimeterOutRollTimeMax) + motorZeroSettleTime;
 	
-  if (dir == RIGHT)
-	{
-		motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-		motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;           
-	}
-	else
-	{
-		motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-		motorLeftSpeedRpmSet = -motorRightSpeedRpmSet; 
-	}
-  }
-  else if (stateNew == STATE_FORWARD){      
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;  
-    statsMowTimeTotalStart = true;            
-		setActuator(ACT_CHGRELAY, 0);         
-  } 
-  else if (stateNew == STATE_CIRCLE){  
-    if (rollDir == LEFT) {
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-      motorRightSpeedRpmSet = 0;
-    } else {
-      motorLeftSpeedRpmSet = 0;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-    }   
-    mowIncreaseCircleRadiusTime = 0;
-    currentCirclingStep = 0;
-    statsMowTimeTotalStart = true;            
-    setActuator(ACT_CHGRELAY, 0);         
-  } 
-  else if (stateNew == STATE_REVERSE)  {
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;                    
-    stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
-  }   
-	else if (stateNew == STATE_BUMPER_REVERSE)  {
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.25;
-    stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
-  }
-  else if (stateNew == STATE_BUMPER_FORWARD)  {
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.25;
-    stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
-  }  
-	else if (stateNew == STATE_ROLL) {                  
-      imuDriveHeading = scalePI(imuDriveHeading + PI); // toggle heading 180 degree (IMU)
-      if (imuRollDir == LEFT){
-        imuRollHeading = scalePI(imuDriveHeading - PI/20);        
-        imuRollDir = RIGHT;
-      } else {
-        imuRollHeading = scalePI(imuDriveHeading + PI/20);        
-        imuRollDir = LEFT;
-      }      
-      stateEndTime = millis() + random(motorRollTimeMin,motorRollTimeMax) + motorZeroSettleTime;
-      if (dir == RIGHT){
-	     motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-	     motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;						
-      } else {
-	     motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-	     motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;	
-      }      
-  }  
+          if (dir == RIGHT) {
+		        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+		        motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;           
+	        } else {
+            motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+		        motorLeftSpeedRpmSet = -motorRightSpeedRpmSet; 
+	        }
+        } else if (stateNew == STATE_FORWARD) {      
+            motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;  
+            statsMowTimeTotalStart = true;            
+		        setActuator(ACT_CHGRELAY, 0);         
+          } else if (stateNew == STATE_CIRCLE) {  
+              if (rollDir == LEFT) {
+                motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+                motorRightSpeedRpmSet = 0;
+              } else {
+                motorLeftSpeedRpmSet = 0;
+                motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+              }   
+              mowIncreaseCircleRadiusTime = 0;
+              currentCirclingStep = 0;
+              statsMowTimeTotalStart = true;            
+              setActuator(ACT_CHGRELAY, 0);         
+            } else if (stateNew == STATE_GPSPERIMETER_CHANGE_DIR) {
+                stateEndTime = millis() + 30000;
+                gpsPerimeterRollState = 0;
+                gpsPerimeterRollSubStateStartTime = millis();
+                gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
+                motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
+              } else if (stateNew == STATE_REVERSE) {
+                  motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;                    
+                  stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
+                } else if (stateNew == STATE_BUMPER_REVERSE) {
+                    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.25;
+                    stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
+                  } else if (stateNew == STATE_BUMPER_FORWARD) {
+                      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.25;
+                      stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
+                    } else if (stateNew == STATE_ROLL) {                  
+                        imuDriveHeading = scalePI(imuDriveHeading + PI); // toggle heading 180 degree (IMU)
+                        if (imuRollDir == LEFT){
+                          imuRollHeading = scalePI(imuDriveHeading - PI/20);        
+                          imuRollDir = RIGHT;
+                        } else {
+                          imuRollHeading = scalePI(imuDriveHeading + PI/20);        
+                          imuRollDir = LEFT;
+                        }      
+
+                        stateEndTime = millis() + random(motorRollTimeMin,motorRollTimeMax) + motorZeroSettleTime;
+            
+                        if (dir == RIGHT){
+	                        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+	                        motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;						
+                        } else {
+                          motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+                          motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;	
+                        }      
+                      }  
+  
   if (stateCurr == STATE_STATION_CHARGING) {
 		// always switch off charging relay if leaving state STATE_STATION_CHARGING
 		setActuator(ACT_CHGRELAY, 0); 
 	}
+  
   if (stateNew == STATE_REMOTE){
     motorMowEnable = true;
     //motorMowModulate = false;              
   } 
+  
   if (stateNew == STATE_STATION){
     setMotorPWM(0,0,false);
     setActuator(ACT_CHGRELAY, 0); 
@@ -1426,20 +1421,24 @@ void Robot::setNextState(byte stateNew, byte dir){
     loadSaveRobotStats(false);        //save robot stats
        
   }
+  
   if (stateNew == STATE_STATION_CHARGING){
     setActuator(ACT_CHGRELAY, 1); 
     setDefaults();        
   }
+  
   if (stateNew == STATE_OFF){
     setActuator(ACT_CHGRELAY, 0);
     setDefaults();   
     statsMowTimeTotalStart = false; // stop stats mowTime counter
     loadSaveRobotStats(false);      //save robot stats
   } 
+  
   if (stateNew == STATE_TILT_STOP){
      motorMowEnable = false;    
      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
   }
+  
   if (stateNew == STATE_ERROR){
     motorMowEnable = false;    
     motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
@@ -1447,11 +1446,13 @@ void Robot::setNextState(byte stateNew, byte dir){
     statsMowTimeTotalStart = false;  
     //loadSaveRobotStats(false);   
   }
+  
   if (stateNew == STATE_PERI_FIND){
     // find perimeter  => drive half speed      
     motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;    
     //motorMowEnable = false;     // FIXME: should be an option?
   }
+  
   if (stateNew == STATE_PERI_TRACK){        
     //motorMowEnable = false;     // FIXME: should be an option?
     perimeterMagMaxValue = perimeterMagMedian.getHighest();
@@ -1459,18 +1460,10 @@ void Robot::setNextState(byte stateNew, byte dir){
     perimeterPID.reset();
     //beep(6);
   }   
+  
   if (stateNew != STATE_REMOTE){
     motorMowSpeedPWMSet = motorMowSpeedMaxPwm;
   }      
-
-  if (stateNew == STATE_GPSPERIMETER_CHANGE_DIR) {
-    stateStartTime = millis();
-    stateEndTime = millis() + 30000;
-    gpsPerimeterRollState = 0;
-    gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
-    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
-  }
-
 
   sonarObstacleTimeout = 0;
   // state has changed    
@@ -1490,6 +1483,7 @@ void Robot::setNextState(byte stateNew, byte dir){
   else{
     rmcsPrintInfo(Console);
   }
+
 }// -------------------------- ENDE void Robot::setNextState(byte stateNew, byte dir)
 
 /* markor debug
@@ -1548,16 +1542,14 @@ void Robot::loop()  {
 	   nextTimeRMCSInfo = millis() + 100;
      rmcsPrintInfo(Console);
   }
+
   if (millis() >= nextTimeInfo) {        
     nextTimeInfo = millis() + 1000; 
-
-  //gpsPerimeter.doUnitTest();
-
-	if (rmcsUse == false) { 
-	  printInfo(Console); 
-    printErrors();
-	}
- 
+    //gpsPerimeter.doUnitTest();
+    if (rmcsUse == false) { 
+      printInfo(Console); 
+      printErrors();
+    }
     if (stateCurr != STATE_ROS && rmcsUse == false) {
       printInfo(Console);    
       printErrors();
@@ -1567,17 +1559,20 @@ void Robot::loop()  {
       else setActuator(ACT_LED, LOW);        */
     //checkErrorCounter();  
     if (stateCurr == STATE_REMOTE) printRemote();    
+
     loopsPerSec = loopsPerSecCounter;					
 		if (stateCurr != STATE_ERROR){		
 			if (loopsPerSec < 10) { // loopsPerSec too low
 				if (loopsPerSecLowCounter < 255) loopsPerSecLowCounter++;
 			} else if (loopsPerSecLowCounter > 0) loopsPerSecLowCounter--; // loopsPerSec OK
-			if (loopsPerSecLowCounter > 10) { // too long I2C cables can be a reason for this
-				Console.println(F("Error: loopsPerSec too low (check I2C cables)"));
-				addErrorCounter(ERR_CPU_SPEED);
-				setNextState(STATE_ERROR,0);    //mower is switched into ERROR
-			}
+      
+      if (loopsPerSecLowCounter > 10) { // too long I2C cables can be a reason for this
+			  Console.println(F("Error: loopsPerSec too low (check I2C cables)"));
+			  addErrorCounter(ERR_CPU_SPEED);
+			  setNextState(STATE_ERROR,0);    //mower is switched into ERROR
+      }
 		} else loopsPerSecLowCounter = 0; // reset counter to zero
+    
     if (loopsPerSec > 0) loopsTa = 1000.0 / ((double)loopsPerSec);    
     loopsPerSecMax = loopsPerSecCounter;
     loopsPerSecCounter = 0;    
@@ -1749,36 +1744,42 @@ void Robot::loop()  {
 //      checkLawn();      
 //      checkTimeout();    
 
+      // fail-safe if didn't complete our turn sequence
+      if (millis() > stateEndTime) setNextState(STATE_FORWARD,0);
+
       if (gpsPerimeterRollState == 0) {
-        if (millis() > (stateStartTime + motorZeroSettleTime+500)) {
+        if (millis() > (gpsPerimeterRollSubStateStartTime + 500)) { //+ motorZeroSettleTime
           gpsPerimeterRollState = 1;
-          stateStartTime = millis();
-          break;
+          gpsPerimeterRollSubStateStartTime = millis();
         }
         break ;
       } 
 
       if (gpsPerimeterRollState == 1) {
         motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;                    
-        if (millis() > (stateStartTime + 500)) {
-          gpsPerimeterRollState = 2;
-          stateStartTime = millis();
-          break;
-        }
+        gpsPerimeterRollState = 2;
+        gpsPerimeterRollSubStateStartTime = millis();
         break;
       } 
 
       if (gpsPerimeterRollState == 2) {      
-        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
-        if (millis() >= stateStartTime + motorZeroSettleTime +500){
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 500){
+          motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
           gpsPerimeterRollState = 3;
-          stateStartTime = millis();
-          break ;  
+          gpsPerimeterRollSubStateStartTime = millis();
         }
         break;
       }
 
-      if (gpsPerimeterRollState == 3) {      
+      if (gpsPerimeterRollState == 3) {
+        if (millis() > (gpsPerimeterRollSubStateStartTime + 500)) { //+ motorZeroSettleTime
+          gpsPerimeterRollState = 4;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
+        break ;
+      } 
+
+      if (gpsPerimeterRollState == 4) {      
  
         float currentHeading = imu.ypr.yaw/PI*180.0;
 
@@ -1799,13 +1800,13 @@ void Robot::loop()  {
           motorRightSpeedRpmSet = motorSpeedMaxRpm * 0.5;                    
         }
 
-        gpsPerimeterRollState = 4;
-        stateStartTime = millis();
+        gpsPerimeterRollState = 5;
+        gpsPerimeterRollSubStateStartTime = millis();
  
         break; 
       }
 
-      if (gpsPerimeterRollState == 4) {  
+      if (gpsPerimeterRollState == 5) {  
 
         float currentHeading = imu.ypr.yaw/PI*180.0;
 
@@ -1817,56 +1818,56 @@ void Robot::loop()  {
         minimumAngle = min(minimumAngle, third);
 
         if (abs(minimumAngle) <= 20) {
-            gpsPerimeterRollState = 5;
-            stateStartTime = millis();
-            break;
-          } 
-        break;
-      }
-
-      if (gpsPerimeterRollState == 5) {  
-        if (millis() >= stateStartTime + motorZeroSettleTime + 300){
           gpsPerimeterRollState = 6;
-          stateStartTime = millis();
-          break ;  
-        }
+          gpsPerimeterRollSubStateStartTime = millis();
+        } 
         break;
       }
 
-      if (gpsPerimeterRollState == 6) {      
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        gpsPerimeterRollState = 7;
-        stateStartTime = millis();
+      if (gpsPerimeterRollState == 6) {  
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 300){
+          gpsPerimeterRollState = 7;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
         break;
       }
 
       if (gpsPerimeterRollState == 7) {      
-   //     checkSonar();             
-        if (millis() >= stateStartTime + 1000){
-          gpsPerimeterRollState = 8;
-          stateStartTime = millis();
-          break;
-        }
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        gpsPerimeterRollState = 8;
+        gpsPerimeterRollSubStateStartTime = millis();
         break;
       }
 
-      if (gpsPerimeterRollState == 8) {  
-        motorLeftSpeedRpmSet = 0;
-        motorRightSpeedRpmSet = 0;                    
-        if (millis() >= stateStartTime + motorZeroSettleTime+300){
+      if (gpsPerimeterRollState == 8) {      
+   //     checkSonar();             
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 3000){
           gpsPerimeterRollState = 9;
-          stateStartTime = millis();
-          break ;  
+          gpsPerimeterRollSubStateStartTime = millis();
         }
         break;
       }
 
       if (gpsPerimeterRollState == 9) {  
-        setNextState(STATE_FORWARD, LEFT);
+        motorLeftSpeedRpmSet = 0;
+        motorRightSpeedRpmSet = 0;                    
+        gpsPerimeterRollState = 10;
+        gpsPerimeterRollSubStateStartTime = millis();
+        break;
       }
 
-      if (millis() > stateEndTime) setNextState(STATE_FORWARD,0);
+      if (gpsPerimeterRollState == 10) {      
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 300){
+          gpsPerimeterRollState = 11;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
+        break;
+      }
+
+      if (gpsPerimeterRollState == 11) {  
+        setNextState(STATE_FORWARD, LEFT);
+      }
 
       break;
 

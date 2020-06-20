@@ -223,6 +223,7 @@ class Robot
     char gpsUse            ;       // use GPS?        
     char gpsPerimeterUse            ;       // use GPS Perimeter?  
     float gpsPerimeterRollState;
+    float gpsPerimeterRollSubStateStartTime;
     float gpsPerimeterRollNewHeading;  
     float longGrassTempAreaSize ;
     gpsMap gpsPerimeter;
