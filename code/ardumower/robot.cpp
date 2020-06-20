@@ -112,7 +112,7 @@ Robot::Robot(){
   motorLeftSenseCurrent = motorRightSenseCurrent = 0;     
   motorLeftSense = motorRightSense = 0;
   motorLeftSenseCounter = motorRightSenseCounter = 0;  
-  motorZeroSettleTime = 0;  
+  motorZeroSettleTime = 1000;  
   motorLeftZeroTimeout = 0;
   motorRightZeroTimeout = 0;  
   rotateLeft = true;
@@ -1772,21 +1772,18 @@ void Robot::loop()  {
         break; 
       }
 
-      if (millis() >= stateStartTime + motorZeroSettleTime + 300){
+      if (millis() >= stateStartTime + motorZeroSettleTime + 500){
         motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
         break ;  
       }
 
       if (millis() >= stateStartTime + motorZeroSettleTime) {
         motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;                    
-        break
-;      } 
-
-
-//motorReverseTime
-// + motorZeroSettleTime;
+        break ;
+      } 
 
       break;
+
     case STATE_ROLL_WAIT:
       // making a roll (left/right)            
       //if (abs(distancePI(imuYaw, imuRollHeading)) < PI/36) setNextState(STATE_OFF,0);				
