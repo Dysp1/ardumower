@@ -1727,15 +1727,20 @@ void Robot::loop()  {
       checkFreeWheel();            
       checkBumpers();      
       checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
-      checkSonar();             
       //checkPerimeterBoundary(); 
       checkLawn();      
       checkTimeout();    
 
-      if (millis() > stateEndTime) setNextState(STATE_FORWARD,0);
+      // We didn't do great the first time, try again
+      if (millis() > stateStartTime + 15000) setNextState(STATE_GPSPERIMETER_CHANGE_DIR, RIGHT);
+
+      if (stateEndTime > 0 && millis() > stateEndTime) setNextState(STATE_FORWARD,0);
       else if (stateEndTime > 0) break;
 
       if (millis() >= stateStartTime + motorZeroSettleTime + 300 + motorZeroSettleTime){
+
+        checkSonar();             
+
         float newHeading = gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
         float currentHeading = imu.ypr.yaw/PI*180.0;
 
@@ -1756,11 +1761,11 @@ void Robot::loop()  {
           stateEndTime = millis() + 500;
         } else {
           if (turnClockwise) {
-            motorLeftSpeedRpmSet = motorSpeedMaxRpm;
-            motorRightSpeedRpmSet = -motorSpeedMaxRpm;                    
+            motorLeftSpeedRpmSet = motorSpeedMaxRpm * 0.5;
+            motorRightSpeedRpmSet = -motorSpeedMaxRpm * 0.5;                    
           } else {
-            motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
-            motorRightSpeedRpmSet = motorSpeedMaxRpm;                    
+            motorLeftSpeedRpmSet = -motorSpeedMaxRpm * 0.5;
+            motorRightSpeedRpmSet = motorSpeedMaxRpm * 0.5;                    
           }
         }
 
