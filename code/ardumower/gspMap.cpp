@@ -111,7 +111,7 @@ int gpsMap::insidePerimeter(float x, float y)
       _longGrassTempAreaInUse = 0;
     } else {
 
-      for (int i=0; i<5; i++) {   // edge from area[i] to  area[i+1]
+      for (int i=0; i<4; i++) {   // 4th pass will check the 5th point also. first and last points are the same.
           if (_longGrassTempArea[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
               if (_longGrassTempArea[i].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _longGrassTempArea[i], _longGrassTempArea[i+1], _currentLocation) > 0)  // P left of  edge

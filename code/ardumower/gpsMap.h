@@ -57,8 +57,6 @@ class gpsMap
 //        uint8_t _numberOfMainAreaPoints = 0;
         
 
-        Point _longGrassTempArea[5] = {};
-        Point _longGrassTempAreaMiddlePoint;
         uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
         float _tempAreaSize = 0.0001;
@@ -72,6 +70,9 @@ class gpsMap
         void loadSaveMapData(boolean readflag);
 
     public:
+        Point _longGrassTempArea[5] = {};
+        Point _longGrassTempAreaMiddlePoint;
+
         void doUnitTest(); 
         void init(float size, float wiredInUse);
 
@@ -102,38 +103,3 @@ class gpsMap
 
 #endif
 
-
-/*
-
-#ifndef gpsMap_H
-#define gpsMap_H
-
-#include "Arduino.h"
-
-enum {INSIDE_PERIMETER, PERIMETER_EDGE_NODE, CONNECTED_NORTH, CONNECTED_EAST, CONNECTED_SOUTH, CONNECTED_WEST};
-
-class gpsMap
-{
-public:
-  gpsMap();
-  void init();
-  void checkPoint(float longitude, float latitude) ;
-  void setPerimeterEdgePoint(float longitude, float latitude) ;
-  void printMap() ; 
-
-private:
-  void loadSaveMapData(boolean) ; 
-  float chargingLatitude ;
-  float chargingLongitude ;
-  float lastPointLatitude ;
-  float lastPointLongitude ;
-  int angleToChargingStation ;
-  unsigned long nextgpsMapSaveTime ;
-  boolean gpsMapDataChanged ; 
-  void setBitOnOfPoint(float longitude, float latitude, int bitToSet) ;
-  boolean bitOfPointIsOn(float longitude, float latitude, int bitToCompare) ;
-};
-
-
-#endif
-*/
