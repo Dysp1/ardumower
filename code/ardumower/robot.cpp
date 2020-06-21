@@ -1368,7 +1368,7 @@ void Robot::setNextState(byte stateNew, byte dir){
               statsMowTimeTotalStart = true;            
               setActuator(ACT_CHGRELAY, 0);         
             } else if (stateNew == STATE_GPSPERIMETER_CHANGE_DIR) {
-                stateEndTime = millis() + 30000;
+                stateEndTime = millis() + 15000;
                 gpsPerimeterRollState = 0;
                 gpsPerimeterRollSubStateStartTime = millis();
                 gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
@@ -1745,7 +1745,7 @@ void Robot::loop()  {
 //      checkTimeout();    
 
       // fail-safe if didn't complete our turn sequence
-      if (millis() > stateEndTime) setNextState(STATE_FORWARD,0);
+      if (millis() > stateEndTime) setNextState(STATE_FORWARD,rollDir);
 
       if (gpsPerimeterRollState == 0) {
         if (millis() > (gpsPerimeterRollSubStateStartTime + 500)) { //+ motorZeroSettleTime
@@ -1786,18 +1786,18 @@ void Robot::loop()  {
         float first = abs(gpsPerimeterRollNewHeading - currentHeading);
         float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
         float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
-        int turnClockwise = 0;
 
-        if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) turnClockwise = 1;
-        else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) turnClockwise = 1;
-        else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) turnClockwise = 1;
+        rollDir = LEFT;
+        if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) rollDir = RIGHT;
+        else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) rollDir = RIGHT;
+        else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) rollDir = RIGHT;
 
-        if (turnClockwise == 0) {
-          motorLeftSpeedRpmSet = motorSpeedMaxRpm * 0.5;
+        if (rollDir == LEFT) {
+          motorLeftSpeedRpmSet  =  motorSpeedMaxRpm * 0.5;
           motorRightSpeedRpmSet = -motorSpeedMaxRpm * 0.5;                    
         } else {
-          motorLeftSpeedRpmSet = -motorSpeedMaxRpm * 0.5;
-          motorRightSpeedRpmSet = motorSpeedMaxRpm * 0.5;                    
+          motorLeftSpeedRpmSet  = -motorSpeedMaxRpm * 0.5;
+          motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
         }
 
         gpsPerimeterRollState = 5;
@@ -1807,6 +1807,14 @@ void Robot::loop()  {
       }
 
       if (gpsPerimeterRollState == 5) {  
+
+        if (rollDir == LEFT) {
+          motorLeftSpeedRpmSet  =  motorSpeedMaxRpm * 0.5;
+          motorRightSpeedRpmSet = -motorSpeedMaxRpm * 0.5;                    
+        } else {
+          motorLeftSpeedRpmSet  = -motorSpeedMaxRpm * 0.5;
+          motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
+        }
 
         float currentHeading = imu.ypr.yaw/PI*180.0;
 
@@ -1825,6 +1833,9 @@ void Robot::loop()  {
       }
 
       if (gpsPerimeterRollState == 6) {  
+        motorLeftSpeedRpmSet = 0;
+        motorRightSpeedRpmSet = 0;                    
+
         if (millis() >= gpsPerimeterRollSubStateStartTime + 300){
           gpsPerimeterRollState = 7;
           gpsPerimeterRollSubStateStartTime = millis();
@@ -1833,16 +1844,18 @@ void Robot::loop()  {
       }
 
       if (gpsPerimeterRollState == 7) {      
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+//        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+//        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
         gpsPerimeterRollState = 8;
-        gpsPerimeterRollSubStateStartTime = millis();
-        break;
+//        gpsPerimeterRollSubStateStartTime = millis();
+//        break;
       }
 
       if (gpsPerimeterRollState == 8) {      
    //     checkSonar();             
-        if (millis() >= gpsPerimeterRollSubStateStartTime + 3000){
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 2000){
           gpsPerimeterRollState = 9;
           gpsPerimeterRollSubStateStartTime = millis();
         }
@@ -1866,7 +1879,8 @@ void Robot::loop()  {
       }
 
       if (gpsPerimeterRollState == 11) {  
-        setNextState(STATE_FORWARD, LEFT);
+        gpsPerimeterRollState = 0;
+        setNextState(STATE_FORWARD, rollDir);
       }
 
       break;

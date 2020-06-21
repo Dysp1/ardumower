@@ -745,6 +745,8 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
     serialPort->print(robot->gpsLat,8);
 	  serialPort->print(F("|sgpsPMmm~Lon: "));
     serialPort->print(robot->gpsLon,8);
+	  serialPort->print(F("|sgpsPMmm~GPSROLL STATE: "));
+		serialPort->print(robot->gpsPerimeterRollState);
 	  serialPort->print(F("|sgpsPMmm~Inside Area: "));
 		float insidePerim = robot->gpsPerimeter.insidePerimeter(robot->gpsLat, robot->gpsLon);
     if (insidePerim != 0) serialPort->print("Yes");
