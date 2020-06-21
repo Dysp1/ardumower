@@ -753,7 +753,7 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
    // else serialPort->print("No");
     serialPort->print(insidePerim,8);
 	  serialPort->print(F("|sgpsPMmm~dist:"));
-		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(),6);
+		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(robot->gpsLat, robot->gpsLon),6);
 
 	  serialPort->print(F("|sgpsPMmm~mp:"));
 		serialPort->print(robot->gpsPerimeter._longGrassTempAreaMiddlePoint.x,6);

@@ -155,7 +155,7 @@ Serial.println(_longGrassTempAreaInUse);
 
 float gpsMap::distanceFromTempAreaMiddle(float lat, float lon)
 {
-  return sqrt( pow(lat - _longGrassTempAreaMiddlePoint.x) + pow(lon - _longGrassTempAreaMiddlePoint.y) );
+  return sqrt( pow((lat - _longGrassTempAreaMiddlePoint.x),2) + pow((lon - _longGrassTempAreaMiddlePoint.y),2) );
 }
 
 float gpsMap::distanceToClosestWall(float x, float y)
