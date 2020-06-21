@@ -735,11 +735,12 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 		else serialPort->print(F("|0gpsPMmm~No tall grass area in use"));
 
     //sendSlider(String cmd, String title, float value, String unit, double scale, float maxvalue, float minvalue)
-    sendSlider("0gpsPMmm01", F("Long grass temp area size"), robot->longGrassTempAreaSize, "", 1.0, 20.0, 5.0);       
+    sendSlider("0gpsPMmm01", F("Tall grass temp area size"), robot->longGrassTempAreaSize, "", 1.0, 20.0, 5.0);       
   
 	  serialPort->print(F("|sgpsPMamMA0~Main Area"));
 	  serialPort->print(F("|sgpsPMamEA0~Exclude Area 1"));
 	  serialPort->print(F("|sgpsPMamEA1~Exclude Area 2"));
+	  serialPort->print(F("|sgpsPMamHP1~Homing Points"));
 
 	  serialPort->print(F("|sgpsPMmm~Lat: "));
     serialPort->print(robot->gpsLat,8);
@@ -749,40 +750,11 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 		serialPort->print(robot->gpsPerimeterRollState);
 	  serialPort->print(F("|sgpsPMmm~Inside Area: "));
 		float insidePerim = robot->gpsPerimeter.insidePerimeter(robot->gpsLat, robot->gpsLon);
-   // if (insidePerim != 0) serialPort->print("Yes");
-   // else serialPort->print("No");
-    serialPort->print(insidePerim,8);
+    if (insidePerim != 0) serialPort->print("Yes");
+    else serialPort->print("No");
 	  serialPort->print(F("|sgpsPMmm~dist:"));
 		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(robot->gpsLat, robot->gpsLon),6);
-
-	  serialPort->print(F("|sgpsPMmm~mp:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempAreaMiddlePoint.x,6);
-		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempAreaMiddlePoint.y,6);
-	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[0].x,6);
-		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[0].y,6);
-	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[1].x,6);
-		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[1].y,6);
-	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[2].x,6);
-		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[2].y,6);
-	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[3].x,6);
-		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[3].y,6);
-	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[4].x,6);
-		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[4].y,6);  
   }
-
-
-
   serialPort->println("}");
 }
 
@@ -814,7 +786,11 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
   	} else {
 	    if (areaType.startsWith("EA")) { 
     		sprintf (buffer, "{.GPS P Exclusion Area %i`1000",areaNumber+1);
-			}   
+			}	else {
+		    if (areaType.startsWith("HP")) { 
+  	  		sprintf (buffer, "{.GPS P Homing Points %i`1000",areaNumber+1);
+  	  	}
+			}
   	}
 	  serialPort->print(F(buffer)); 
   }
@@ -828,10 +804,12 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 
 	if (areaType.startsWith("MA")) sprintf (buffer, "|0gpsPMamSavePointMA%i~Save as edge point",areaNumber);
 	if (areaType.startsWith("EA")) sprintf (buffer, "|0gpsPMamSavePointEA%i~Save as edge point",areaNumber);
+	if (areaType.startsWith("HP")) sprintf (buffer, "|0gpsPMamSavePointHP%i~Save homing point",areaNumber);
 	serialPort->print(F(buffer)); 
 
 	if (areaType.startsWith("MA")) sprintf (buffer2, "|0gpsPMamSaveDeletMA%i~Delete all points",areaNumber);
 	if (areaType.startsWith("EA")) sprintf (buffer2, "|0gpsPMamSaveDeletEA%i~Delete all points",areaNumber);
+	if (areaType.startsWith("HP")) sprintf (buffer2, "|0gpsPMamSaveDeletHP%i~Delete all points",areaNumber);
 	serialPort->print(F(buffer2)); 
 
 	serialPort->print(F("|0~-----------------"));
@@ -858,6 +836,17 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 		}
 	}
 
+	if (areaType.startsWith("HP")) {
+		areaPoints = robot->gpsPerimeter.getNumberOfHomingPoints(areaNumber);
+		for(int i=0; i < areaPoints; i++) {
+			serialPort->print(F("|0~"));
+			serialPort->print(robot->gpsPerimeter.getHomingPointX(areaNumber,i),6);
+			serialPort->print(",");
+			serialPort->print(robot->gpsPerimeter.getHomingPointY(areaNumber,i),6);
+		}
+	}
+
+
 	serialPort->println("}");
 }
 
@@ -877,6 +866,10 @@ void RemoteControl::processGPSPerimeterAreaMenu(String pfodCmd){
     robot->gpsPerimeter.addExclusionAreaPoint(1, robot->gpsLat,robot->gpsLon);	
   	sendGPSPerimeterAreaMenu(true, "sgpsPMamEA1");
   }
+	if (pfodCmd == "0gpsPMamSavePointHP0") {
+    robot->gpsPerimeter.addHomingPoint(0, robot->gpsLat,robot->gpsLon);	
+  	sendGPSPerimeterAreaMenu(true, "sgpsPMamHP0");
+  }
 
 
 	if (pfodCmd == "0gpsPMamSaveDeletMA0") {
@@ -890,6 +883,10 @@ void RemoteControl::processGPSPerimeterAreaMenu(String pfodCmd){
 	if (pfodCmd == "0gpsPMamSaveDeletEA1") {
     robot->gpsPerimeter.deleteExclusionAreaPoints(1);	
   	sendGPSPerimeterAreaMenu(false, "sgpsPMamEA1");
+  }
+	if (pfodCmd == "0gpsPMamSaveDeletHP0") {
+    robot->gpsPerimeter.deleteHomingPoints(0);	
+  	sendGPSPerimeterAreaMenu(false, "sgpsPMamHP0");
   }
 
   

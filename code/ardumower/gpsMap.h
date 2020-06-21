@@ -28,6 +28,7 @@
 
 #define MAXMAINAREAPOINTS 31 // 30 + 1 extra. last point must be = first point
 #define MAXEXCLUSIONAREAPOINTS 11 // 10 + 1 extra. last point must be = first point
+#define MAXHOMINGPOINTS 30
 
 #define MAGIC 1
 #define ADDR_GPSMAP_DATA 2049
@@ -44,19 +45,26 @@ typedef struct  {
                   Point point[MAXEXCLUSIONAREAPOINTS] = {};
                 } exclusionArea;
 
+typedef struct  {
+                  int numPoints = 0; 
+                  Point point[MAXHOMINGPOINTS] = {};
+                } homingPointList;
+
 class gpsMap
 {
     private:
         mainArea _mainAreas[MAXMAINAREAS];
         exclusionArea _exclusionAreas[MAXEXCLUSIONAREAS];
+        homingPointList _homingPointList[1];
 
         int _numberOfMainAreas = 1; // we must have at least one main area
         int _numberOfExclusionAreas = 2;
-
+        int _numberOfHomingPointLists = 1;
 //        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
 //        uint8_t _numberOfMainAreaPoints = 0;
         
-
+        Point _longGrassTempArea[5] = {};
+        Point _longGrassTempAreaMiddlePoint;
         uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
         float _tempAreaSize = 0.0001;
@@ -70,16 +78,13 @@ class gpsMap
         void loadSaveMapData(boolean readflag);
 
     public:
-        Point _longGrassTempArea[5] = {};
-        Point _longGrassTempAreaMiddlePoint;
-
         void doUnitTest(); 
         void init(float size, float wiredInUse);
 
         int getLongGrassTempAreaInUse();
+        int insideLongGrassTempArea(float x, float y);
         void setLongGrassTempAreaSize(float size);
         float distanceFromTempAreaMiddle(float lat, float lon);
-
         float getNewHeadingFromPerimeterDegrees( float lat, float lon);
         void wiredPerimeterInUse(float inUse);
 
@@ -94,6 +99,13 @@ class gpsMap
         float getExclusionAreaPointX(int areaNumber, int pointNumber);
         float getExclusionAreaPointY(int areaNumber, int pointNumber);
         void deleteExclusionAreaPoints(int areaNumber);
+
+        int addHomingPoint(int areaNum, float lat, float lon);
+        int getNumberOfHomingPoints (int areaNumber);
+        float getHomingPointX (int areaNumber, int pointNumber);
+        float getHomingPointY (int areaNumber, int pointNumber);
+        void deleteHomingPoints(int areaNumber);
+
 
         int insidePerimeter(float x, float y);
         float distanceToClosestWall(float x, float y);

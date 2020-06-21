@@ -61,13 +61,15 @@ int gpsMap::insidePerimeter(float x, float y)
 int gpsMap::insidePerimeter(float x, float y)
 {
   int    wn = 0;    // the  winding number counter
-  int    wnTempArea = 0;    // the  winding number counter
   Point _currentLocation = {x,y};
 
   if (_numberOfExclusionAreas > 0) {
     for (int j=0; j < _numberOfExclusionAreas; j++) {
+
+      if (_exclusionAreas[j].numPoints < 3 ) break; //less than 3 points can't make an area.
+
       // loop through all edges of the polygon
-      for (int i=0; i<_exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
+      for (int i=0; i <= _exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
           if (_exclusionAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
               if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
@@ -88,7 +90,7 @@ int gpsMap::insidePerimeter(float x, float y)
   if (_numberOfMainAreas > 0) {
     for (int j=0; j < _numberOfMainAreas; j++) {
       // loop through all edges of the polygon
-      for (int i=0; i<_mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
+      for (int i=0; i <= _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
           if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
               if (_mainAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
@@ -100,16 +102,44 @@ int gpsMap::insidePerimeter(float x, float y)
                        --wn;            // have  a valid down intersect
           }
       }
-      if (wn != 0) break; //return wn; // we are inside of one main area, no need to check others
+      if (wn != 0) return wn; // we are inside of one main area, no need to check others
     }
   }
 
-//0  0 1
-//1  1 2
-//2  2 3
-//3  3 4
-//4  4 5
-  wnTempArea = 0;
+  if (wn == 0 && _wiredPerimeterInUse) return 11;
+
+  return wn;
+}
+
+//  if(_longGrassTempAreaInUse > 0 && (wn !=0 || _wiredPerimeterInUse) && wnTempArea !=0) return 6;
+/*Serial.println(wn);
+Serial.println(wnTempArea);
+Serial.println(_wiredPerimeterInUse);
+Serial.println(_longGrassTempAreaInUse);
+
+   {
+    if(_longGrassTempAreaInUse > 0) return wnTempArea;
+  }
+
+  if (wn != 0) {
+    if(_longGrassTempAreaInUse > 0) return wnTempArea;
+  }
+
+  if (wn == 0 && _mainAreas[0].numPoints < 3 && _wiredPerimeterInUse) return 6;
+*/
+
+
+// 0  0 1
+// 1  1 2
+// 2  2 3
+// 3  3 4
+// 4  4 5
+
+
+int gpsMap::insideLongGrassTempArea(float x, float y)
+{
+  Point _currentLocation = {x,y};
+  int    wnTempArea = 0;    // the  winding number counter
   //checking if we are inside the temporary area
   if ( _longGrassTempAreaInUse > 0) {
     if (millis() > _tempAreaStartTime + _tempAreaTimeIfNoLongGrassFound) {
@@ -131,27 +161,9 @@ int gpsMap::insidePerimeter(float x, float y)
 
     }
     return wnTempArea;
-
   }
-
-//  if(_longGrassTempAreaInUse > 0 && (wn !=0 || _wiredPerimeterInUse) && wnTempArea !=0) return 6;
-/*Serial.println(wn);
-Serial.println(wnTempArea);
-Serial.println(_wiredPerimeterInUse);
-Serial.println(_longGrassTempAreaInUse);
-*/
-  if (wn == 0 && _wiredPerimeterInUse) {
-    if(_longGrassTempAreaInUse > 0) return wnTempArea;
-  }
-
-  if (wn != 0) {
-    if(_longGrassTempAreaInUse > 0) return wnTempArea;
-  }
-
-  if (wn == 0 && _mainAreas[0].numPoints < 3 && _wiredPerimeterInUse) return 6;
-
-  return wn;
 }
+
 
 float gpsMap::distanceFromTempAreaMiddle(float lat, float lon)
 {
@@ -279,6 +291,18 @@ int gpsMap::addExclusionAreaPoint(int areaNumber, float lat, float lon) {
     return 0;
 }
 
+int gpsMap::addHomingPoint(int areaNumber, float lat, float lon) {
+    if (_homingPointList[areaNumber].numPoints >= MAXHOMINGPOINTS-1) {
+        return 1;
+    } else {
+        _homingPointList[areaNumber].point[_mainAreas[areaNumber].numPoints] = {lat , lon};
+        _homingPointList[areaNumber].numPoints++;
+    }
+    if (!_unitTesting) loadSaveMapData(false);
+    return 0;
+}
+
+
 uint8_t gpsMap::removeMainAreaPoint(int pointNro) {
 /*
     if (_numberOfMainAreaPoints <= 1) {
@@ -330,6 +354,20 @@ int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
   return _exclusionAreas[areaNumber].numPoints;
 }
 
+float gpsMap::getHomingPointX(int areaNumber, int pointNumber) {
+  return _homingPointList[areaNumber].point[pointNumber].x;
+}
+
+float gpsMap::getHomingPointY(int areaNumber, int pointNumber) {
+  return _homingPointList[areaNumber].point[pointNumber].y;
+}
+
+int gpsMap::getNumberOfHomingPoints(int areaNumber) {
+  return _homingPointList[areaNumber].numPoints;
+}
+
+
+
 void gpsMap::deleteMainAreaPoints(int areaNumber) {
   _mainAreas[areaNumber].numPoints = 0; 
   if (!_unitTesting) loadSaveMapData(false);
@@ -337,6 +375,11 @@ void gpsMap::deleteMainAreaPoints(int areaNumber) {
 
 void gpsMap::deleteExclusionAreaPoints(int areaNumber) {
   if (!_unitTesting) _exclusionAreas[areaNumber].numPoints = 0;
+  loadSaveMapData(false);
+}
+
+void gpsMap::deleteHomingPoints(int areaNumber) {
+  if (!_unitTesting) _homingPointList[areaNumber].numPoints = 0;
   loadSaveMapData(false);
 }
 
@@ -401,6 +444,22 @@ void gpsMap::loadSaveMapData(boolean readflag){
     }
   }
 
+  eereadwrite(readflag, addr, _numberOfHomingPointLists);  
+
+  for (int i=0; i <= _numberOfHomingPointLists; i++) {
+    eereadwrite(readflag, addr, _homingPointList[i].numPoints);  
+    int j=0;
+    if (_homingPointList[i].numPoints > 0) {
+      for (j; j <= _homingPointList[i].numPoints; j++) {
+        eereadwrite(readflag, addr, _homingPointList[i].point[j].x);      
+        eereadwrite(readflag, addr, _homingPointList[i].point[j].y);      
+      }
+      if (readflag) {
+        _homingPointList[i].point[j+1].x = _homingPointList[i].point[0].x;
+        _homingPointList[i].point[j+1].y = _homingPointList[i].point[0].y;
+      }
+    }
+  }
 
   Serial.print(F("loadSaveMapData addrstop="));
   Serial.println(addr);

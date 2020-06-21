@@ -946,15 +946,20 @@ void Robot::checkBumpersPerimeter(){
 
 // check perimeter as a boundary
 void Robot::checkPerimeterBoundary(){
-  
+
   if (gpsPerimeterUse) {
     if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
-      if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) != 0) {
-        ;
-      } else {
+      if (gpsPerimeter.getLongGrassTempAreaInUse() && (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) == 0)) {
         setSensorTriggered(SEN_GPSPERIMETER);
         setNextState(STATE_GPSPERIMETER_CHANGE_DIR, rollDir);
       }
+    }
+  }  
+
+  if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
+    if (gpsPerimeter.getLongGrassTempAreaInUse() == 1 && (gpsPerimeter.insideLongGrassTempArea(gpsLat, gpsLon) == 0)) {
+      setSensorTriggered(SEN_GPSPERIMETER);
+      setNextState(STATE_GPSPERIMETER_CHANGE_DIR, rollDir);
     }
   }
   
