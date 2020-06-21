@@ -153,6 +153,10 @@ Serial.println(_longGrassTempAreaInUse);
   return wn;
 }
 
+float gpsMap::distanceFromTempAreaMiddle(float lat, float lon)
+{
+  return sqrt( pow(lat - _longGrassTempAreaMiddlePoint.x) + pow(lon - _longGrassTempAreaMiddlePoint.y) );
+}
 
 float gpsMap::distanceToClosestWall(float x, float y)
 {

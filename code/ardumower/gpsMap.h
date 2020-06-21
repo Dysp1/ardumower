@@ -78,6 +78,8 @@ class gpsMap
 
         int getLongGrassTempAreaInUse();
         void setLongGrassTempAreaSize(float size);
+        float distanceFromTempAreaMiddle(float lat, float lon);
+
         float getNewHeadingFromPerimeterDegrees( float lat, float lon);
         void wiredPerimeterInUse(float inUse);
 
