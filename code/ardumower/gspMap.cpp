@@ -104,6 +104,7 @@ int gpsMap::insidePerimeter(float x, float y)
     }
   }
 
+  wnTempArea = 0;
   //checking if we are inside the temporary area
   if ( _longGrassTempAreaInUse > 0) {
     if (millis() > _tempAreaStartTime + _tempAreaTimeIfNoLongGrassFound) {
