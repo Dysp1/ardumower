@@ -1523,7 +1523,7 @@ void Robot::loop()  {
     if (millis() > nextTimeIMU) {
       nextTimeIMU = millis() + 100;
       imu.update();  
-      checkIfImuAccelerationMaxed();
+      //checkIfImuAccelerationMaxed();
     }
   }
 

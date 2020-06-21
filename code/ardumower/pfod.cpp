@@ -753,34 +753,29 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
    // else serialPort->print("No");
     serialPort->print(insidePerim,8);
 	  serialPort->print(F("|sgpsPMmm~mp:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempAreaMiddlePoint.x);
+		serialPort->print(robot->gpsPerimeter._longGrassTempAreaMiddlePoint.x,6);
 		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempAreaMiddlePoint.y);
+		serialPort->print(robot->gpsPerimeter._longGrassTempAreaMiddlePoint.y,6);
 	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[0].x);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[0].x,6);
 		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[0].y);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[0].y,6);
 	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[1].x);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[1].x,6);
 		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[1].y);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[1].y,6);
 	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[2].x);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[2].x,6);
 		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[2].y);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[2].y,6);
 	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[3].x);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[3].x,6);
 		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[3].y);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[3].y,6);
 	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[4].x);
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[4].x,6);
 		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[4].y);
-	  serialPort->print(F("|sgpsPMmm~0:"));
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[5].x);
-		serialPort->print(",");
-		serialPort->print(robot->gpsPerimeter._longGrassTempArea[5].y);
-  
+		serialPort->print(robot->gpsPerimeter._longGrassTempArea[4].y,6);  
   }
 
 

@@ -104,6 +104,11 @@ int gpsMap::insidePerimeter(float x, float y)
     }
   }
 
+//0  0 1
+//1  1 2
+//2  2 3
+//3  3 4
+//4  4 5
   wnTempArea = 0;
   //checking if we are inside the temporary area
   if ( _longGrassTempAreaInUse > 0) {
@@ -111,7 +116,7 @@ int gpsMap::insidePerimeter(float x, float y)
       _longGrassTempAreaInUse = 0;
     } else {
 
-      for (int i=0; i<4; i++) {   // 4th pass will check the 5th point also. first and last points are the same.
+      for (int i=0; i <= 4; i++) {   
           if (_longGrassTempArea[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
               if (_longGrassTempArea[i].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _longGrassTempArea[i], _longGrassTempArea[i+1], _currentLocation) > 0)  // P left of  edge
@@ -123,7 +128,10 @@ int gpsMap::insidePerimeter(float x, float y)
                        --wnTempArea;            // have  a valid down intersect
           }
       }
+
     }
+    return wnTempArea;
+
   }
 
 //  if(_longGrassTempAreaInUse > 0 && (wn !=0 || _wiredPerimeterInUse) && wnTempArea !=0) return 6;
