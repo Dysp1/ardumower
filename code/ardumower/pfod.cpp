@@ -817,7 +817,7 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 	int areaPoints;
 	if (areaType.startsWith("MA")) {
 		areaPoints = robot->gpsPerimeter.getNumberOfMainAreaPoints(areaNumber);
-		for(int i=0; i < areaPoints; i++) {
+		for(int i=0; i < areaPoints+1; i++) {
 			serialPort->print(F("|0~"));
 			int asdf = robot->gpsPerimeter.getMainAreaPointX(areaNumber,i);
 			serialPort->print(robot->gpsPerimeter.getMainAreaPointX(areaNumber,i),6);
@@ -828,7 +828,7 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 
 	if (areaType.startsWith("EA")) {
 		areaPoints = robot->gpsPerimeter.getNumberOfExclusionAreaPoints(areaNumber);
-		for(int i=0; i < areaPoints; i++) {
+		for(int i=0; i < areaPoints+1; i++) {
 			serialPort->print(F("|0~"));
 			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointX(areaNumber,i),6);
 			serialPort->print(",");

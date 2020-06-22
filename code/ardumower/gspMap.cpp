@@ -69,7 +69,7 @@ int gpsMap::insidePerimeter(float x, float y)
       if (_exclusionAreas[j].numPoints < 3 ) break; //less than 3 points can't make an area.
 
       // loop through all edges of the polygon
-      for (int i=0; i <= _exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
+      for (int i=0; i < _exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
           if (_exclusionAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
               if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
@@ -89,8 +89,12 @@ int gpsMap::insidePerimeter(float x, float y)
   wn = 0;
   if (_numberOfMainAreas > 0) {
     for (int j=0; j < _numberOfMainAreas; j++) {
+
+      if (_mainAreas[j].numPoints < 3 ) break; //less than 3 points can't make an area.
+
       // loop through all edges of the polygon
-      for (int i=0; i <= _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
+      for (int i=0; i < _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
+
           if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
               if (_mainAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
@@ -230,18 +234,54 @@ float gpsMap::getNewHeadingLongGrassAreaDegrees( float lat, float lon) {
 
 float gpsMap::getNewHeadingFromPerimeterDegrees( float lat, float lon) {
   int closestPoint = 0;
-  float lastShortestDistance = 88888;
-  float shortestDistance = 99999;
-  for (int i; i <= _homingPointList[0].numPoints; i++) {
-    shortestDistance = min(shortestDistance, (sqrt( pow((lat - _homingPointList[0].point[i].x),2) + pow((lon - _homingPointList[0].point[i].x),2) )));
+  float lastShortestDistance = 88888.0;
+  float shortestDistance = 99999.0;
+  int i = 0;
+  for (i=0; i < _homingPointList[0].numPoints; i++) {
+    shortestDistance = min(shortestDistance, (sqrt( pow((lat - _homingPointList[0].point[i].x),2) + pow((lon - _homingPointList[0].point[i].y),2) )));
+/*    Serial.print("distance:");
+    Serial.println(shortestDistance,8);
+
+    Serial.print(" lastshortest:");
+    Serial.println(lastShortestDistance,8);
+
+    Serial.print(" pointnro:");    
+    Serial.print(i); 
+    Serial.print("distance:");    
+    Serial.print(sqrt( pow((lat - _homingPointList[0].point[i].x),2) + pow((lon - _homingPointList[0].point[i].y),2) ),8);
+    Serial.print(" currlat:");    
+    Serial.print(lat,6);
+    Serial.print(" currlon:");    
+    Serial.print(lon,6);
+    Serial.print(" pointlat:");    
+    Serial.print(_homingPointList[0].point[i].x,6);
+    Serial.print(" pointlon:");    
+    Serial.println(_homingPointList[0].point[i].y,6);
+  */  
     if (shortestDistance < lastShortestDistance) {
       lastShortestDistance = shortestDistance;
       closestPoint = i;
+    /*  Serial.print("   HERE  ");
+      Serial.print(i);
+      Serial.print("   HERE  ");
+      Serial.print(closestPoint);
+      Serial.print("   HERE  ");
+   */
     }
-  }
 
+  }
+/*  Serial.print("closest point: ");
+  Serial.print(closestPoint);
+  Serial.print(" - ");
+  Serial.print(_homingPointList[0].point[closestPoint].x,6);
+  Serial.print(",");
+  Serial.print(_homingPointList[0].point[closestPoint].y,6);
+  Serial.print(" - dist: ");
+*/
   float degrees = atan2( (_homingPointList[0].point[closestPoint].y - lon ), (_homingPointList[0].point[closestPoint].x - lat) )/PI*180.0;
   if (degrees < 0) degrees += 360; 
+
+  //Serial.println(degrees);
   return degrees;
 }
 
@@ -313,7 +353,7 @@ int gpsMap::addHomingPoint(int areaNumber, float lat, float lon) {
     if (_homingPointList[areaNumber].numPoints >= MAXHOMINGPOINTS-1) {
         return 1;
     } else {
-        _homingPointList[areaNumber].point[_mainAreas[areaNumber].numPoints] = {lat , lon};
+        _homingPointList[areaNumber].point[_homingPointList[0].numPoints] = {lat , lon};
         _homingPointList[areaNumber].numPoints++;
     }
     if (!_unitTesting) loadSaveMapData(false);
@@ -359,7 +399,6 @@ int gpsMap::getLongGrassTempAreaInUse() {
 void gpsMap::setLongGrassTempAreaSize(float size) {
   _tempAreaSize = (float)((float)size/100000); 
 }
-
 
 float gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
   return _exclusionAreas[areaNumber].point[pointNumber].x;
@@ -412,28 +451,28 @@ void gpsMap::init(float size, float wiredInUse) {
 void gpsMap::loadSaveMapData(boolean readflag){
   if (readflag) Serial.println(F("loadSavegpsMapData:: read"));
   else Serial.println(F("loadSavegpsMapData: write"));
-
+  
   if (readflag) {
-    short magic = 15;
+    short magic = 30;
     int addr = ADDR_GPSMAP_DATA;
     eeread(addr, magic);
-    if (magic != MAGIC) {
-      Serial.print(F("NO gpsPerimeter DATA FOUND at: "));
-      Serial.println(ADDR_GPSMAP_DATA);
+    if (magic != 30) {
+      Serial.println(F("No GPS Perimeter data found."));
       return;  
     }
   }
 
-  short magic = 33;
   int addr = ADDR_GPSMAP_DATA;
+  short magic = 30;
   eereadwrite(readflag, addr, magic); // magic
+
 
   eereadwrite(readflag, addr, _numberOfMainAreas);  
 
   for (int i=0; i <= _numberOfMainAreas; i++) {
     eereadwrite(readflag, addr, _mainAreas[i].numPoints);  
     int j=0;
-    if (_mainAreas[i].numPoints > 0 && _exclusionAreas[i].numPoints <= MAXMAINAREAPOINTS) {
+    if (_mainAreas[i].numPoints > 0 && _mainAreas[i].numPoints <= MAXMAINAREAPOINTS) {
       for (j; j <= _mainAreas[i].numPoints; j++) {
         eereadwrite(readflag, addr, _mainAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _mainAreas[i].point[j].y);      
@@ -471,10 +510,6 @@ void gpsMap::loadSaveMapData(boolean readflag){
       for (j; j <= _homingPointList[i].numPoints; j++) {
         eereadwrite(readflag, addr, _homingPointList[i].point[j].x);      
         eereadwrite(readflag, addr, _homingPointList[i].point[j].y);      
-      }
-      if (readflag) {
-        _homingPointList[i].point[j+1].x = _homingPointList[i].point[0].x;
-        _homingPointList[i].point[j+1].y = _homingPointList[i].point[0].y;
       }
     }
   }

@@ -955,14 +955,14 @@ void Robot::checkPerimeterBoundary(){
       }
     }
   }  
-
+/*
   if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
     if (gpsPerimeter.getLongGrassTempAreaInUse() == 1 && (gpsPerimeter.insideLongGrassTempArea(gpsLat, gpsLon) == 0)) {
       setSensorTriggered(SEN_GPSLONGGRASS);
       setNextState(STATE_GPS_LONG_GRASS_CHANGE_DIR, rollDir);
     }
   }
-  
+*/  
   if (!perimeterUse) return;
   if (millis() >= nextTimeRotationChange){
       nextTimeRotationChange = millis() + 60000;
@@ -1378,7 +1378,7 @@ void Robot::setNextState(byte stateNew, byte dir){
                 stateEndTime = millis() + 15000;
                 gpsPerimeterRollState = 0;
                 gpsPerimeterRollSubStateStartTime = millis();
-                gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingLongGrassAreaDegrees(gpsLat, gpsLon);
+                gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
                 motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
               } else if (stateNew == STATE_GPS_LONG_GRASS_CHANGE_DIR) {
                   stateEndTime = millis() + 15000;
@@ -1559,6 +1559,8 @@ void Robot::loop()  {
   if (millis() >= nextTimeInfo) {        
     nextTimeInfo = millis() + 1000; 
     //gpsPerimeter.doUnitTest();
+    gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
+    
     if (rmcsUse == false) { 
       printInfo(Console); 
       printErrors();
