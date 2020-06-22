@@ -740,7 +740,7 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 	  serialPort->print(F("|sgpsPMamMA0~Main Area"));
 	  serialPort->print(F("|sgpsPMamEA0~Exclude Area 1"));
 	  serialPort->print(F("|sgpsPMamEA1~Exclude Area 2"));
-	  serialPort->print(F("|sgpsPMamHP1~Homing Points"));
+	  serialPort->print(F("|sgpsPMamHP0~Homing Points"));
 
 	  serialPort->print(F("|sgpsPMmm~Lat: "));
     serialPort->print(robot->gpsLat,8);

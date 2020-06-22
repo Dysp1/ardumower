@@ -220,14 +220,14 @@ void IMU::read(){
   callCounter++;    
 
   mpu.update();
-
+/*
   Serial.print("roll:");
   Serial.print(mpu.getRoll());
   Serial.print(" pitch:");
   Serial.print(mpu.getPitch());
   Serial.print(" yaw:");
   Serial.println(mpu.getYaw());
-
+*/
   gyro.x = mpu.getGyro(0)*PI/180.0;
   gyro.y = mpu.getGyro(1)*PI/180.0;
   gyro.z = mpu.getGyro(2)*PI/180.0;

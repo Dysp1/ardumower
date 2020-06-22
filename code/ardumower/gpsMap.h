@@ -57,9 +57,9 @@ class gpsMap
         exclusionArea _exclusionAreas[MAXEXCLUSIONAREAS];
         homingPointList _homingPointList[1];
 
-        int _numberOfMainAreas = 1; // we must have at least one main area
-        int _numberOfExclusionAreas = 2;
-        int _numberOfHomingPointLists = 1;
+        float _numberOfMainAreas = 1; // we must have at least one main area
+        float _numberOfExclusionAreas = 2;
+        float _numberOfHomingPointLists = 1;
 //        Point _mainAreaPointList[MAXMAINAREAPOINTS] = {};
 //        uint8_t _numberOfMainAreaPoints = 0;
         
@@ -85,7 +85,7 @@ class gpsMap
         int insideLongGrassTempArea(float x, float y);
         void setLongGrassTempAreaSize(float size);
         float distanceFromTempAreaMiddle(float lat, float lon);
-        float getNewHeadingFromPerimeterDegrees( float lat, float lon);
+        float getNewHeadingLongGrassAreaDegrees( float lat, float lon);
         void wiredPerimeterInUse(float inUse);
 
         int addMainAreaPoint(int areaNum, float lat, float lon);
@@ -93,6 +93,7 @@ class gpsMap
         float getMainAreaPointX(int areaNumber, int pointNumber);
         float getMainAreaPointY(int areaNumber, int pointNumber);
         void deleteMainAreaPoints(int areaNumber);
+
 
         int addExclusionAreaPoint(int areaNum, float lat, float lon);
         int getNumberOfExclusionAreaPoints(int areaNumber);
@@ -105,7 +106,7 @@ class gpsMap
         float getHomingPointX (int areaNumber, int pointNumber);
         float getHomingPointY (int areaNumber, int pointNumber);
         void deleteHomingPoints(int areaNumber);
-
+        float getNewHeadingFromPerimeterDegrees( float lat, float lon);
 
         int insidePerimeter(float x, float y);
         float distanceToClosestWall(float x, float y);

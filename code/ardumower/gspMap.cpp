@@ -164,12 +164,6 @@ int gpsMap::insideLongGrassTempArea(float x, float y)
   }
 }
 
-
-float gpsMap::distanceFromTempAreaMiddle(float lat, float lon)
-{
-  return sqrt( pow((lat - _longGrassTempAreaMiddlePoint.x),2) + pow((lon - _longGrassTempAreaMiddlePoint.y),2) );
-}
-
 float gpsMap::distanceToClosestWall(float x, float y)
 {
 /*    float distanceToClosestWall = 100000;
@@ -219,12 +213,36 @@ uint8_t gpsMap::addMainAreaPointDELETEME( float x, float y) {
 }
 */
 
-float gpsMap::getNewHeadingFromPerimeterDegrees( float lat, float lon) {
+float gpsMap::distanceFromTempAreaMiddle(float lat, float lon)
+{
+  return sqrt( pow((lat - _longGrassTempAreaMiddlePoint.x),2) + pow((lon - _longGrassTempAreaMiddlePoint.y),2) );
+}
+
+
+float gpsMap::getNewHeadingLongGrassAreaDegrees( float lat, float lon) {
   if (_longGrassTempAreaInUse > 0) {
     float degrees = atan2( (_longGrassTempAreaMiddlePoint.y - lon ), (_longGrassTempAreaMiddlePoint.x - lat) )/PI*180.0;
     if (degrees < 0) degrees += 360; 
     return degrees;
   }
+}
+
+
+float gpsMap::getNewHeadingFromPerimeterDegrees( float lat, float lon) {
+  int closestPoint = 0;
+  float lastShortestDistance = 88888;
+  float shortestDistance = 99999;
+  for (int i; i <= _homingPointList[0].numPoints; i++) {
+    shortestDistance = min(shortestDistance, (sqrt( pow((lat - _homingPointList[0].point[i].x),2) + pow((lon - _homingPointList[0].point[i].x),2) )));
+    if (shortestDistance < lastShortestDistance) {
+      lastShortestDistance = shortestDistance;
+      closestPoint = i;
+    }
+  }
+
+  float degrees = atan2( (_homingPointList[0].point[closestPoint].y - lon ), (_homingPointList[0].point[closestPoint].x - lat) )/PI*180.0;
+  if (degrees < 0) degrees += 360; 
+  return degrees;
 }
 
 uint8_t gpsMap::setTemporaryArea( float x, float y) {
@@ -330,7 +348,8 @@ float gpsMap::getMainAreaPointY(int areaNumber, int pointNumber) {
 }
 
 int gpsMap::getNumberOfMainAreaPoints(int areaNumber) {
-  return _mainAreas[areaNumber].numPoints;
+  if (_mainAreas[areaNumber].numPoints > 0 && _mainAreas[areaNumber].numPoints <= MAXMAINAREAPOINTS) return _mainAreas[areaNumber].numPoints;
+  else return 0;  
 }
 
 int gpsMap::getLongGrassTempAreaInUse() {
@@ -351,7 +370,8 @@ float gpsMap::getExclusionAreaPointY(int areaNumber, int pointNumber) {
 }
 
 int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
-  return _exclusionAreas[areaNumber].numPoints;
+  if (_exclusionAreas[areaNumber].numPoints > 0 && _exclusionAreas[areaNumber].numPoints <= MAXEXCLUSIONAREAPOINTS) return _exclusionAreas[areaNumber].numPoints;
+  else return 0;  
 }
 
 float gpsMap::getHomingPointX(int areaNumber, int pointNumber) {
@@ -363,10 +383,9 @@ float gpsMap::getHomingPointY(int areaNumber, int pointNumber) {
 }
 
 int gpsMap::getNumberOfHomingPoints(int areaNumber) {
-  return _homingPointList[areaNumber].numPoints;
+  if (_homingPointList[areaNumber].numPoints > 0 && _homingPointList[areaNumber].numPoints <= MAXHOMINGPOINTS) return _homingPointList[areaNumber].numPoints;
+  else return 0;  
 }
-
-
 
 void gpsMap::deleteMainAreaPoints(int areaNumber) {
   _mainAreas[areaNumber].numPoints = 0; 
@@ -374,13 +393,13 @@ void gpsMap::deleteMainAreaPoints(int areaNumber) {
 }
 
 void gpsMap::deleteExclusionAreaPoints(int areaNumber) {
-  if (!_unitTesting) _exclusionAreas[areaNumber].numPoints = 0;
-  loadSaveMapData(false);
+  _exclusionAreas[areaNumber].numPoints = 0;
+  if (!_unitTesting) loadSaveMapData(false);
 }
 
 void gpsMap::deleteHomingPoints(int areaNumber) {
-  if (!_unitTesting) _homingPointList[areaNumber].numPoints = 0;
-  loadSaveMapData(false);
+  _homingPointList[areaNumber].numPoints = 0;
+  if (!_unitTesting) loadSaveMapData(false);
 }
 
 void gpsMap::init(float size, float wiredInUse) {
@@ -394,9 +413,8 @@ void gpsMap::loadSaveMapData(boolean readflag){
   if (readflag) Serial.println(F("loadSavegpsMapData:: read"));
   else Serial.println(F("loadSavegpsMapData: write"));
 
-
   if (readflag) {
-    short magic = 33;
+    short magic = 15;
     int addr = ADDR_GPSMAP_DATA;
     eeread(addr, magic);
     if (magic != MAGIC) {
@@ -415,7 +433,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
   for (int i=0; i <= _numberOfMainAreas; i++) {
     eereadwrite(readflag, addr, _mainAreas[i].numPoints);  
     int j=0;
-    if (_mainAreas[i].numPoints > 0) {
+    if (_mainAreas[i].numPoints > 0 && _exclusionAreas[i].numPoints <= MAXMAINAREAPOINTS) {
       for (j; j <= _mainAreas[i].numPoints; j++) {
         eereadwrite(readflag, addr, _mainAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _mainAreas[i].point[j].y);      
@@ -432,7 +450,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
   for (int i=0; i <= _numberOfExclusionAreas; i++) {
     eereadwrite(readflag, addr, _exclusionAreas[i].numPoints);  
     int j=0;
-    if (_exclusionAreas[i].numPoints > 0) {
+    if (_exclusionAreas[i].numPoints > 0 && _exclusionAreas[i].numPoints <= MAXEXCLUSIONAREAPOINTS) {
       for (j; j <= _exclusionAreas[i].numPoints; j++) {
         eereadwrite(readflag, addr, _exclusionAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _exclusionAreas[i].point[j].y);      
@@ -449,7 +467,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
   for (int i=0; i <= _numberOfHomingPointLists; i++) {
     eereadwrite(readflag, addr, _homingPointList[i].numPoints);  
     int j=0;
-    if (_homingPointList[i].numPoints > 0) {
+    if (_homingPointList[i].numPoints > 0 && _homingPointList[i].numPoints <= MAXHOMINGPOINTS) {
       for (j; j <= _homingPointList[i].numPoints; j++) {
         eereadwrite(readflag, addr, _homingPointList[i].point[j].x);      
         eereadwrite(readflag, addr, _homingPointList[i].point[j].y);      

@@ -949,7 +949,7 @@ void Robot::checkPerimeterBoundary(){
 
   if (gpsPerimeterUse) {
     if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
-      if (gpsPerimeter.getLongGrassTempAreaInUse() && (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) == 0)) {
+      if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) == 0) {
         setSensorTriggered(SEN_GPSPERIMETER);
         setNextState(STATE_GPSPERIMETER_CHANGE_DIR, rollDir);
       }
@@ -958,8 +958,8 @@ void Robot::checkPerimeterBoundary(){
 
   if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
     if (gpsPerimeter.getLongGrassTempAreaInUse() == 1 && (gpsPerimeter.insideLongGrassTempArea(gpsLat, gpsLon) == 0)) {
-      setSensorTriggered(SEN_GPSPERIMETER);
-      setNextState(STATE_GPSPERIMETER_CHANGE_DIR, rollDir);
+      setSensorTriggered(SEN_GPSLONGGRASS);
+      setNextState(STATE_GPS_LONG_GRASS_CHANGE_DIR, rollDir);
     }
   }
   
@@ -1378,37 +1378,43 @@ void Robot::setNextState(byte stateNew, byte dir){
                 stateEndTime = millis() + 15000;
                 gpsPerimeterRollState = 0;
                 gpsPerimeterRollSubStateStartTime = millis();
-                gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
+                gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingLongGrassAreaDegrees(gpsLat, gpsLon);
                 motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
-              } else if (stateNew == STATE_REVERSE) {
-                  motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;                    
-                  stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
-                } else if (stateNew == STATE_BUMPER_REVERSE) {
-                    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.25;
+              } else if (stateNew == STATE_GPS_LONG_GRASS_CHANGE_DIR) {
+                  stateEndTime = millis() + 15000;
+                  gpsPerimeterRollState = 0;
+                  gpsPerimeterRollSubStateStartTime = millis();
+                  gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingLongGrassAreaDegrees(gpsLat, gpsLon);
+                  motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
+                  } else if (stateNew == STATE_REVERSE) {
+                    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;                    
                     stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
-                  } else if (stateNew == STATE_BUMPER_FORWARD) {
-                      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.25;
+                  } else if (stateNew == STATE_BUMPER_REVERSE) {
+                      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.25;
                       stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
-                    } else if (stateNew == STATE_ROLL) {                  
-                        imuDriveHeading = scalePI(imuDriveHeading + PI); // toggle heading 180 degree (IMU)
-                        if (imuRollDir == LEFT){
-                          imuRollHeading = scalePI(imuDriveHeading - PI/20);        
-                          imuRollDir = RIGHT;
-                        } else {
-                          imuRollHeading = scalePI(imuDriveHeading + PI/20);        
-                          imuRollDir = LEFT;
-                        }      
-
-                        stateEndTime = millis() + random(motorRollTimeMin,motorRollTimeMax) + motorZeroSettleTime;
-            
-                        if (dir == RIGHT){
-	                        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-	                        motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;						
-                        } else {
-                          motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-                          motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;	
-                        }      
-                      }  
+                    } else if (stateNew == STATE_BUMPER_FORWARD) {
+                        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.25;
+                        stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
+                      } else if (stateNew == STATE_ROLL) {                  
+                          imuDriveHeading = scalePI(imuDriveHeading + PI); // toggle heading 180 degree (IMU)
+                          if (imuRollDir == LEFT){
+                            imuRollHeading = scalePI(imuDriveHeading - PI/20);        
+                            imuRollDir = RIGHT;
+                          } else {
+                            imuRollHeading = scalePI(imuDriveHeading + PI/20);        
+                            imuRollDir = LEFT;
+                          }      
+  
+                          stateEndTime = millis() + random(motorRollTimeMin,motorRollTimeMax) + motorZeroSettleTime;
+              
+                          if (dir == RIGHT){
+	                         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+	                         motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;						
+                          } else {
+                            motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+                            motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;	
+                          }      
+}  
   
   if (stateCurr == STATE_STATION_CHARGING) {
 		// always switch off charging relay if leaving state STATE_STATION_CHARGING
@@ -1892,6 +1898,161 @@ void Robot::loop()  {
       }
 
       break;
+
+    case STATE_GPS_LONG_GRASS_CHANGE_DIR:
+//        checkErrorCounter();    
+//      checkTimer();
+//      checkRain();
+//      checkCurrent();
+//      checkFreeWheel();            
+//      checkBumpers();      
+//      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
+      //checkPerimeterBoundary(); 
+//      checkLawn();      
+//      checkTimeout();    
+
+      // fail-safe if didn't complete our turn sequence
+      if (millis() > stateEndTime) setNextState(STATE_FORWARD,rollDir);
+
+      if (gpsPerimeterRollState == 0) {
+        if (millis() > (gpsPerimeterRollSubStateStartTime + 500)) { //+ motorZeroSettleTime
+          gpsPerimeterRollState = 1;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
+        break ;
+      } 
+
+      if (gpsPerimeterRollState == 1) {
+        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;                    
+        gpsPerimeterRollState = 2;
+        gpsPerimeterRollSubStateStartTime = millis();
+        break;
+      } 
+
+      if (gpsPerimeterRollState == 2) {      
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 500){
+          motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+          gpsPerimeterRollState = 3;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
+        break;
+      }
+
+      if (gpsPerimeterRollState == 3) {
+        if (millis() > (gpsPerimeterRollSubStateStartTime + 500)) { //+ motorZeroSettleTime
+          gpsPerimeterRollState = 4;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
+        break ;
+      } 
+
+      if (gpsPerimeterRollState == 4) {      
+ 
+        float currentHeading = imu.ypr.yaw/PI*180.0;
+
+        float first = abs(gpsPerimeterRollNewHeading - currentHeading);
+        float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
+        float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
+
+        rollDir = RIGHT;
+        if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) rollDir = LEFT;
+        else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) rollDir = LEFT;
+        else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) rollDir = LEFT;
+
+        if (rollDir == LEFT) {
+          motorLeftSpeedRpmSet  =  motorSpeedMaxRpm * 0.5;
+          motorRightSpeedRpmSet = -motorSpeedMaxRpm * 0.5;                    
+        } else {
+          motorLeftSpeedRpmSet  = -motorSpeedMaxRpm * 0.5;
+          motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
+        }
+
+        gpsPerimeterRollState = 5;
+        gpsPerimeterRollSubStateStartTime = millis();
+ 
+        break; 
+      }
+
+      if (gpsPerimeterRollState == 5) {  
+        if (millis() > gpsPerimeterRollSubStateStartTime + 102) {
+          if (rollDir == LEFT) {
+            motorLeftSpeedRpmSet  =  motorSpeedMaxRpm * 0.5;
+            motorRightSpeedRpmSet = -motorSpeedMaxRpm * 0.5;                    
+          } else {
+            motorLeftSpeedRpmSet  = -motorSpeedMaxRpm * 0.5;
+            motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
+          }
+  
+          float currentHeading = imu.ypr.yaw/PI*180.0;
+  
+          float first = abs(gpsPerimeterRollNewHeading - currentHeading);
+          float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
+          float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
+  
+          float minimumAngle = min(first, second);
+          minimumAngle = min(minimumAngle, third);
+  
+          if (abs(minimumAngle) <= 20) {
+            gpsPerimeterRollState = 6;
+            gpsPerimeterRollSubStateStartTime = millis();
+          } 
+        }
+        break;
+      }
+
+      if (gpsPerimeterRollState == 6) {  
+        motorLeftSpeedRpmSet = 0;
+        motorRightSpeedRpmSet = 0;                    
+
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 300){
+          gpsPerimeterRollState = 7;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
+        break;
+      }
+
+      if (gpsPerimeterRollState == 7) {      
+//        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+//        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        gpsPerimeterRollState = 8;
+//        gpsPerimeterRollSubStateStartTime = millis();
+//        break;
+      }
+
+      if (gpsPerimeterRollState == 8) {      
+   //     checkSonar();             
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 2000){
+          gpsPerimeterRollState = 9;
+          gpsPerimeterRollSubStateStartTime = millis();
+        }
+        break;
+      }
+
+      if (gpsPerimeterRollState == 9) {  
+//        motorLeftSpeedRpmSet = 0;
+//        motorRightSpeedRpmSet = 0;                    
+        gpsPerimeterRollState = 10;
+        gpsPerimeterRollSubStateStartTime = millis();
+        break;
+      }
+
+      if (gpsPerimeterRollState == 10) {      
+//        if (millis() >= gpsPerimeterRollSubStateStartTime + 300){
+          gpsPerimeterRollState = 11;
+          gpsPerimeterRollSubStateStartTime = millis();
+//        }
+        break;
+      }
+
+      if (gpsPerimeterRollState == 11) {  
+        gpsPerimeterRollState = 0;
+        setNextState(STATE_FORWARD, rollDir);
+      }
+
+      break;
+
 
     case STATE_ROLL_WAIT:
       // making a roll (left/right)            
