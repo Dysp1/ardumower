@@ -72,13 +72,18 @@ int gpsMap::insidePerimeter(float x, float y)
       for (int i=0; i < _exclusionAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
           if (_exclusionAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
               if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
-                   if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
-                       ++wn;            // have  a valid up intersect
+                   if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
+                      ++wn;            // have  a valid up intersect
+                      Serial.println("++");
+                    }
           }
           else {                        // start y > _currentLocation.y (no test needed)
               if (_exclusionAreas[j].point[i+1].y  <= _currentLocation.y)     // a downward crossing
-                   if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) < 0)  // P right of  edge
-                       --wn;            // have  a valid down intersect
+                   if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) < 0) { // P right of  edge
+                      --wn;            // have  a valid down intersect
+                      Serial.println("--");
+                    }
+
           }
       }
       if (wn != 0) return 0; // we are inside of at least one exclusion area, no need to check others 
@@ -94,17 +99,35 @@ int gpsMap::insidePerimeter(float x, float y)
 
       // loop through all edges of the polygon
       for (int i=0; i < _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
-
-          if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
-              if (_mainAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
-                   if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0)  // P left of  edge
-                       ++wn;            // have  a valid up intersect
+/*Serial.print("HERE2: i: ");
+Serial.print(_mainAreas[j].point[i].x,6);
+Serial.print(" , ");
+Serial.print(_mainAreas[j].point[i].y,6);
+Serial.print(" - i+1: ");
+Serial.print(_mainAreas[j].point[i+1].x,6);
+Serial.print(" , ");
+Serial.print(_mainAreas[j].point[i+1].y,6);
+Serial.print(" - curr:");
+Serial.print(_currentLocation.x,6);
+Serial.print(" , ");
+Serial.println(_currentLocation.y,6);
+*/
+        if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
+          if (_mainAreas[j].point[i+1].y  > _currentLocation.y) {      // an upward crossing
+            if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
+              ++wn;            // have  a valid up intersect
+//              Serial.println("ma++");
+            }
           }
-          else {                        // start y > _currentLocation.y (no test needed)
-              if (_mainAreas[j].point[i+1].y  <= _currentLocation.y)     // a downward crossing
-                   if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) < 0)  // P right of  edge
-                       --wn;            // have  a valid down intersect
+        }
+        else {                        // start y > _currentLocation.y (no test needed)
+          if (_mainAreas[j].point[i+1].y  <= _currentLocation.y) {    // a downward crossing
+            if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) < 0) { // P right of  edge
+              --wn;            // have  a valid down intersect
+//              Serial.println("ma--");
+            }
           }
+        }
       }
       if (wn != 0) return wn; // we are inside of one main area, no need to check others
     }
