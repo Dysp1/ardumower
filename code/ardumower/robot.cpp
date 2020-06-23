@@ -1564,7 +1564,7 @@ void Robot::loop()  {
   if (millis() >= nextTimeInfo) {        
     nextTimeInfo = millis() + 1000; 
     //gpsPerimeter.doUnitTest();
-    gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
+    //gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
     
     if (rmcsUse == false) { 
       printInfo(Console); 
