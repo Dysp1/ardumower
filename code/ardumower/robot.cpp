@@ -1876,6 +1876,10 @@ void Robot::loop()  {
    //     checkSonar();             
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
         motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        if (gpsPerimeter.insidePerimeter(gpslat, gpsLon) != 0) {
+          gpsPerimeterRollState = 9;
+          gpsPerimeterRollSubStateStartTime = millis();
+        };
         if (millis() >= gpsPerimeterRollSubStateStartTime + 2000){
           gpsPerimeterRollState = 9;
           gpsPerimeterRollSubStateStartTime = millis();

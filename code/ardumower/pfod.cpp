@@ -746,6 +746,12 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
     serialPort->print(robot->gpsLat,8);
 	  serialPort->print(F("|sgpsPMmm~Lon: "));
     serialPort->print(robot->gpsLon,8);
+
+	  serialPort->print(F("|sgpsPMmm~xLat: "));
+    serialPort->print(robot->gpsX,8);
+	  serialPort->print(F("|sgpsPMmm~yLon: "));
+    serialPort->print(robot->gpsY,8);
+
 	  serialPort->print(F("|sgpsPMmm~GPSROLL STATE: "));
 		serialPort->print(robot->gpsPerimeterRollState);
 	  serialPort->print(F("|sgpsPMmm~Inside Area: "));
