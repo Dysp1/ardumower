@@ -804,11 +804,14 @@ void Robot::checkCurrent(){
       && abs(perimeterMag) < 1000
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
         setSensorTriggered(SEN_MOW_POWER);
-        gpsPerimeter.setTemporaryArea(gpsLat, gpsLon);
-        if((rand() % 2) == 0) {
-          rollDir = LEFT;
-        } else {
-          rollDir = RIGHT;
+
+        if(longGrassTempAreaSize > 5) {
+          gpsPerimeter.setTemporaryArea(gpsLat, gpsLon);
+          if((rand() % 2) == 0) {
+            rollDir = LEFT;
+          } else {
+            rollDir = RIGHT;
+          }
         }
         setNextState(STATE_CIRCLE, rollDir);
   }
@@ -955,14 +958,16 @@ void Robot::checkPerimeterBoundary(){
       }
     }
   }  
-/*
-  if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
-    if (gpsPerimeter.getLongGrassTempAreaInUse() == 1 && (gpsPerimeter.insideLongGrassTempArea(gpsLat, gpsLon) == 0)) {
-      setSensorTriggered(SEN_GPSLONGGRASS);
-      setNextState(STATE_GPS_LONG_GRASS_CHANGE_DIR, rollDir);
+
+  if(longGrassTempAreaSize > 5) {
+    if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
+      if (gpsPerimeter.getLongGrassTempAreaInUse() == 1 && (gpsPerimeter.insideLongGrassTempArea(gpsLat, gpsLon) == 0)) {
+        setSensorTriggered(SEN_GPSLONGGRASS);
+        setNextState(STATE_GPS_LONG_GRASS_CHANGE_DIR, rollDir);
+      }
     }
   }
-*/  
+
   if (!perimeterUse) return;
   if (millis() >= nextTimeRotationChange){
       nextTimeRotationChange = millis() + 60000;
@@ -1840,7 +1845,7 @@ void Robot::loop()  {
           float minimumAngle = min(first, second);
           minimumAngle = min(minimumAngle, third);
   
-          if (abs(minimumAngle) <= 20) {
+          if (abs(minimumAngle) <= 10) {
             gpsPerimeterRollState = 6;
             gpsPerimeterRollSubStateStartTime = millis();
           } 

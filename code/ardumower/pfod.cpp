@@ -735,7 +735,7 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 		else serialPort->print(F("|0gpsPMmm~No tall grass area in use"));
 
     //sendSlider(String cmd, String title, float value, String unit, double scale, float maxvalue, float minvalue)
-    sendSlider("0gpsPMmm01", F("Tall grass temp area size"), robot->longGrassTempAreaSize, "", 1.0, 20.0, 5.0);       
+    sendSlider("0gpsPMmm01", F("Tall grass area size (5=off"), robot->longGrassTempAreaSize, "", 1.0, 20.0, 5.0);       
   
 	  serialPort->print(F("|sgpsPMamMA0~Main Area"));
 	  serialPort->print(F("|sgpsPMamEA0~Exclude Area 1"));
@@ -756,8 +756,15 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 		serialPort->print(insidePerim);
 //    if (insidePerim != 0) serialPort->print("Yes");
 //    else serialPort->print("No");
-	  serialPort->print(F("|sgpsPMmm~dist:"));
-		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(robot->gpsLat, robot->gpsLon),6);
+	  serialPort->print(F("|sgpsPMmm~New heading:"));
+		serialPort->print(robot->gpsPerimeterRollNewHeading,6);
+	  serialPort->print(F("|sgpsPMmm~Curr heading:"));
+	  float myHeading2 = (robot->imu.ypr.yaw/PI*180);
+  	if (myHeading2 < 0) myHeading2 += 360;
+  	serialPort->print(myHeading2);
+
+//	  serialPort->print(F("|sgpsPMmm~dist:"));
+//		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(robot->gpsLat, robot->gpsLon),6);
   }
   serialPort->println("}");
 }
