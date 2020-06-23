@@ -33,7 +33,7 @@
 #define MAGIC 1
 #define ADDR_GPSMAP_DATA 2049
 
-typedef struct {float x, y;} Point;
+typedef struct {long x, y;} Point;
 
 typedef struct  {
                   int numPoints = 0; 
@@ -55,7 +55,7 @@ class gpsMap
     private:
         mainArea _mainAreas[MAXMAINAREAS];
         exclusionArea _exclusionAreas[MAXEXCLUSIONAREAS];
-        homingPointList _homingPointList[1];
+        homingPointList _homingPointList[2];
 
         float _numberOfMainAreas = 1; // we must have at least one main area
         float _numberOfExclusionAreas = 2;
@@ -73,8 +73,8 @@ class gpsMap
 
         bool _unitTesting = false;
 
-        float isLeft( Point P0, Point P1, Point P2 );
-        void doTest(uint8_t testNum, float lat, float lon, bool expectZero);
+        inline int isLeft( Point P0, Point P1, Point P2 );
+        void doTest(uint8_t testNum, long lat, long lon, bool expectZero);
         void loadSaveMapData(boolean readflag);
 
     public:
@@ -82,36 +82,36 @@ class gpsMap
         void init(float size, float wiredInUse);
 
         int getLongGrassTempAreaInUse();
-        int insideLongGrassTempArea(float x, float y);
+        int insideLongGrassTempArea(long x, long y);
         void setLongGrassTempAreaSize(float size);
-        float distanceFromTempAreaMiddle(float lat, float lon);
-        float getNewHeadingLongGrassAreaDegrees( float lat, float lon);
+        float distanceFromTempAreaMiddle(long lat, long lon);
+        float getNewHeadingLongGrassAreaDegrees( long lat, long lon);
         void wiredPerimeterInUse(float inUse);
 
-        int addMainAreaPoint(int areaNum, float lat, float lon);
+        int addMainAreaPoint(int areaNum, long lat, long lon);
         int getNumberOfMainAreaPoints(int areaNumber);
-        float getMainAreaPointX(int areaNumber, int pointNumber);
-        float getMainAreaPointY(int areaNumber, int pointNumber);
+        long getMainAreaPointX(int areaNumber, int pointNumber);
+        long getMainAreaPointY(int areaNumber, int pointNumber);
         void deleteMainAreaPoints(int areaNumber);
 
 
-        int addExclusionAreaPoint(int areaNum, float lat, float lon);
+        int addExclusionAreaPoint(int areaNum, long lat, long lon);
         int getNumberOfExclusionAreaPoints(int areaNumber);
-        float getExclusionAreaPointX(int areaNumber, int pointNumber);
-        float getExclusionAreaPointY(int areaNumber, int pointNumber);
+        long getExclusionAreaPointX(int areaNumber, int pointNumber);
+        long getExclusionAreaPointY(int areaNumber, int pointNumber);
         void deleteExclusionAreaPoints(int areaNumber);
 
-        int addHomingPoint(int areaNum, float lat, float lon);
+        int addHomingPoint(int areaNum, long lat, long lon);
         int getNumberOfHomingPoints (int areaNumber);
-        float getHomingPointX (int areaNumber, int pointNumber);
-        float getHomingPointY (int areaNumber, int pointNumber);
+        long getHomingPointX (int areaNumber, int pointNumber);
+        long getHomingPointY (int areaNumber, int pointNumber);
         void deleteHomingPoints(int areaNumber);
-        float getNewHeadingFromPerimeterDegrees( float lat, float lon);
+        float getNewHeadingFromPerimeterDegrees( long lat, long lon);
 
-        int insidePerimeter(float x, float y);
-        float distanceToClosestWall(float x, float y);
+        int insidePerimeter(long x, long y);
+        float distanceToClosestWall(long x, long y);
         uint8_t removeMainAreaPoint( int pointNro);
-        uint8_t setTemporaryArea( float x, float y);
+        uint8_t setTemporaryArea( long x, long y);
         void disableTemporaryArea();
         //int removeExclusionAreaPoint( int pointNro);
 };

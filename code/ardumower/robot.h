@@ -229,8 +229,8 @@ class Robot
     float gpsPerimeterRollNewHeading;  
     float longGrassTempAreaSize ;
     gpsMap gpsPerimeter;
-    float gpsLat;
-    float gpsLon;
+    long gpsLat;
+    long gpsLon;
     float gpsX ;   // X position (m)
     float gpsY ;   // Y position (m)
     unsigned long nextTimeGPS ;

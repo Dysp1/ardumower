@@ -1234,9 +1234,9 @@ void Robot::checkIfStuck(){
 
 void Robot::processGPSData()
 {
-  float nlat, nlon;
+  long nlat, nlon;
   unsigned long age;
-  gps.f_get_position(&nlat, &nlon, &age);
+  gps.get_position(&nlat, &nlon, &age);
   if (nlat == GPS::GPS_INVALID_F_ANGLE ) return;
   if (gpsLon == 0){
     gpsLon = nlon;  // this is xy (0,0)
@@ -1565,6 +1565,7 @@ void Robot::loop()  {
     nextTimeInfo = millis() + 1000; 
     //gpsPerimeter.doUnitTest();
     //gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
+    //gpsPerimeter.insidePerimeter(random(6247269,6247280), random(2544013,2544030));
     
     if (rmcsUse == false) { 
       printInfo(Console); 

@@ -694,9 +694,9 @@ void RemoteControl::sendGPSMenu(boolean update){
     serialPort->print(F("|q08~altitude "));
     serialPort->print(robot->gps.f_altitude()*100000);
     serialPort->print(F("|q09~lat "));
-    serialPort->print(lat,8);
+    serialPort->print(lat,5);
     serialPort->print(F("|q09~lon "));
-    serialPort->print(lon,8);
+    serialPort->print(lon,5);
     serialPort->print(F("|q09~stuck count "));
     serialPort->print(robot->robotIsStuckCounter);
   }
@@ -743,18 +743,18 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 	  serialPort->print(F("|sgpsPMamHP0~Homing Points"));
 
 	  serialPort->print(F("|sgpsPMmm~Lat: "));
-    serialPort->print(robot->gpsLat,8);
+    serialPort->print(robot->gpsLat);
 	  serialPort->print(F("|sgpsPMmm~Lon: "));
-    serialPort->print(robot->gpsLon,8);
+    serialPort->print(robot->gpsLon);
 
-    float nlat,nlon;
+    long nlat,nlon;
     long unsigned int age;
-    robot->gps.f_get_position(&nlat, &nlon, &age);
+    robot->gps.get_position(&nlat, &nlon, &age);
 
 	  serialPort->print(F("|sgpsPMmm~xLat: "));
-    serialPort->print(nlat,8);
+    serialPort->print(nlat);
 	  serialPort->print(F("|sgpsPMmm~yLon: "));
-    serialPort->print(nlon,8);
+    serialPort->print(nlon);
 
 	  serialPort->print(F("|sgpsPMmm~GPSROLL STATE: "));
 		serialPort->print(robot->gpsPerimeterRollState);
@@ -767,13 +767,13 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 //    if (insidePerim != 0) serialPort->print("Yes");
 //    else serialPort->print("No");
 	  serialPort->print(F("|sgpsPMmm~New heading:"));
-		serialPort->print(robot->gpsPerimeterRollNewHeading,6);
+		serialPort->print(robot->gpsPerimeterRollNewHeading);
 	  serialPort->print(F("|sgpsPMmm~Mag heading:"));
 	  float myHeading2 = (robot->imu.ypr.yaw/PI*180);
   	if (myHeading2 < 0) myHeading2 += 360;
   	serialPort->print(myHeading2);
     serialPort->print(F("|q07~GPS heading"));
-    serialPort->print(robot->gps.f_course()*100000);
+    serialPort->print(robot->gps.f_course());
 //	  serialPort->print(F("|sgpsPMmm~dist:"));
 //		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(robot->gpsLat, robot->gpsLon),6);
   }
@@ -817,12 +817,13 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 	  serialPort->print(F(buffer)); 
   }
 	
-  float lat, lon;
+  long lat, lon;
   unsigned long age;
+  robot->gps.get_position(&lat, &lon, &age);
   serialPort->print(F("|0gpsPMam~lat "));
-  serialPort->print(robot->gpsLat,6);
+  serialPort->print(lat);
   serialPort->print(F("|0gpsPMam~lon "));
-  serialPort->print(robot->gpsLon,6);
+  serialPort->print(lon);
 
 	if (areaType.startsWith("MA")) sprintf (buffer, "|0gpsPMamSavePointMA%i~Save as edge point",areaNumber);
 	if (areaType.startsWith("EA")) sprintf (buffer, "|0gpsPMamSavePointEA%i~Save as edge point",areaNumber);
@@ -842,9 +843,9 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 		for(int i=0; i < areaPoints+1; i++) {
 			serialPort->print(F("|0~"));
 			int asdf = robot->gpsPerimeter.getMainAreaPointX(areaNumber,i);
-			serialPort->print(robot->gpsPerimeter.getMainAreaPointX(areaNumber,i),6);
+			serialPort->print(robot->gpsPerimeter.getMainAreaPointX(areaNumber,i));
 			serialPort->print(",");
-			serialPort->print(robot->gpsPerimeter.getMainAreaPointY(areaNumber,i),6);
+			serialPort->print(robot->gpsPerimeter.getMainAreaPointY(areaNumber,i));
 		}
 	}
 
@@ -852,9 +853,9 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 		areaPoints = robot->gpsPerimeter.getNumberOfExclusionAreaPoints(areaNumber);
 		for(int i=0; i < areaPoints+1; i++) {
 			serialPort->print(F("|0~"));
-			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointX(areaNumber,i),6);
+			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointX(areaNumber,i));
 			serialPort->print(",");
-			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointY(areaNumber,i),6);
+			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointY(areaNumber,i));
 		}
 	}
 
@@ -862,9 +863,9 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 		areaPoints = robot->gpsPerimeter.getNumberOfHomingPoints(areaNumber);
 		for(int i=0; i < areaPoints; i++) {
 			serialPort->print(F("|0~"));
-			serialPort->print(robot->gpsPerimeter.getHomingPointX(areaNumber,i),6);
+			serialPort->print(robot->gpsPerimeter.getHomingPointX(areaNumber,i));
 			serialPort->print(",");
-			serialPort->print(robot->gpsPerimeter.getHomingPointY(areaNumber,i),6);
+			serialPort->print(robot->gpsPerimeter.getHomingPointY(areaNumber,i));
 		}
 	}
 
@@ -876,8 +877,12 @@ void RemoteControl::processGPSPerimeterAreaMenu(String pfodCmd){
 	String areaType = pfodCmd.substring(17,19);
   uint8_t areaNumber = pfodCmd.substring(19,20).toInt();
 
+  long lat, lon;
+  unsigned long age;
+  robot->gps.get_position(&lat, &lon, &age);
+
 	if (pfodCmd == "0gpsPMamSavePointMA0") {
-    robot->gpsPerimeter.addMainAreaPoint(0, robot->gpsLat,robot->gpsLon);	
+    robot->gpsPerimeter.addMainAreaPoint(0,lat,lon);	
   	sendGPSPerimeterAreaMenu(true, "sgpsPMamMA0");
   }
 	if (pfodCmd == "0gpsPMamSavePointEA0") {
@@ -1566,9 +1571,9 @@ void RemoteControl::run(){
       serialPort->print(",");
       serialPort->print(robot->gps.f_altitude());
       serialPort->print(",");
-      serialPort->print(lat);
+      serialPort->print(lat,5);
       serialPort->print(",");
-      serialPort->print(lon);
+      serialPort->print(lon,5);
       serialPort->println();
   } else if (pfodState == PFOD_PLOT_BAT){
     if (millis() >= nextPlotTime){
@@ -1725,9 +1730,9 @@ void RemoteControl::run(){
       serialPort->print(",");
       serialPort->print(robot->gps.f_altitude());
       serialPort->print(",");
-      serialPort->print(lat);
+      serialPort->print(lat,5);
       serialPort->print(",");
-      serialPort->println(lon);
+      serialPort->println(lon,5);
     }
   } else if (pfodState == PFOD_PLOT_GPS2D){
     if (millis() >= nextPlotTime){

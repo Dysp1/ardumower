@@ -24,7 +24,7 @@
 //    See: Algorithm 1 "Area of Triangles and Polygons"
 //inline int isLeft(Point P0, Point P1, Point P2) __attribute__((always_inline));
 
-float gpsMap::isLeft( Point P0, Point P1, Point P2 )
+inline int gpsMap::isLeft( Point P0, Point P1, Point P2 )
 {
     return ( (P1.x - P0.x) * (P2.y - P0.y)
             - (P2.x -  P0.x) * (P1.y - P0.y) );
@@ -58,7 +58,7 @@ int gpsMap::insidePerimeter(float x, float y)
 }
 */
 
-int gpsMap::insidePerimeter(float x, float y)
+int gpsMap::insidePerimeter(long x, long y)
 {
   int    wn = 0;    // the  winding number counter
   Point _currentLocation = {x,y};
@@ -74,14 +74,14 @@ int gpsMap::insidePerimeter(float x, float y)
               if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
                       ++wn;            // have  a valid up intersect
-                      Serial.println("++");
+                      Serial.println("EA++");
                     }
           }
           else {                        // start y > _currentLocation.y (no test needed)
               if (_exclusionAreas[j].point[i+1].y  <= _currentLocation.y)     // a downward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) < 0) { // P right of  edge
                       --wn;            // have  a valid down intersect
-                      Serial.println("--");
+                      Serial.println("EA--");
                     }
 
           }
@@ -99,19 +99,25 @@ int gpsMap::insidePerimeter(float x, float y)
 
       // loop through all edges of the polygon
       for (int i=0; i < _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
-Serial.print("HERE2: i: ");
-Serial.print(_mainAreas[j].point[i].x,6);
-Serial.print(" , ");
-Serial.print(_mainAreas[j].point[i].y,6);
-Serial.print(" - i+1: ");
-Serial.print(_mainAreas[j].point[i+1].x,6);
-Serial.print(" , ");
-Serial.print(_mainAreas[j].point[i+1].y,6);
-Serial.print(" - curr:");
-Serial.print(_currentLocation.x,6);
-Serial.print(" , ");
-Serial.println(_currentLocation.y,6);
 
+Serial.print("HERE2: i: ");
+Serial.print(_mainAreas[j].point[i].x);
+delay(2);
+Serial.print(" , ");
+Serial.print(_mainAreas[j].point[i].y);
+delay(2);
+Serial.print(" - i+1: ");
+Serial.print(_mainAreas[j].point[i+1].x);
+delay(2);
+Serial.print(" , ");
+Serial.print(_mainAreas[j].point[i+1].y);
+delay(2);
+Serial.print(" - curr:");
+Serial.print(_currentLocation.x);
+delay(2);
+Serial.print(" , ");
+Serial.println(_currentLocation.y);
+delay(2);
         if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
           if (_mainAreas[j].point[i+1].y  > _currentLocation.y) {      // an upward crossing
             if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
@@ -163,7 +169,7 @@ Serial.println(_longGrassTempAreaInUse);
 // 4  4 5
 
 
-int gpsMap::insideLongGrassTempArea(float x, float y)
+int gpsMap::insideLongGrassTempArea(long x, long y)
 {
   Point _currentLocation = {x,y};
   int    wnTempArea = 0;    // the  winding number counter
@@ -191,7 +197,7 @@ int gpsMap::insideLongGrassTempArea(float x, float y)
   }
 }
 
-float gpsMap::distanceToClosestWall(float x, float y)
+float gpsMap::distanceToClosestWall(long x, long y)
 {
 /*    float distanceToClosestWall = 100000;
      Point _currentLocation = {x,y};
@@ -240,13 +246,13 @@ uint8_t gpsMap::addMainAreaPointDELETEME( float x, float y) {
 }
 */
 
-float gpsMap::distanceFromTempAreaMiddle(float lat, float lon)
+float gpsMap::distanceFromTempAreaMiddle(long lat, long lon)
 {
   return sqrt( pow((lat - _longGrassTempAreaMiddlePoint.x),2) + pow((lon - _longGrassTempAreaMiddlePoint.y),2) );
 }
 
 
-float gpsMap::getNewHeadingLongGrassAreaDegrees( float lat, float lon) {
+float gpsMap::getNewHeadingLongGrassAreaDegrees( long lat, long lon) {
   if (_longGrassTempAreaInUse > 0) {
     float degrees = atan2( (_longGrassTempAreaMiddlePoint.y - lon ), (_longGrassTempAreaMiddlePoint.x - lat) )/PI*180.0;
     if (degrees < 0) degrees += 360; 
@@ -255,7 +261,7 @@ float gpsMap::getNewHeadingLongGrassAreaDegrees( float lat, float lon) {
 }
 
 
-float gpsMap::getNewHeadingFromPerimeterDegrees( float lat, float lon) {
+float gpsMap::getNewHeadingFromPerimeterDegrees( long lat, long lon) {
   int closestPoint = 0;
   float lastShortestDistance = 88888.0;
   float shortestDistance = 99999.0;
@@ -308,7 +314,7 @@ float gpsMap::getNewHeadingFromPerimeterDegrees( float lat, float lon) {
   return degrees;
 }
 
-uint8_t gpsMap::setTemporaryArea( float x, float y) {
+uint8_t gpsMap::setTemporaryArea( long x, long y) {
     _tempAreaStartTime = millis(); // We will reset the timer everytime we find long grass in the temp area.
     if (_longGrassTempAreaInUse > 0) {  // we are already working on temp area, do not change temp area coordinates
       return 1;  
@@ -348,7 +354,7 @@ void gpsMap::disableTemporaryArea() {
   _longGrassTempAreaInUse = 0;
 }
 
-int gpsMap::addMainAreaPoint(int areaNumber, float lat, float lon) {
+int gpsMap::addMainAreaPoint(int areaNumber, long lat, long lon) {
     if (_mainAreas[areaNumber].numPoints >= MAXMAINAREAPOINTS-1) {
         return 1;
     } else {
@@ -360,23 +366,25 @@ int gpsMap::addMainAreaPoint(int areaNumber, float lat, float lon) {
     return 0;
 }
 
-int gpsMap::addExclusionAreaPoint(int areaNumber, float lat, float lon) {
-    if (_exclusionAreas[areaNumber].numPoints >= MAXEXCLUSIONAREAPOINTS-1) {
-        return 1;
-    } else {
-        _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints] = {lat , lon};
-        _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints + 1] = _exclusionAreas[areaNumber].point[0]; // last point of area must be equal to first
-        _exclusionAreas[areaNumber].numPoints++;
-    }
-    if (!_unitTesting) loadSaveMapData(false);
-    return 0;
+int gpsMap::addExclusionAreaPoint(int areaNumber, long lat, long lon) {
+  lat = lat * 100000;
+  lon = lon * 100000;
+  if (_exclusionAreas[areaNumber].numPoints >= MAXEXCLUSIONAREAPOINTS-1) {
+      return 1;
+  } else {
+      _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints] = {lat , lon};
+      _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints + 1] = _exclusionAreas[areaNumber].point[0]; // last point of area must be equal to first
+      _exclusionAreas[areaNumber].numPoints++;
+  }
+  if (!_unitTesting) loadSaveMapData(false);
+  return 0;
 }
 
-int gpsMap::addHomingPoint(int areaNumber, float lat, float lon) {
+int gpsMap::addHomingPoint(int areaNumber, long lat, long lon) {
     if (_homingPointList[areaNumber].numPoints >= MAXHOMINGPOINTS-1) {
         return 1;
     } else {
-        _homingPointList[areaNumber].point[_homingPointList[0].numPoints] = {lat , lon};
+        _homingPointList[areaNumber].point[_homingPointList[areaNumber].numPoints] = {lat , lon};
         _homingPointList[areaNumber].numPoints++;
     }
     if (!_unitTesting) loadSaveMapData(false);
@@ -402,11 +410,11 @@ uint8_t gpsMap::removeMainAreaPoint(int pointNro) {
     return 0;
 }
 
-float gpsMap::getMainAreaPointX(int areaNumber, int pointNumber) {
+long gpsMap::getMainAreaPointX(int areaNumber, int pointNumber) {
   return _mainAreas[areaNumber].point[pointNumber].x;
 }
 
-float gpsMap::getMainAreaPointY(int areaNumber, int pointNumber) {
+long gpsMap::getMainAreaPointY(int areaNumber, int pointNumber) {
   return _mainAreas[areaNumber].point[pointNumber].y;
 }
 
@@ -423,11 +431,11 @@ void gpsMap::setLongGrassTempAreaSize(float size) {
   _tempAreaSize = (float)((float)size/100000); 
 }
 
-float gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
+long gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
   return _exclusionAreas[areaNumber].point[pointNumber].x;
 }
 
-float gpsMap::getExclusionAreaPointY(int areaNumber, int pointNumber) {
+long gpsMap::getExclusionAreaPointY(int areaNumber, int pointNumber) {
   return _exclusionAreas[areaNumber].point[pointNumber].y;
 }
 
@@ -436,11 +444,11 @@ int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
   else return 0;  
 }
 
-float gpsMap::getHomingPointX(int areaNumber, int pointNumber) {
+long gpsMap::getHomingPointX(int areaNumber, int pointNumber) {
   return _homingPointList[areaNumber].point[pointNumber].x;
 }
 
-float gpsMap::getHomingPointY(int areaNumber, int pointNumber) {
+long gpsMap::getHomingPointY(int areaNumber, int pointNumber) {
   return _homingPointList[areaNumber].point[pointNumber].y;
 }
 
@@ -559,17 +567,17 @@ void gpsMap::doUnitTest() {
 
   _longGrassTempAreaInUse = 0;
 
-  doTest(1,10.0005,10.0005,false); // inside of main area / not in exclusion areas
+  doTest(1,100005,100005,false); // inside of main area / not in exclusion areas
 
-  doTest(2,10.0003,10.0003,true);  // inside of exclusion area
+  doTest(2,100003,100003,true);  // inside of exclusion area
 
-  doTest(3,10.0000,10.0011, true); // outside of main areas
+  doTest(3,100000,100011, true); // outside of main areas
 
-  setTemporaryArea(10.0007, 10.0007);
+  setTemporaryArea(100007, 100007);
 
-  doTest(4,10.00071,10.00071, false); // inside of temporary area
+  doTest(4,1000071,1000071, false); // inside of temporary area
 
-  doTest(5,10.00095,10.00095, true);  // outside of temporary area
+  doTest(5,1000095,1000095, true);  // outside of temporary area
 
   Serial.print("Test 6 - Heading from South to temp area middle (waiting 0) got:");
   Serial.println(getNewHeadingFromPerimeterDegrees(10.00065,10.00070));
@@ -586,7 +594,7 @@ void gpsMap::doUnitTest() {
   _unitTesting = false;
 }
 
-void gpsMap::doTest(uint8_t testNum, float lat, float lon, bool expectZero) {
+void gpsMap::doTest(uint8_t testNum, long lat, long lon, bool expectZero) {
   Serial.println(" ");
   Serial.print("Test ");
   Serial.print(testNum);
