@@ -24,7 +24,7 @@
 //    See: Algorithm 1 "Area of Triangles and Polygons"
 //inline int isLeft(Point P0, Point P1, Point P2) __attribute__((always_inline));
 
-inline int gpsMap::isLeft( Point P0, Point P1, Point P2 )
+inline long gpsMap::isLeft( Point P0, Point P1, Point P2 )
 {
     return ( (P1.x - P0.x) * (P2.y - P0.y)
             - (P2.x -  P0.x) * (P1.y - P0.y) );
@@ -74,14 +74,14 @@ int gpsMap::insidePerimeter(long x, long y)
               if (_exclusionAreas[j].point[i+1].y  > _currentLocation.y)      // an upward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
                       ++wn;            // have  a valid up intersect
-                      Serial.println("EA++");
+//                      Serial.println("EA++");
                     }
           }
           else {                        // start y > _currentLocation.y (no test needed)
               if (_exclusionAreas[j].point[i+1].y  <= _currentLocation.y)     // a downward crossing
                    if (isLeft( _exclusionAreas[j].point[i], _exclusionAreas[j].point[i+1], _currentLocation) < 0) { // P right of  edge
                       --wn;            // have  a valid down intersect
-                      Serial.println("EA--");
+//                      Serial.println("EA--");
                     }
 
           }
@@ -100,7 +100,7 @@ int gpsMap::insidePerimeter(long x, long y)
       // loop through all edges of the polygon
       for (int i=0; i < _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
 
-Serial.print("HERE2: i: ");
+/*Serial.print("HERE2: i: ");
 Serial.print(_mainAreas[j].point[i].x);
 delay(2);
 Serial.print(" , ");
@@ -117,12 +117,12 @@ Serial.print(_currentLocation.x);
 delay(2);
 Serial.print(" , ");
 Serial.println(_currentLocation.y);
-delay(2);
+delay(2);*/
         if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
           if (_mainAreas[j].point[i+1].y  > _currentLocation.y) {      // an upward crossing
             if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
               ++wn;            // have  a valid up intersect
-             Serial.println("ma++");
+  //           Serial.println("ma++");
             }
           }
         }
@@ -130,11 +130,14 @@ delay(2);
           if (_mainAreas[j].point[i+1].y  <= _currentLocation.y) {    // a downward crossing
             if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) < 0) { // P right of  edge
               --wn;            // have  a valid down intersect
-              Serial.println("ma--");
+  //            Serial.println("ma--");
             }
           }
         }
       }
+//      Serial.print("WN:");
+//      Serial.println(wn);
+
       if (wn != 0) return wn; // we are inside of one main area, no need to check others
     }
   }
@@ -428,7 +431,7 @@ int gpsMap::getLongGrassTempAreaInUse() {
 }
 
 void gpsMap::setLongGrassTempAreaSize(float size) {
-  _tempAreaSize = (float)((float)size/100000); 
+  _tempAreaSize = size; 
 }
 
 long gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
@@ -473,7 +476,7 @@ void gpsMap::deleteHomingPoints(int areaNumber) {
 }
 
 void gpsMap::init(float size, float wiredInUse) {
-  _tempAreaSize = (float)((float)size/100000); 
+  _tempAreaSize = size; 
   _wiredPerimeterInUse = wiredInUse;
   loadSaveMapData(true);
 }

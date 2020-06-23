@@ -1754,16 +1754,16 @@ void Robot::loop()  {
       }
       break;
     case STATE_GPSPERIMETER_CHANGE_DIR:
-//        checkErrorCounter();    
-//      checkTimer();
-//      checkRain();
-//      checkCurrent();
-//      checkFreeWheel();            
-//      checkBumpers();      
-//      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
-      //checkPerimeterBoundary(); 
-//      checkLawn();      
-//      checkTimeout();    
+      checkErrorCounter();    
+      checkTimer();
+      checkRain();
+      checkCurrent();
+      checkFreeWheel();            
+      checkBumpers();      
+      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
+      checkPerimeterBoundary(); 
+      checkLawn();      
+      checkTimeout();    
 
       // fail-safe if didn't complete our turn sequence
       if (millis() > stateEndTime) setNextState(STATE_FORWARD,rollDir);
@@ -1784,7 +1784,7 @@ void Robot::loop()  {
       } 
 
       if (gpsPerimeterRollState == 2) {      
-        if (millis() >= gpsPerimeterRollSubStateStartTime + 500){
+        if (millis() >= gpsPerimeterRollSubStateStartTime + 1500){
           motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
           gpsPerimeterRollState = 3;
           gpsPerimeterRollSubStateStartTime = millis();
@@ -1803,7 +1803,6 @@ void Robot::loop()  {
       if (gpsPerimeterRollState == 4) {      
  
         float currentHeading = imu.ypr.yaw/PI*180.0;
-
         float first = abs(gpsPerimeterRollNewHeading - currentHeading);
         float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
         float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
@@ -1874,20 +1873,42 @@ void Robot::loop()  {
       }
 
       if (gpsPerimeterRollState == 8) {      
-   //     checkSonar();             
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        
-      //  gps.feed();
-      //  processGPSData();
-
+       
         if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) != 0) {
           gpsPerimeterRollState = 9;
           gpsPerimeterRollSubStateStartTime = millis();
-        }
-        if (millis() >= gpsPerimeterRollSubStateStartTime + 2000){
-          gpsPerimeterRollState = 9;
-          gpsPerimeterRollSubStateStartTime = millis();
+        } else {
+          if (millis() >= gpsPerimeterRollSubStateStartTime + 100) {
+          
+            float currentHeading = imu.ypr.yaw/PI*180.0;
+            float first = abs(gpsPerimeterRollNewHeading - currentHeading);
+            float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
+            float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
+
+            rollDir = RIGHT;
+            if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) rollDir = LEFT;
+            else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) rollDir = LEFT;
+            else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) rollDir = LEFT;
+
+            float minimumAngle = min(first, second);
+            minimumAngle = min(minimumAngle, third);
+  
+            if (abs(minimumAngle) >= 10) {
+              if (rollDir == LEFT) {
+                motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.35;
+                motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+              } else {
+                motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.25;
+                motorRightSpeedRpmSet = motorSpeedMaxRpm/1.35;
+              }
+            } else {
+              motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.25;
+              motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+            }
+
+//            gpsPerimeterRollState = 9;
+            gpsPerimeterRollSubStateStartTime = millis();
+          }
         }
         break;
       }

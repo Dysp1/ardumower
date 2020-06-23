@@ -67,13 +67,13 @@ class gpsMap
         Point _longGrassTempAreaMiddlePoint;
         uint8_t _longGrassTempAreaInUse = 0;
         float _tempAreaStartTime;
-        float _tempAreaSize = 0.0001;
+        float _tempAreaSize = 10;
         float _wiredPerimeterInUse = 0;
         float _tempAreaTimeIfNoLongGrassFound = 300000;
 
         bool _unitTesting = false;
 
-        inline int isLeft( Point P0, Point P1, Point P2 );
+        inline long isLeft( Point P0, Point P1, Point P2 );
         void doTest(uint8_t testNum, long lat, long lon, bool expectZero);
         void loadSaveMapData(boolean readflag);
 
