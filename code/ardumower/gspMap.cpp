@@ -99,7 +99,7 @@ int gpsMap::insidePerimeter(float x, float y)
 
       // loop through all edges of the polygon
       for (int i=0; i < _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
-/*Serial.print("HERE2: i: ");
+Serial.print("HERE2: i: ");
 Serial.print(_mainAreas[j].point[i].x,6);
 Serial.print(" , ");
 Serial.print(_mainAreas[j].point[i].y,6);
@@ -111,12 +111,12 @@ Serial.print(" - curr:");
 Serial.print(_currentLocation.x,6);
 Serial.print(" , ");
 Serial.println(_currentLocation.y,6);
-*/
+
         if (_mainAreas[j].point[i].y <= _currentLocation.y) {          // start y <= _currentLocation.y
           if (_mainAreas[j].point[i+1].y  > _currentLocation.y) {      // an upward crossing
             if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
               ++wn;            // have  a valid up intersect
-//              Serial.println("ma++");
+             Serial.println("ma++");
             }
           }
         }
@@ -124,7 +124,7 @@ Serial.println(_currentLocation.y,6);
           if (_mainAreas[j].point[i+1].y  <= _currentLocation.y) {    // a downward crossing
             if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) < 0) { // P right of  edge
               --wn;            // have  a valid down intersect
-//              Serial.println("ma--");
+              Serial.println("ma--");
             }
           }
         }

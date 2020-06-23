@@ -747,10 +747,14 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 	  serialPort->print(F("|sgpsPMmm~Lon: "));
     serialPort->print(robot->gpsLon,8);
 
+    float nlat,nlon;
+    long unsigned int age;
+    robot->gps.f_get_position(&nlat, &nlon, &age);
+
 	  serialPort->print(F("|sgpsPMmm~xLat: "));
-    serialPort->print(robot->gpsX,8);
+    serialPort->print(nlat,8);
 	  serialPort->print(F("|sgpsPMmm~yLon: "));
-    serialPort->print(robot->gpsY,8);
+    serialPort->print(nlon,8);
 
 	  serialPort->print(F("|sgpsPMmm~GPSROLL STATE: "));
 		serialPort->print(robot->gpsPerimeterRollState);
@@ -769,7 +773,7 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
   	if (myHeading2 < 0) myHeading2 += 360;
   	serialPort->print(myHeading2);
     serialPort->print(F("|q07~GPS heading"));
-    serialPort->print(robot->gps.f_course()*100000)
+    serialPort->print(robot->gps.f_course()*100000);
 //	  serialPort->print(F("|sgpsPMmm~dist:"));
 //		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(robot->gpsLat, robot->gpsLon),6);
   }
