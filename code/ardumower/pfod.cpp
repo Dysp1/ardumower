@@ -740,13 +740,14 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 	  serialPort->print(F("|sgpsPMamMA0~Main Area"));
 	  serialPort->print(F("|sgpsPMamEA0~Exclude Area 1"));
 	  serialPort->print(F("|sgpsPMamEA1~Exclude Area 2"));
+    serialPort->print(F("|sgpsPMamSP0~Safe Points"));
 	  serialPort->print(F("|sgpsPMamHP0~Homing Points"));
 
 	  serialPort->print(F("|sgpsPMmm~Lat: "));
     serialPort->print(robot->gpsLat);
 	  serialPort->print(F("|sgpsPMmm~Lon: "));
     serialPort->print(robot->gpsLon);
-
+/*
     long nlat,nlon;
     long unsigned int age;
     robot->gps.get_position(&nlat, &nlon, &age);
@@ -755,9 +756,9 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
     serialPort->print(nlat);
 	  serialPort->print(F("|sgpsPMmm~yLon: "));
     serialPort->print(nlon);
-
-	  serialPort->print(F("|sgpsPMmm~GPSROLL STATE: "));
-		serialPort->print(robot->gpsPerimeterRollState);
+*/
+	  //serialPort->print(F("|sgpsPMmm~GPSROLL STATE: "));
+//		serialPort->print(robot->gpsPerimeterRollState);
 	  serialPort->print(F("|sgpsPMmm~Inside Area: "));
 		float insidePerim = robot->gpsPerimeter.insidePerimeter(robot->gpsLat, robot->gpsLon);
 //		float testx = 62.472 + (float)random(698,809)/1000000;
@@ -798,7 +799,12 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 	String areaType = pfodCmd.substring(8,10);
   uint8_t areaNumber = pfodCmd.substring(10,11).toInt();
 	char buffer[60];
-	char buffer2[60];
+
+  // There are currently 3 types of point lists
+  // MA (Main area points), points of the area that mower must stay inside
+  // EA (Exclusion area points), points of areas that mower may not enter
+  // SP (Safe point list), points that mower can always turn from perimeter
+  // HP (Homing points), points that will help the mower find charger
 
   if (update) {
   	serialPort->print("{:");
@@ -808,15 +814,20 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
   	} else {
 	    if (areaType.startsWith("EA")) { 
     		sprintf (buffer, "{.GPS P Exclusion Area %i`3000",areaNumber+1);
-			}	else {
-		    if (areaType.startsWith("HP")) { 
-  	  		sprintf (buffer, "{.GPS P Homing Points %i`3000",areaNumber+1);
-  	  	}
-			}
+      } else {
+        if (areaType.startsWith("SP")) { 
+          sprintf (buffer, "{.GPS P Safe Points %i`3000",areaNumber+1);
+        } else {
+          if (areaType.startsWith("HP")) { 
+            sprintf (buffer, "{.GPS P Homing Points %i`3000",areaNumber+1);
+          }
+        }
+      }
   	}
 	  serialPort->print(F(buffer)); 
   }
 	
+  // Displaying the current lat and lon we are at
   long lat, lon;
   unsigned long age;
   robot->gps.get_position(&lat, &lon, &age);
@@ -825,66 +836,48 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
   serialPort->print(F("|0gpsPMam~lon "));
   serialPort->print(lon);
 
-	if (areaType.startsWith("MA")) sprintf (buffer, "|0gpsPMamSavePointMA%i~Save as edge point",areaNumber);
-	if (areaType.startsWith("EA")) sprintf (buffer, "|0gpsPMamSavePointEA%i~Save as edge point",areaNumber);
-	if (areaType.startsWith("HP")) sprintf (buffer, "|0gpsPMamSavePointHP%i~Save homing point",areaNumber);
-	serialPort->print(F(buffer)); 
+  // Displaying save point button, which will save the current coordinates to current list
+  sprintf (buffer, "|0gpsPMamSavePoint");
+  if (areaType.startsWith("HP")) strcat (buffer, (areaType+areaNumber+"~Save homing point").c_str() );
+  else strcat (buffer, (areaType+areaNumber+"~Save as edge point").c_str() );
+  serialPort->print(F(buffer)); 
 
-	if (areaType.startsWith("MA")) sprintf (buffer, "|0~Points: %i/%i",robot->gpsPerimeter.getNumberOfMainAreaPoints(areaNumber), robot->gpsPerimeter.getMaxNumberOfMainAreaPoints());
-	if (areaType.startsWith("EA")) sprintf (buffer, "|0~Points: %i/%i",robot->gpsPerimeter.getNumberOfExclusionAreaPoints(areaNumber), robot->gpsPerimeter.getMaxNumberOfExclusionAreaPoints());
-	if (areaType.startsWith("HP")) sprintf (buffer, "|0~Points: %i/%i",robot->gpsPerimeter.getNumberOfHomingPoints(areaNumber), robot->gpsPerimeter.getMaxNumberOfHomingPoints());
-	serialPort->print(F(buffer)); 
+  // Displaying number of points used for this list
+  String dummy = "/";
+  uint8_t currPoints = robot->gpsPerimeter.getNumberOfPoints(areaType,areaNumber);
+  uint8_t maxPoints = robot->gpsPerimeter.getMaxNumberOfPoints(areaType,areaNumber);
+  sprintf (buffer, "|0~Points: ");
+  strcat (buffer, (currPoints+dummy+maxPoints).c_str() );
+  serialPort->print(F(buffer)); 
 
-	if (areaType.startsWith("MA")) sprintf (buffer2, "|0gpsPMamSaveDeletMA%i~Delete all points",areaNumber);
-	if (areaType.startsWith("EA")) sprintf (buffer2, "|0gpsPMamSaveDeletEA%i~Delete all points",areaNumber);
-	if (areaType.startsWith("HP")) sprintf (buffer2, "|0gpsPMamSaveDeletHP%i~Delete all points",areaNumber);
-	serialPort->print(F(buffer2)); 
+  // Displaying delete all button, which will delete all the points from this list
+  sprintf (buffer, "|0gpsPMamSaveDelet");
+  strcat (buffer, (areaType+areaNumber+"~Delete all points").c_str() );
+  serialPort->print(F(buffer)); 
 
+  // Displaying separation line before list of points
 	serialPort->print(F("|0~-----------------"));
 	
-	int areaPoints;
-	if (areaType.startsWith("MA")) {
-		areaPoints = robot->gpsPerimeter.getNumberOfMainAreaPoints(areaNumber);
-		for(int i=0; i < areaPoints; i++) {
-			serialPort->print(F("|0~"));
-			int asdf = robot->gpsPerimeter.getMainAreaPointX(areaNumber,i);
-			serialPort->print(robot->gpsPerimeter.getMainAreaPointX(areaNumber,i));
-			serialPort->print(",");
-			serialPort->print(robot->gpsPerimeter.getMainAreaPointY(areaNumber,i));
-			sprintf (buffer, "|0gpsPMamSaveDelPtMA%i%i~Delete above point",areaNumber,i);
-			serialPort->print(F(buffer)); 
-			//Serial.println(buffer);
-			sprintf (buffer, "|0gpsPMamSaveAddPtMA%i%i~Add new point here",areaNumber,i);
-			serialPort->print(F(buffer)); 
-			//Serial.println(buffer);
+  // Listing all points for current list
+	int points = robot->gpsPerimeter.getNumberOfPoints(areaType,areaNumber);
+  if ((areaType == "MA" || areaType == "EA") && points > 0) points++;
+  for(int i=0; i < points; i++) {
+    serialPort->print(F("|0~"));
+		serialPort->print(robot->gpsPerimeter.getPointX(areaType,areaNumber,i));
+		serialPort->print(",");
+		serialPort->print(robot->gpsPerimeter.getPointY(areaType,areaNumber,i));
+    
+    if ((areaType == "MA" || areaType == "EA") && i == points-1) break;
+    
+    sprintf (buffer, "|0gpsPMamSaveDelPt");
+    strcat (buffer, (areaType+areaNumber+i+"~Delete above point").c_str() );
+    serialPort->print(F(buffer)); 
 
-		}
-	}
-
-	if (areaType.startsWith("EA")) {
-		areaPoints = robot->gpsPerimeter.getNumberOfExclusionAreaPoints(areaNumber);
-		for(int i=0; i < areaPoints; i++) {
-			serialPort->print(F("|0~"));
-			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointX(areaNumber,i));
-			serialPort->print(",");
-			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointY(areaNumber,i));
-			sprintf (buffer, "|0gpsPMamSaveDelPtEA%i%i~Delete above point",areaNumber,i);
-			serialPort->print(F(buffer)); 
-			sprintf (buffer, "|0gpsPMamSaveAddPtEA%i%i~Add new point here",areaNumber,i);
-			serialPort->print(F(buffer)); 
-		}
-	}
-
-	if (areaType.startsWith("HP")) {
-		areaPoints = robot->gpsPerimeter.getNumberOfHomingPoints(areaNumber);
-		for(int i=0; i < areaPoints; i++) {
-			serialPort->print(F("|0~"));
-			serialPort->print(robot->gpsPerimeter.getHomingPointX(areaNumber,i));
-			serialPort->print(",");
-			serialPort->print(robot->gpsPerimeter.getHomingPointY(areaNumber,i));
-		}
-	}
-
+    sprintf (buffer, "|0gpsPMamSaveAddPt");
+    strcat (buffer, (areaType+areaNumber+i+"~Add new point here").c_str() );
+    serialPort->print(F(buffer)); 
+    
+  }
 
 	serialPort->println("}");
 }
@@ -922,7 +915,7 @@ void RemoteControl::processGPSPerimeterAreaMenu(String pfodCmd){
     sendGPSPerimeterAreaMenu(true, buffer);
   }
 
-
+  sendGPSPerimeterAreaMenu(true, buffer);
 }
 
 void RemoteControl::sendImuMenu(boolean update){

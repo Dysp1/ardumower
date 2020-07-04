@@ -279,7 +279,7 @@ void Robot::setSensorTriggered(char type){
 }
 
 const char *Robot::lastSensorTriggeredName(){
-  String s = "";
+  String s = "N/A";
   if (lastSensorTriggeredTime != 0) {
     s = sensorNames[lastSensorTriggered];
     s += " (";

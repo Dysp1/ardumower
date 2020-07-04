@@ -202,52 +202,39 @@ int gpsMap::insideLongGrassTempArea(long x, long y)
 
 float gpsMap::distanceToClosestWall(long x, long y)
 {
-/*    float distanceToClosestWall = 100000;
-     Point _currentLocation = {x,y};
+  float distanceToClosestWall = 100000;
+  Point _currentLocation = {x,y};
+ 
+  pointList arrayToModify = getRightArray("MA", 0);
 
-    for (int i=0; i<_numberOfMainAreaPoints; i++) {   // edge from V[i] to  V[i+1]
-        float distance = abs( ((_mainAreaPointList[i+1].y - _mainAreaPointList[i].y)*_currentLocation.x 
-                             - (_mainAreaPointList[i+1].x - _mainAreaPointList[i].x)*_currentLocation.y 
-                             +  _mainAreaPointList[i+1].x*_mainAreaPointList[i].y 
-                             -  _mainAreaPointList[i+1].y*_mainAreaPointList[i].x )) 
-                         / sqrt(pow((_mainAreaPointList[i+1].y-_mainAreaPointList[i].y),2) 
-                              + pow((_mainAreaPointList[i+1].x-_mainAreaPointList[i].x),2) );
-        Serial.print(i);
-        Serial.print(":: ");
-        Serial.print(_currentLocation.x);
-        Serial.print(",");
-        Serial.print(_currentLocation.y);
-        Serial.print(" - ");
-        Serial.print(_mainAreaPointList[i].x);
-        Serial.print(",");
-        Serial.print(_mainAreaPointList[i].y);
-        Serial.print(" - ");
-        Serial.print(_mainAreaPointList[i+1].x);
-        Serial.print(",");
-        Serial.print(_mainAreaPointList[i+1].y);
-        Serial.print(" - ");
-        
-        distanceToClosestWall = min(distanceToClosestWall, distance);
-        Serial.println(distanceToClosestWall);
-    }
+  for (int i=0; i < arrayToModify.numPoints; i++) {   // edge from V[i] to  V[i+1]
+      float distance = abs( ((arrayToModify.point[i+1].y - arrayToModify.point[i].y)*_currentLocation.x 
+                           - (arrayToModify.point[i+1].x - arrayToModify.point[i].x)*_currentLocation.y 
+                           +  arrayToModify.point[i+1].x*arrayToModify.point[i].y 
+                           -  arrayToModify.point[i+1].y*arrayToModify.point[i].x )) 
+                       / sqrt(pow((arrayToModify.point[i+1].y-arrayToModify.point[i].y),2) 
+                            + pow((arrayToModify.point[i+1].x-arrayToModify.point[i].x),2) );
+    Serial.print(i);
+    Serial.print(":: ");
+    Serial.print(_currentLocation.x);
+    Serial.print(",");
+    Serial.print(_currentLocation.y);
+    Serial.print(" - ");
+    Serial.print(arrayToModify.point[i].x);
+    Serial.print(",");
+    Serial.print(arrayToModify.point[i].y);
+    Serial.print(" - ");
+    Serial.print(arrayToModify.point[i+1].x);
+    Serial.print(",");
+    Serial.print(arrayToModify.point[i+1].y);
+    Serial.print(" - ");
+      
+    distanceToClosestWall = min(distanceToClosestWall, distance);
+    Serial.println(distanceToClosestWall);
+  }
+  return distanceToClosestWall;
 
-    return distanceToClosestWall;
-*/
 }
-
-/*
-uint8_t gpsMap::addMainAreaPointDELETEME( float x, float y) {
-    if (_numberOfMainAreaPoints >= MAXMAINAREAPOINTS-1) {
-        return 1;
-    } else {
-        _mainAreaPointList[_numberOfMainAreaPoints] = {x,y};
-        _mainAreaPointList[_numberOfMainAreaPoints+1] = _mainAreaPointList[0]; // last point of area must be equal to first
-        _numberOfMainAreaPoints++;
-        loadSaveMapData(false);
-    }
-    return 0;
-}
-*/
 
 float gpsMap::distanceFromTempAreaMiddle(long lat, long lon)
 {
@@ -269,8 +256,8 @@ float gpsMap::getNewHeadingFromPerimeterDegrees( long lat, long lon) {
   float lastShortestDistance = 88888.0;
   float shortestDistance = 99999.0;
   int i = 0;
-  for (i=0; i < _homingPointList[0].numPoints; i++) {
-    shortestDistance = min(shortestDistance, (sqrt( pow((lat - _homingPointList[0].point[i].x),2) + pow((lon - _homingPointList[0].point[i].y),2) )));
+  for (i=0; i < _safePointList[0].numPoints; i++) {
+    shortestDistance = min(shortestDistance, (sqrt( pow((lat - _safePointList[0].point[i].x),2) + pow((lon - _safePointList[0].point[i].y),2) )));
 /*    Serial.print("distance:");
     Serial.println(shortestDistance,8);
 
@@ -310,7 +297,7 @@ float gpsMap::getNewHeadingFromPerimeterDegrees( long lat, long lon) {
   Serial.print(_homingPointList[0].point[closestPoint].y,6);
   Serial.print(" - dist: ");
 */
-  float degrees = atan2( (_homingPointList[0].point[closestPoint].y - lon ), (_homingPointList[0].point[closestPoint].x - lat) )/PI*180.0;
+  float degrees = atan2( (_safePointList[0].point[closestPoint].y - lon ), (_safePointList[0].point[closestPoint].x - lat) )/PI*180.0;
   if (degrees < 0) degrees += 360; 
 
   //Serial.println(degrees);
@@ -357,56 +344,18 @@ void gpsMap::disableTemporaryArea() {
   _longGrassTempAreaInUse = 0;
 }
 
-/*
-void pushArray(arrayToPush, int positionToAdd, long lat, long lon) {
-    if (arrayToPush.numPoints > 0 && arrayToPush.numPoints < MAXMAINAREAPOINTS) {
-      int i = 0;
-      for (i = positionToAdd; i <= arrayToPush.numPoints; i++) {
-        arrayToPush.point[i+1].x = arrayToPush.point[i].x;
-        arrayToPush.point[i+1].y = arrayToPush.point[i].y;
-      }
-      arrayToPush.point[positionToAdd].x = lat;
-      arrayToPush.point[positionToAdd].y = lon;
-      arrayToPush.numPoints++;
-    }
-}
-*/
-
-void gpsMap::addMainAreaPointInMiddle(int areaNumber, int positionToAdd, long lat, long lon) {
-    if (_mainAreas[areaNumber].numPoints > 0 && _mainAreas[areaNumber].numPoints < MAXMAINAREAPOINTS) {
-      int i = 0;
-      for (i = positionToAdd; i <= _mainAreas[areaNumber].numPoints; i++) {
-        _mainAreas[areaNumber].point[i+1].x = _mainAreas[areaNumber].point[i].x;
-        _mainAreas[areaNumber].point[i+1].y = _mainAreas[areaNumber].point[i].y;
-      }
-      _mainAreas[areaNumber].point[positionToAdd].x = lat;
-      _mainAreas[areaNumber].point[positionToAdd].y = lon;
-      _mainAreas[areaNumber].numPoints++;
-    }
-}
-
-void gpsMap::deleteMainAreaPointFromMiddle(int areaNumber, int positionToAdd, long lat, long lon) {
-    if (_mainAreas[areaNumber].numPoints > 0) {
-      int i = 0;
-      for (i = positionToAdd; i <= _mainAreas[areaNumber].numPoints; i++) {
-        _mainAreas[areaNumber].point[i].x = _mainAreas[areaNumber].point[i+1].x;
-        _mainAreas[areaNumber].point[i].y = _mainAreas[areaNumber].point[i+1].y;
-      }
-      _mainAreas[areaNumber].numPoints--;
-    }
-}
-
-
 pointList gpsMap::getRightArray(String areaType, int areaNumber) {
   if (areaType == "MA") return _mainAreas[areaNumber];
     else if (areaType == "EA") return _exclusionAreas[areaNumber];
-      else if (areaType == "HP") return _homingPointList[areaNumber];
+      else if (areaType == "SP") return _safePointList[areaNumber];
+        else if (areaType == "HP") return _homingPointList[areaNumber];
 }
 
 void gpsMap::putBackToRightArray(String areaType, int areaNumber, pointList arrayToModify) {
   if (areaType == "MA") _mainAreas[areaNumber] = arrayToModify;
     else if (areaType == "EA") _exclusionAreas[areaNumber] = arrayToModify;
-      else if (areaType == "HP") _homingPointList[areaNumber] = arrayToModify;
+      else if (areaType == "SP") _safePointList[areaNumber] = arrayToModify;
+        else if (areaType == "HP") _homingPointList[areaNumber] = arrayToModify;
 }
 
 void gpsMap::addPointInMiddle(String areaType, int areaNumber, int positionToAdd, long lat, long lon) {
@@ -475,77 +424,25 @@ void gpsMap::deletePointFromMiddle(String areaType, int areaNumber, int position
 }
 
 
-
-
-int gpsMap::addMainAreaPoint(int areaNumber, long lat, long lon) {
-    if (_mainAreas[areaNumber].numPoints >= MAXMAINAREAPOINTS-1) {
-        return 1;
-    } else {
-        _mainAreas[areaNumber].point[_mainAreas[areaNumber].numPoints] = {lat , lon};
-        _mainAreas[areaNumber].point[_mainAreas[areaNumber].numPoints + 1] = _mainAreas[areaNumber].point[0]; // last point of area must be equal to first
-        _mainAreas[areaNumber].numPoints++;
-    }
-    if (!_unitTesting) loadSaveMapData(false);
-    return 0;
-}
-
-int gpsMap::addExclusionAreaPoint(int areaNumber, long lat, long lon) {
-  if (_exclusionAreas[areaNumber].numPoints >= MAXEXCLUSIONAREAPOINTS-1) {
-      return 1;
-  } else {
-      _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints] = {lat , lon};
-      _exclusionAreas[areaNumber].point[_exclusionAreas[areaNumber].numPoints + 1] = _exclusionAreas[areaNumber].point[0]; // last point of area must be equal to first
-      _exclusionAreas[areaNumber].numPoints++;
-  }
-  if (!_unitTesting) loadSaveMapData(false);
-  return 0;
-}
-
-int gpsMap::addHomingPoint(int areaNumber, long lat, long lon) {
-    if (_homingPointList[areaNumber].numPoints >= MAXHOMINGPOINTS-1) {
-        return 1;
-    } else {
-        _homingPointList[areaNumber].point[_homingPointList[areaNumber].numPoints] = {lat , lon};
-        _homingPointList[areaNumber].numPoints++;
-    }
-    if (!_unitTesting) loadSaveMapData(false);
-    return 0;
-}
-
-
-uint8_t gpsMap::removeMainAreaPoint(int pointNro) {
-/*
-    if (_numberOfMainAreaPoints <= 1) {
-        _numberOfMainAreaPoints = 0;
-        return 1;
-    } else {
-        int i=0;
-        while (pointNro-1+i < _numberOfMainAreaPoints+1) {
-            _mainAreaPointList[pointNro-1+i] = _mainAreaPointList[pointNro+i]; // last point of area must be equal to first
-            i++;
-        }
-        _numberOfMainAreaPoints--;
-
-    }
-*/
-    return 0;
-}
-
-long gpsMap::getMainAreaPointX(int areaNumber, int pointNumber) {
-  return _mainAreas[areaNumber].point[pointNumber].x;
-}
-
-long gpsMap::getMainAreaPointY(int areaNumber, int pointNumber) {
-  return _mainAreas[areaNumber].point[pointNumber].y;
-}
-
-int gpsMap::getNumberOfMainAreaPoints(int areaNumber) {
-  if (_mainAreas[areaNumber].numPoints > 0 && _mainAreas[areaNumber].numPoints <= MAXMAINAREAPOINTS) return _mainAreas[areaNumber].numPoints;
+int gpsMap::getNumberOfPoints(String areaType,int areaNumber) {
+  pointList arrayToModify = getRightArray(areaType, areaNumber);
+  
+  if (arrayToModify.numPoints > 0 && arrayToModify.numPoints <= MAXPOINTS) return arrayToModify.numPoints;
   else return 0;  
 }
 
-int gpsMap::getMaxNumberOfMainAreaPoints() {
-  return MAXMAINAREAPOINTS-1;  
+long gpsMap::getPointX(String areaType, int areaNumber, int pointNumber) {
+  pointList arrayToModify = getRightArray(areaType, areaNumber);
+  return arrayToModify.point[pointNumber].x;
+}
+
+long gpsMap::getPointY(String areaType, int areaNumber, int pointNumber) {
+  pointList arrayToModify = getRightArray(areaType, areaNumber);
+  return arrayToModify.point[pointNumber].y;
+}
+
+int gpsMap::getMaxNumberOfPoints(String areaType, int areaNumber) {
+  return MAXPOINTS-1;  
 }
 
 int gpsMap::getLongGrassTempAreaInUse() {
@@ -556,61 +453,11 @@ void gpsMap::setLongGrassTempAreaSize(float size) {
   _tempAreaSize = size; 
 }
 
-long gpsMap::getExclusionAreaPointX(int areaNumber, int pointNumber) {
-  return _exclusionAreas[areaNumber].point[pointNumber].x;
-}
-
-long gpsMap::getExclusionAreaPointY(int areaNumber, int pointNumber) {
-  return _exclusionAreas[areaNumber].point[pointNumber].y;
-}
-
-int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
-  if (_exclusionAreas[areaNumber].numPoints > 0 && _exclusionAreas[areaNumber].numPoints <= MAXEXCLUSIONAREAPOINTS) return _exclusionAreas[areaNumber].numPoints;
-  else return 0;  
-}
-
-int gpsMap::getMaxNumberOfExclusionAreaPoints() {
-  return MAXEXCLUSIONAREAPOINTS-1;  
-}
-
-long gpsMap::getHomingPointX(int areaNumber, int pointNumber) {
-  return _homingPointList[areaNumber].point[pointNumber].x;
-}
-
-long gpsMap::getHomingPointY(int areaNumber, int pointNumber) {
-  return _homingPointList[areaNumber].point[pointNumber].y;
-}
-
-int gpsMap::getNumberOfHomingPoints(int areaNumber) {
-  if (_homingPointList[areaNumber].numPoints > 0 && _homingPointList[areaNumber].numPoints <= MAXHOMINGPOINTS) return _homingPointList[areaNumber].numPoints;
-  else return 0;  
-}
-
-int gpsMap::getMaxNumberOfHomingPoints() {
-  return MAXHOMINGPOINTS-1;  
-}
-
-void gpsMap::deleteMainAreaPoints(int areaNumber) {
-  _mainAreas[areaNumber].numPoints = 0; 
-  if (!_unitTesting) loadSaveMapData(false);
-}
-
-void gpsMap::deleteExclusionAreaPoints(int areaNumber) {
-  _exclusionAreas[areaNumber].numPoints = 0;
-  if (!_unitTesting) loadSaveMapData(false);
-}
-
-void gpsMap::deleteHomingPoints(int areaNumber) {
-  _homingPointList[areaNumber].numPoints = 0;
-  if (!_unitTesting) loadSaveMapData(false);
-}
-
 void gpsMap::init(float size, float wiredInUse) {
   _tempAreaSize = size; 
   _wiredPerimeterInUse = wiredInUse;
   loadSaveMapData(true);
 }
-
 
 void gpsMap::loadSaveMapData(boolean readflag){
   if (readflag) Serial.println(F("loadSavegpsMapData:: read"));
@@ -636,7 +483,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
   for (int i=0; i <= _numberOfMainAreas; i++) {
     eereadwrite(readflag, addr, _mainAreas[i].numPoints);  
     int j=0;
-    if (_mainAreas[i].numPoints > 0 && _mainAreas[i].numPoints <= MAXMAINAREAPOINTS) {
+    if (_mainAreas[i].numPoints > 0 && _mainAreas[i].numPoints <= MAXPOINTS) {
       for (j; j <= _mainAreas[i].numPoints; j++) {
         eereadwrite(readflag, addr, _mainAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _mainAreas[i].point[j].y);      
@@ -653,7 +500,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
   for (int i=0; i <= _numberOfExclusionAreas; i++) {
     eereadwrite(readflag, addr, _exclusionAreas[i].numPoints);  
     int j=0;
-    if (_exclusionAreas[i].numPoints > 0 && _exclusionAreas[i].numPoints <= MAXEXCLUSIONAREAPOINTS) {
+    if (_exclusionAreas[i].numPoints > 0 && _exclusionAreas[i].numPoints <= MAXPOINTS) {
       for (j; j <= _exclusionAreas[i].numPoints; j++) {
         eereadwrite(readflag, addr, _exclusionAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _exclusionAreas[i].point[j].y);      
@@ -665,12 +512,25 @@ void gpsMap::loadSaveMapData(boolean readflag){
     }
   }
 
+  eereadwrite(readflag, addr, _numberOfSafePointLists);  
+
+  for (int i=0; i <= _numberOfSafePointLists; i++) {
+    eereadwrite(readflag, addr, _safePointList[i].numPoints);  
+    int j=0;
+    if (_safePointList[i].numPoints > 0 && _safePointList[i].numPoints <= MAXPOINTS) {
+      for (j; j <= _safePointList[i].numPoints; j++) {
+        eereadwrite(readflag, addr, _safePointList[i].point[j].x);      
+        eereadwrite(readflag, addr, _safePointList[i].point[j].y);      
+      }
+    }
+  }
+
   eereadwrite(readflag, addr, _numberOfHomingPointLists);  
 
   for (int i=0; i <= _numberOfHomingPointLists; i++) {
     eereadwrite(readflag, addr, _homingPointList[i].numPoints);  
     int j=0;
-    if (_homingPointList[i].numPoints > 0 && _homingPointList[i].numPoints <= MAXHOMINGPOINTS) {
+    if (_homingPointList[i].numPoints > 0 && _homingPointList[i].numPoints <= MAXPOINTS) {
       for (j; j <= _homingPointList[i].numPoints; j++) {
         eereadwrite(readflag, addr, _homingPointList[i].point[j].x);      
         eereadwrite(readflag, addr, _homingPointList[i].point[j].y);      
@@ -686,17 +546,17 @@ void gpsMap::loadSaveMapData(boolean readflag){
 
 void gpsMap::doUnitTest() {
   _unitTesting = true;
-  addMainAreaPoint(0,10.0000,10.0000);
-  addMainAreaPoint(0,10.0000,10.0010);
-  addMainAreaPoint(0,10.0010,10.0010);
-  addMainAreaPoint(0,10.0010,10.0000);
-  addMainAreaPoint(0,10.0000,10.0000);
+  addPoint("MA",0,10.0000,10.0000);
+  addPoint("MA",0,10.0000,10.0010);
+  addPoint("MA",0,10.0010,10.0010);
+  addPoint("MA",0,10.0010,10.0000);
+  addPoint("MA",0,10.0000,10.0000);
 
-  addExclusionAreaPoint(0,10.0002,10.0002);
-  addExclusionAreaPoint(0,10.0002,10.0004);
-  addExclusionAreaPoint(0,10.0004,10.0004);
-  addExclusionAreaPoint(0,10.0004,10.0002);
-  addExclusionAreaPoint(0,10.0002,10.0002);
+  addPoint("EA",0,10.0002,10.0002);
+  addPoint("EA",0,10.0002,10.0004);
+  addPoint("EA",0,10.0004,10.0004);
+  addPoint("EA",0,10.0004,10.0002);
+  addPoint("EA",0,10.0002,10.0002);
 
   _longGrassTempAreaInUse = 0;
 
