@@ -357,6 +357,126 @@ void gpsMap::disableTemporaryArea() {
   _longGrassTempAreaInUse = 0;
 }
 
+/*
+void pushArray(arrayToPush, int positionToAdd, long lat, long lon) {
+    if (arrayToPush.numPoints > 0 && arrayToPush.numPoints < MAXMAINAREAPOINTS) {
+      int i = 0;
+      for (i = positionToAdd; i <= arrayToPush.numPoints; i++) {
+        arrayToPush.point[i+1].x = arrayToPush.point[i].x;
+        arrayToPush.point[i+1].y = arrayToPush.point[i].y;
+      }
+      arrayToPush.point[positionToAdd].x = lat;
+      arrayToPush.point[positionToAdd].y = lon;
+      arrayToPush.numPoints++;
+    }
+}
+*/
+
+void gpsMap::addMainAreaPointInMiddle(int areaNumber, int positionToAdd, long lat, long lon) {
+    if (_mainAreas[areaNumber].numPoints > 0 && _mainAreas[areaNumber].numPoints < MAXMAINAREAPOINTS) {
+      int i = 0;
+      for (i = positionToAdd; i <= _mainAreas[areaNumber].numPoints; i++) {
+        _mainAreas[areaNumber].point[i+1].x = _mainAreas[areaNumber].point[i].x;
+        _mainAreas[areaNumber].point[i+1].y = _mainAreas[areaNumber].point[i].y;
+      }
+      _mainAreas[areaNumber].point[positionToAdd].x = lat;
+      _mainAreas[areaNumber].point[positionToAdd].y = lon;
+      _mainAreas[areaNumber].numPoints++;
+    }
+}
+
+void gpsMap::deleteMainAreaPointFromMiddle(int areaNumber, int positionToAdd, long lat, long lon) {
+    if (_mainAreas[areaNumber].numPoints > 0) {
+      int i = 0;
+      for (i = positionToAdd; i <= _mainAreas[areaNumber].numPoints; i++) {
+        _mainAreas[areaNumber].point[i].x = _mainAreas[areaNumber].point[i+1].x;
+        _mainAreas[areaNumber].point[i].y = _mainAreas[areaNumber].point[i+1].y;
+      }
+      _mainAreas[areaNumber].numPoints--;
+    }
+}
+
+
+pointList gpsMap::getRightArray(String areaType, int areaNumber) {
+  if (areaType == "MA") return _mainAreas[areaNumber];
+    else if (areaType == "EA") return _exclusionAreas[areaNumber];
+      else if (areaType == "HP") return _homingPointList[areaNumber];
+}
+
+void gpsMap::putBackToRightArray(String areaType, int areaNumber, pointList arrayToModify) {
+  if (areaType == "MA") _mainAreas[areaNumber] = arrayToModify;
+    else if (areaType == "EA") _exclusionAreas[areaNumber] = arrayToModify;
+      else if (areaType == "HP") _homingPointList[areaNumber] = arrayToModify;
+}
+
+void gpsMap::addPointInMiddle(String areaType, int areaNumber, int positionToAdd, long lat, long lon) {
+
+    pointList arrayToModify = getRightArray(areaType, areaNumber);
+
+    if (arrayToModify.numPoints > 0 && arrayToModify.numPoints < MAXPOINTS-1) {
+      int i = 0;
+      for (i = arrayToModify.numPoints; i > positionToAdd; i--) {
+        arrayToModify.point[i+1] = arrayToModify.point[i];
+      }
+      arrayToModify.point[positionToAdd+1].x = random(1,200); //lat;
+      arrayToModify.point[positionToAdd+1].y = random(1,200); //lon;
+      arrayToModify.numPoints++;
+    }
+
+    if (positionToAdd == 0 && (areaType == "MA" || areaType == "EA")) arrayToModify.point[arrayToModify.numPoints] = arrayToModify.point[0];  // last point of exclusion and main areas must be equal to the first point
+
+    putBackToRightArray(areaType, areaNumber, arrayToModify);
+
+    if (!_unitTesting) loadSaveMapData(false);
+}
+
+
+int gpsMap::addPoint(String areaType, int areaNumber, long lat, long lon) {
+    
+    pointList arrayToModify = getRightArray(areaType, areaNumber);
+
+    if (arrayToModify.numPoints >= MAXPOINTS-1) {
+        return 0;
+    } else {
+        arrayToModify.point[arrayToModify.numPoints] = {lat , lon};
+        if (areaType == "MA" || areaType == "EA") arrayToModify.point[arrayToModify.numPoints + 1] = arrayToModify.point[0];  // last point of exclusion and main areas must be equal to the first point
+        arrayToModify.numPoints++;
+    }
+
+    putBackToRightArray(areaType, areaNumber, arrayToModify);
+
+    if (!_unitTesting) loadSaveMapData(false);
+    return 1;
+}
+
+void gpsMap::deleteAllPoints(String areaType, int areaNumber) {
+  
+  pointList arrayToModify = getRightArray(areaType, areaNumber);
+  arrayToModify.numPoints = 0; 
+  putBackToRightArray(areaType, areaNumber, arrayToModify);
+
+  if (!_unitTesting) loadSaveMapData(false);
+}
+
+void gpsMap::deletePointFromMiddle(String areaType, int areaNumber, int positionToDelete) {
+  pointList arrayToModify = getRightArray(areaType, areaNumber);
+
+  if (arrayToModify.numPoints > 0) {
+    int i = 0;
+    for (i = positionToDelete; i <= arrayToModify.numPoints; i++) {
+      arrayToModify.point[i] = arrayToModify.point[i+1];
+    }
+    arrayToModify.numPoints--;
+    if (positionToDelete == 0 && (areaType == "MA" || areaType == "EA")) arrayToModify.point[arrayToModify.numPoints] = arrayToModify.point[0];  // last point of exclusion and main areas must be equal to the first point
+  }
+  putBackToRightArray(areaType, areaNumber, arrayToModify);
+
+  if (!_unitTesting) loadSaveMapData(false);
+}
+
+
+
+
 int gpsMap::addMainAreaPoint(int areaNumber, long lat, long lon) {
     if (_mainAreas[areaNumber].numPoints >= MAXMAINAREAPOINTS-1) {
         return 1;
@@ -370,8 +490,6 @@ int gpsMap::addMainAreaPoint(int areaNumber, long lat, long lon) {
 }
 
 int gpsMap::addExclusionAreaPoint(int areaNumber, long lat, long lon) {
-  lat = lat * 100000;
-  lon = lon * 100000;
   if (_exclusionAreas[areaNumber].numPoints >= MAXEXCLUSIONAREAPOINTS-1) {
       return 1;
   } else {
@@ -426,6 +544,10 @@ int gpsMap::getNumberOfMainAreaPoints(int areaNumber) {
   else return 0;  
 }
 
+int gpsMap::getMaxNumberOfMainAreaPoints() {
+  return MAXMAINAREAPOINTS-1;  
+}
+
 int gpsMap::getLongGrassTempAreaInUse() {
   return _longGrassTempAreaInUse;
 }
@@ -447,6 +569,10 @@ int gpsMap::getNumberOfExclusionAreaPoints(int areaNumber) {
   else return 0;  
 }
 
+int gpsMap::getMaxNumberOfExclusionAreaPoints() {
+  return MAXEXCLUSIONAREAPOINTS-1;  
+}
+
 long gpsMap::getHomingPointX(int areaNumber, int pointNumber) {
   return _homingPointList[areaNumber].point[pointNumber].x;
 }
@@ -458,6 +584,10 @@ long gpsMap::getHomingPointY(int areaNumber, int pointNumber) {
 int gpsMap::getNumberOfHomingPoints(int areaNumber) {
   if (_homingPointList[areaNumber].numPoints > 0 && _homingPointList[areaNumber].numPoints <= MAXHOMINGPOINTS) return _homingPointList[areaNumber].numPoints;
   else return 0;  
+}
+
+int gpsMap::getMaxNumberOfHomingPoints() {
+  return MAXHOMINGPOINTS-1;  
 }
 
 void gpsMap::deleteMainAreaPoints(int areaNumber) {

@@ -580,6 +580,8 @@ class Robot
     virtual void loop();        
 
     virtual void resetIdleTime();
+
+    int freeMemory();
     
     // call this from R/C control interrupt
     virtual void setRemotePPMState(unsigned long timeMicros, boolean remoteSpeedState, boolean remoteSteerState, 

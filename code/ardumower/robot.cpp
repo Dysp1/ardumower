@@ -75,7 +75,12 @@ float Robot::ADC2voltage(float ADCvalue){
   return (ADCvalue /1023.0 * IOREF);   // ADCman works @ 10 bit
 }  
 
+extern "C" char* sbrk(int incr);
 
+int Robot::freeMemory() {
+  char top;
+  return &top - reinterpret_cast<char*>(sbrk(0));
+}
 
 Robot::Robot(){
   name = "Generic";
@@ -249,6 +254,7 @@ Robot::Robot(){
   rmcsInfoLastSendPeri = 0;
   gpsPerimeterRollState = 0;
   gpsPerimeterRollSubStateStartTime = 0;
+
 }
 
 const char *Robot::mowPatternName(){
@@ -1563,6 +1569,7 @@ void Robot::loop()  {
 
   if (millis() >= nextTimeInfo) {        
     nextTimeInfo = millis() + 1000; 
+  
     //gpsPerimeter.doUnitTest();
     //gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
     //gpsPerimeter.insidePerimeter(random(6247269,6247280), random(2544013,2544030));

@@ -26,7 +26,9 @@
 #define MAXMAINAREAS 4
 #define MAXEXCLUSIONAREAS 10
 
-#define MAXMAINAREAPOINTS 31 // 30 + 1 extra. last point must be = first point
+#define MAXPOINTS 51 // 50 + 1 extra. last point must be = first point
+
+#define MAXMAINAREAPOINTS 51 // 30 + 1 extra. last point must be = first point
 #define MAXEXCLUSIONAREAPOINTS 11 // 10 + 1 extra. last point must be = first point
 #define MAXHOMINGPOINTS 30
 
@@ -34,6 +36,11 @@
 #define ADDR_GPSMAP_DATA 2049
 
 typedef struct {long x, y;} Point;
+
+typedef struct  {
+                  int numPoints = 0; 
+                  Point point[MAXMAINAREAPOINTS] = {};
+                } pointList;
 
 typedef struct  {
                   int numPoints = 0; 
@@ -53,9 +60,13 @@ typedef struct  {
 class gpsMap
 {
     private:
-        mainArea _mainAreas[MAXMAINAREAS];
-        exclusionArea _exclusionAreas[MAXEXCLUSIONAREAS];
-        homingPointList _homingPointList[2];
+        //mainArea _mainAreas[MAXMAINAREAS];
+        //exclusionArea _exclusionAreas[MAXEXCLUSIONAREAS];
+        //homingPointList _homingPointList[2];
+
+        pointList _mainAreas[MAXMAINAREAS];
+        pointList _exclusionAreas[MAXEXCLUSIONAREAS];
+        pointList _homingPointList[2];
 
         float _numberOfMainAreas = 1; // we must have at least one main area
         float _numberOfExclusionAreas = 2;
@@ -71,15 +82,22 @@ class gpsMap
         float _wiredPerimeterInUse = 0;
         float _tempAreaTimeIfNoLongGrassFound = 300000;
 
-        bool _unitTesting = false;
+        bool _unitTesting = true; //false;
 
         inline long isLeft( Point P0, Point P1, Point P2 );
         void doTest(uint8_t testNum, long lat, long lon, bool expectZero);
         void loadSaveMapData(boolean readflag);
+        pointList getRightArray(String areaType, int areaNumber);
+        void putBackToRightArray(String areaType, int areaNumber, pointList arrayToModify);
 
     public:
         void doUnitTest(); 
         void init(float size, float wiredInUse);
+
+        int addPoint(String areaType, int areaNumber, long lat, long lon);
+        void addPointInMiddle(String areaType, int areaNumber, int positionToAdd, long lat, long lon);
+        void deleteAllPoints(String areaType, int areaNumber);
+        void deletePointFromMiddle(String areaType, int areaNumber, int positionToDelete);
 
         int getLongGrassTempAreaInUse();
         int insideLongGrassTempArea(long x, long y);
@@ -90,23 +108,30 @@ class gpsMap
 
         int addMainAreaPoint(int areaNum, long lat, long lon);
         int getNumberOfMainAreaPoints(int areaNumber);
+        int getMaxNumberOfMainAreaPoints();
         long getMainAreaPointX(int areaNumber, int pointNumber);
         long getMainAreaPointY(int areaNumber, int pointNumber);
         void deleteMainAreaPoints(int areaNumber);
-
+        void addMainAreaPointInMiddle(int areaNumber, int positionToAdd, long lat, long lon);
+        void deleteMainAreaPointFromMiddle(int areaNumber, int positionToAdd, long lat, long lon);
 
         int addExclusionAreaPoint(int areaNum, long lat, long lon);
         int getNumberOfExclusionAreaPoints(int areaNumber);
+        int getMaxNumberOfExclusionAreaPoints();
         long getExclusionAreaPointX(int areaNumber, int pointNumber);
         long getExclusionAreaPointY(int areaNumber, int pointNumber);
         void deleteExclusionAreaPoints(int areaNumber);
+        void deleteExclusionAreaPointFromMiddle(int areaNumber, int positionToAdd, long lat, long lon);
+
 
         int addHomingPoint(int areaNum, long lat, long lon);
         int getNumberOfHomingPoints (int areaNumber);
+        int getMaxNumberOfHomingPoints();
         long getHomingPointX (int areaNumber, int pointNumber);
         long getHomingPointY (int areaNumber, int pointNumber);
         void deleteHomingPoints(int areaNumber);
         float getNewHeadingFromPerimeterDegrees( long lat, long lon);
+
 
         int insidePerimeter(long x, long y);
         float distanceToClosestWall(long x, long y);

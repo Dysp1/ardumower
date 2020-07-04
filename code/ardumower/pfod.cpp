@@ -804,13 +804,13 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
   	serialPort->print("{:");
   } else {
   	if (areaType.startsWith("MA")) { 
-    	sprintf (buffer, "{.GPS P Main Area %i`1000",areaNumber+1);
+    	sprintf (buffer, "{.GPS P Main Area %i`3000",areaNumber+1);
   	} else {
 	    if (areaType.startsWith("EA")) { 
-    		sprintf (buffer, "{.GPS P Exclusion Area %i`1000",areaNumber+1);
+    		sprintf (buffer, "{.GPS P Exclusion Area %i`3000",areaNumber+1);
 			}	else {
 		    if (areaType.startsWith("HP")) { 
-  	  		sprintf (buffer, "{.GPS P Homing Points %i`1000",areaNumber+1);
+  	  		sprintf (buffer, "{.GPS P Homing Points %i`3000",areaNumber+1);
   	  	}
 			}
   	}
@@ -830,6 +830,11 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 	if (areaType.startsWith("HP")) sprintf (buffer, "|0gpsPMamSavePointHP%i~Save homing point",areaNumber);
 	serialPort->print(F(buffer)); 
 
+	if (areaType.startsWith("MA")) sprintf (buffer, "|0~Points: %i/%i",robot->gpsPerimeter.getNumberOfMainAreaPoints(areaNumber), robot->gpsPerimeter.getMaxNumberOfMainAreaPoints());
+	if (areaType.startsWith("EA")) sprintf (buffer, "|0~Points: %i/%i",robot->gpsPerimeter.getNumberOfExclusionAreaPoints(areaNumber), robot->gpsPerimeter.getMaxNumberOfExclusionAreaPoints());
+	if (areaType.startsWith("HP")) sprintf (buffer, "|0~Points: %i/%i",robot->gpsPerimeter.getNumberOfHomingPoints(areaNumber), robot->gpsPerimeter.getMaxNumberOfHomingPoints());
+	serialPort->print(F(buffer)); 
+
 	if (areaType.startsWith("MA")) sprintf (buffer2, "|0gpsPMamSaveDeletMA%i~Delete all points",areaNumber);
 	if (areaType.startsWith("EA")) sprintf (buffer2, "|0gpsPMamSaveDeletEA%i~Delete all points",areaNumber);
 	if (areaType.startsWith("HP")) sprintf (buffer2, "|0gpsPMamSaveDeletHP%i~Delete all points",areaNumber);
@@ -840,22 +845,33 @@ void RemoteControl::sendGPSPerimeterAreaMenu(boolean update, String pfodCmd){
 	int areaPoints;
 	if (areaType.startsWith("MA")) {
 		areaPoints = robot->gpsPerimeter.getNumberOfMainAreaPoints(areaNumber);
-		for(int i=0; i < areaPoints+1; i++) {
+		for(int i=0; i < areaPoints; i++) {
 			serialPort->print(F("|0~"));
 			int asdf = robot->gpsPerimeter.getMainAreaPointX(areaNumber,i);
 			serialPort->print(robot->gpsPerimeter.getMainAreaPointX(areaNumber,i));
 			serialPort->print(",");
 			serialPort->print(robot->gpsPerimeter.getMainAreaPointY(areaNumber,i));
+			sprintf (buffer, "|0gpsPMamSaveDelPtMA%i%i~Delete above point",areaNumber,i);
+			serialPort->print(F(buffer)); 
+			//Serial.println(buffer);
+			sprintf (buffer, "|0gpsPMamSaveAddPtMA%i%i~Add new point here",areaNumber,i);
+			serialPort->print(F(buffer)); 
+			//Serial.println(buffer);
+
 		}
 	}
 
 	if (areaType.startsWith("EA")) {
 		areaPoints = robot->gpsPerimeter.getNumberOfExclusionAreaPoints(areaNumber);
-		for(int i=0; i < areaPoints+1; i++) {
+		for(int i=0; i < areaPoints; i++) {
 			serialPort->print(F("|0~"));
 			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointX(areaNumber,i));
 			serialPort->print(",");
 			serialPort->print(robot->gpsPerimeter.getExclusionAreaPointY(areaNumber,i));
+			sprintf (buffer, "|0gpsPMamSaveDelPtEA%i%i~Delete above point",areaNumber,i);
+			serialPort->print(F(buffer)); 
+			sprintf (buffer, "|0gpsPMamSaveAddPtEA%i%i~Add new point here",areaNumber,i);
+			serialPort->print(F(buffer)); 
 		}
 	}
 
@@ -881,42 +897,32 @@ void RemoteControl::processGPSPerimeterAreaMenu(String pfodCmd){
   unsigned long age;
   robot->gps.get_position(&lat, &lon, &age);
 
-	if (pfodCmd == "0gpsPMamSavePointMA0") {
-    robot->gpsPerimeter.addMainAreaPoint(0,lat,lon);	
-  	sendGPSPerimeterAreaMenu(true, "sgpsPMamMA0");
+  char buffer[20] = "sgpsPMam";
+  strcat (buffer, (areaType+areaNumber).c_str() );
+
+  if (pfodCmd.startsWith("0gpsPMamSavePoint")) {
+    robot->gpsPerimeter.addPoint(areaType,areaNumber,lat,lon);  
+    sendGPSPerimeterAreaMenu(true, buffer);
   }
-	if (pfodCmd == "0gpsPMamSavePointEA0") {
-    robot->gpsPerimeter.addExclusionAreaPoint(0, robot->gpsLat,robot->gpsLon);	
-  	sendGPSPerimeterAreaMenu(true, "sgpsPMamEA0");
+
+  if (pfodCmd.startsWith("0gpsPMamSaveAddPt")) {
+    uint8_t pointNumber = pfodCmd.substring(20,pfodCmd.length()).toInt();
+    robot->gpsPerimeter.addPointInMiddle(areaType, areaNumber, pointNumber, robot->gpsLat, robot->gpsLon);  
+    sendGPSPerimeterAreaMenu(true, buffer);
   }
-	if (pfodCmd == "0gpsPMamSavePointEA1") {
-    robot->gpsPerimeter.addExclusionAreaPoint(1, robot->gpsLat,robot->gpsLon);	
-  	sendGPSPerimeterAreaMenu(true, "sgpsPMamEA1");
+
+  if (pfodCmd.startsWith("0gpsPMamSaveDelPt")) {
+    uint8_t pointNumber = pfodCmd.substring(20,pfodCmd.length()).toInt();
+    robot->gpsPerimeter.deletePointFromMiddle(areaType, areaNumber, pointNumber);  
+    sendGPSPerimeterAreaMenu(true, buffer);
   }
-	if (pfodCmd == "0gpsPMamSavePointHP0") {
-    robot->gpsPerimeter.addHomingPoint(0, robot->gpsLat,robot->gpsLon);	
-  	sendGPSPerimeterAreaMenu(true, "sgpsPMamHP0");
+
+  if (pfodCmd.startsWith("0gpsPMamSaveDelet")) {
+    robot->gpsPerimeter.deleteAllPoints(areaType, areaNumber);  
+    sendGPSPerimeterAreaMenu(true, buffer);
   }
 
 
-	if (pfodCmd == "0gpsPMamSaveDeletMA0") {
-    robot->gpsPerimeter.deleteMainAreaPoints(0);	
-  	sendGPSPerimeterAreaMenu(false, "sgpsPMamMA0");
-  }
-	if (pfodCmd == "0gpsPMamSaveDeletEA0") {
-    robot->gpsPerimeter.deleteExclusionAreaPoints(0);	
-  	sendGPSPerimeterAreaMenu(false, "sgpsPMamEA0");
-  }
-	if (pfodCmd == "0gpsPMamSaveDeletEA1") {
-    robot->gpsPerimeter.deleteExclusionAreaPoints(1);	
-  	sendGPSPerimeterAreaMenu(false, "sgpsPMamEA1");
-  }
-	if (pfodCmd == "0gpsPMamSaveDeletHP0") {
-    robot->gpsPerimeter.deleteHomingPoints(0);	
-  	sendGPSPerimeterAreaMenu(false, "sgpsPMamHP0");
-  }
-
-  
 }
 
 void RemoteControl::sendImuMenu(boolean update){
@@ -1328,6 +1334,8 @@ void RemoteControl::sendCommandMenu(boolean update){
   serialPort->print(robot->errorName(robot->lastErrType));
   serialPort->print(F("|rr~Auto rotate is "));
   serialPort->print(robot->motorLeftPWMCurr);
+	serialPort->print(F("|rs~Free mem: "));
+  serialPort->print(robot->freeMemory());
   serialPort->print(F("|r1~User switch 1 is "));
   sendOnOff(robot->userSwitch1);  
   serialPort->print(F("|r2~User switch 2 is "));
