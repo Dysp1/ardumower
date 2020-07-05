@@ -152,6 +152,7 @@ void Robot::loadSaveUserSettings(boolean readflag){
   eereadwrite(readflag, addr, gpsPerimeterUse);
   eereadwrite(readflag, addr, gpsDeclination);
   eereadwrite(readflag, addr, longGrassTempAreaSize);
+  eereadwrite(readflag, addr, gpsHomingInUse);
   Console.print(F("loadSaveUserSettings addrstop="));
   Console.println(addr);
 }

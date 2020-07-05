@@ -212,6 +212,7 @@ Mower::Mower(){
   
   // ----- GPS -------------------------------------------
   gpsUse                     = 0;          // use GPS?
+  gpsHomingInUse             = 0;
   stuckIfGpsSpeedBelow       = 0.2;        // if Gps speed is below given value the mower is stuck
   gpsSpeedIgnoreTime         = 5000;       // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
 

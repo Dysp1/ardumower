@@ -147,30 +147,11 @@ delay(2);*/
   return wn;
 }
 
-//  if(_longGrassTempAreaInUse > 0 && (wn !=0 || _wiredPerimeterInUse) && wnTempArea !=0) return 6;
-/*Serial.println(wn);
-Serial.println(wnTempArea);
-Serial.println(_wiredPerimeterInUse);
-Serial.println(_longGrassTempAreaInUse);
-
-   {
-    if(_longGrassTempAreaInUse > 0) return wnTempArea;
-  }
-
-  if (wn != 0) {
-    if(_longGrassTempAreaInUse > 0) return wnTempArea;
-  }
-
-  if (wn == 0 && _mainAreas[0].numPoints < 3 && _wiredPerimeterInUse) return 6;
-*/
-
-
 // 0  0 1
 // 1  1 2
 // 2  2 3
 // 3  3 4
 // 4  4 5
-
 
 int gpsMap::insideLongGrassTempArea(long x, long y)
 {
@@ -250,58 +231,71 @@ float gpsMap::getNewHeadingLongGrassAreaDegrees( long lat, long lon) {
   }
 }
 
+bool gpsMap::getShortestWayToTurn( float currentHeading, float gpsPerimeterRollNewHeading) {
 
-float gpsMap::getNewHeadingFromPerimeterDegrees( long lat, long lon) {
+  bool rollDir;
+  float first = abs(gpsPerimeterRollNewHeading - currentHeading);
+  float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
+  float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
+
+  rollDir = RIGHT;
+  if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) rollDir = LEFT;
+    else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) rollDir = LEFT;
+      else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) rollDir = LEFT;
+
+  return rollDir;
+}
+
+float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long lat, long lon) {
+
+  pointList arrayToModify = getRightArray(areaType, areaNumber);
+
+  int closestPoint = 0;
+  float lastShortestDistance = 88888.0;
+  float shortestDistance = 99999.0;
+  int i = 0;
+  for (i=0; i < arrayToModify.numPoints; i++) {
+    shortestDistance = min(shortestDistance, (sqrt( pow((lat - arrayToModify.point[i].x),2) + pow((lon - arrayToModify.point[i].y),2) )));
+
+    if (shortestDistance < lastShortestDistance) {
+      lastShortestDistance = shortestDistance;
+      closestPoint = i;
+    }
+
+  }
+
+  float degrees = atan2( (arrayToModify.point[closestPoint].y - lon ), (arrayToModify.point[closestPoint].x - lat) )/PI*180.0;
+  if (degrees < 0) degrees += 360; 
+
+  return degrees;
+}
+
+
+float gpsMap::getHeadingToClosestHomingPoint(long lat, long lon) {
+  return getNewHeadingToClosestPoint("HP", 0, lat, lon);
+}
+
+float gpsMap::getNewHeadingFromPerimeterDegrees(long lat, long lon) {
+/*
   int closestPoint = 0;
   float lastShortestDistance = 88888.0;
   float shortestDistance = 99999.0;
   int i = 0;
   for (i=0; i < _safePointList[0].numPoints; i++) {
     shortestDistance = min(shortestDistance, (sqrt( pow((lat - _safePointList[0].point[i].x),2) + pow((lon - _safePointList[0].point[i].y),2) )));
-/*    Serial.print("distance:");
-    Serial.println(shortestDistance,8);
 
-    Serial.print(" lastshortest:");
-    Serial.println(lastShortestDistance,8);
-
-    Serial.print(" pointnro:");    
-    Serial.print(i); 
-    Serial.print("distance:");    
-    Serial.print(sqrt( pow((lat - _homingPointList[0].point[i].x),2) + pow((lon - _homingPointList[0].point[i].y),2) ),8);
-    Serial.print(" currlat:");    
-    Serial.print(lat,6);
-    Serial.print(" currlon:");    
-    Serial.print(lon,6);
-    Serial.print(" pointlat:");    
-    Serial.print(_homingPointList[0].point[i].x,6);
-    Serial.print(" pointlon:");    
-    Serial.println(_homingPointList[0].point[i].y,6);
-  */  
     if (shortestDistance < lastShortestDistance) {
       lastShortestDistance = shortestDistance;
       closestPoint = i;
-    /*  Serial.print("   HERE  ");
-      Serial.print(i);
-      Serial.print("   HERE  ");
-      Serial.print(closestPoint);
-      Serial.print("   HERE  ");
-   */
     }
 
   }
-/*  Serial.print("closest point: ");
-  Serial.print(closestPoint);
-  Serial.print(" - ");
-  Serial.print(_homingPointList[0].point[closestPoint].x,6);
-  Serial.print(",");
-  Serial.print(_homingPointList[0].point[closestPoint].y,6);
-  Serial.print(" - dist: ");
-*/
+
   float degrees = atan2( (_safePointList[0].point[closestPoint].y - lon ), (_safePointList[0].point[closestPoint].x - lat) )/PI*180.0;
   if (degrees < 0) degrees += 360; 
-
-  //Serial.println(degrees);
-  return degrees;
+*/
+  
+  return getNewHeadingToClosestPoint("SP", 0, lat, lon);
 }
 
 uint8_t gpsMap::setTemporaryArea( long x, long y) {

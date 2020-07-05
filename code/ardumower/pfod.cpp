@@ -729,6 +729,10 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
   if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS Perimeter`1000"));
   serialPort->print(F("|0gpsPMmm00~Use "));
   sendYesNo(robot->gpsPerimeterUse);
+
+  serialPort->print(F("|0gpsPMmm02~GPS homing: "));
+  sendYesNo(robot->gpsHomingInUse);
+
   if (robot->gpsPerimeterUse) {
 	  
 		if (robot->gpsPerimeter.getLongGrassTempAreaInUse()) serialPort->print(F("|sgpsPMmm~Tall grass area in use"));
@@ -786,6 +790,10 @@ void RemoteControl::processGPSPerimeterMainMenu(String pfodCmd){
   	robot->gpsPerimeterUse = !robot->gpsPerimeterUse;
   }
   
+  if (pfodCmd == "0gpsPMmm02") {
+    robot->gpsHomingInUse = !robot->gpsHomingInUse;
+  }
+
 	if (pfodCmd.startsWith("0gpsPMmm01")) {
 		processSlider(pfodCmd, robot->longGrassTempAreaSize, 1);  
 		robot->gpsPerimeter.setLongGrassTempAreaSize(robot->longGrassTempAreaSize);

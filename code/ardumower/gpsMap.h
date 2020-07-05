@@ -67,6 +67,9 @@ class gpsMap
         void loadSaveMapData(boolean readflag);
         pointList getRightArray(String areaType, int areaNumber);
         void putBackToRightArray(String areaType, int areaNumber, pointList arrayToModify);
+        float getNewHeadingToClosestPoint(String areaType, int areaNumber, long lat, long lon);
+        // roll types
+        enum { LEFT, RIGHT };
 
     public:
         void doUnitTest(); 
@@ -81,21 +84,20 @@ class gpsMap
         long getPointX(String areaType, int areaNumber, int pointNumber);
         long getPointY(String areaType, int areaNumber, int pointNumber);
 
+        float getHeadingToClosestHomingPoint(long lat, long lon);
+        bool getShortestWayToTurn( float currentHeading, float gpsPerimeterRollNewHeading);
+        float getNewHeadingFromPerimeterDegrees( long lat, long lon);
+        int insidePerimeter(long x, long y);
+        float distanceToClosestWall(long x, long y);
 
+        uint8_t setTemporaryArea( long x, long y);
+        void disableTemporaryArea();
         int getLongGrassTempAreaInUse();
         int insideLongGrassTempArea(long x, long y);
         void setLongGrassTempAreaSize(float size);
         float distanceFromTempAreaMiddle(long lat, long lon);
         float getNewHeadingLongGrassAreaDegrees( long lat, long lon);
         void wiredPerimeterInUse(float inUse);
-
-
-        float getNewHeadingFromPerimeterDegrees( long lat, long lon);
-        int insidePerimeter(long x, long y);
-        float distanceToClosestWall(long x, long y);
-        uint8_t removeMainAreaPoint( int pointNro);
-        uint8_t setTemporaryArea( long x, long y);
-        void disableTemporaryArea();
 };
 
 #endif
