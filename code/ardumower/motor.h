@@ -237,12 +237,12 @@ void Robot::motorControlPerimeter() {
 // PID controller: correct direction during normal driving (requires IMU)
 void Robot::motorControlImuDir(){
   if (millis() < nextTimeMotorImuControl) return;
-    nextTimeMotorImuControl = millis() + 100;
+  nextTimeMotorImuControl = millis() + 100;
 
   int correctLeft = 0;
   int correctRight = 0;
   
-  // Regelbereich entspricht maximaler Drehzahl am Antriebsrad (motorSpeedMaxRpm)
+  // Control range corresponds to maximum speed on the drive wheel (motorSpeedMaxRpm)
   imuDirPID.x = distancePI(imu.ypr.yaw, imuDriveHeading) / PI * 180.0;            
   imuDirPID.w = 0;
   imuDirPID.y_min = -motorSpeedMaxRpm;
@@ -253,28 +253,28 @@ void Robot::motorControlImuDir(){
   if (imuDirPID.y < 0) correctRight = abs(imuDirPID.y);
   if (imuDirPID.y > 0) correctLeft  = abs(imuDirPID.y);
                  
-  // Korrektur erfolgt über Abbremsen des linken Antriebsrades, falls Kursabweichung nach rechts
-  // Regelbereich entspricht maximaler PWM am Antriebsrad (motorSpeedMaxPwm), um auch an Steigungen höchstes Drehmoment für die Solldrehzahl zu gewährleisten
-  motorLeftPID.x = motorLeftRpmCurr;                     // IST 
-  motorLeftPID.w = motorLeftSpeedRpmSet - correctLeft;     // SOLL 
-  motorLeftPID.y_min = -motorSpeedMaxPwm;            // Regel-MIN
-  motorLeftPID.y_max = motorSpeedMaxPwm;       // Regel-MAX
-  motorLeftPID.max_output = motorSpeedMaxPwm;        // Begrenzung
+  // Correction is made by braking the left drive wheel if the course deviates to the right
+  // The control range corresponds to the maximum PWM on the drive wheel (motorSpeedMaxPwm) in order to ensure the highest torque for the target speed even on gradients
+  motorLeftPID.x = motorLeftRpmCurr;                     // IS 
+  motorLeftPID.w = motorLeftSpeedRpmSet - correctLeft;     // SHOULD BE 
+  motorLeftPID.y_min = -motorSpeedMaxPwm;            // Rule MIN
+  motorLeftPID.y_max = motorSpeedMaxPwm;       // Rule MAX
+  motorLeftPID.max_output = motorSpeedMaxPwm;        // Limitation
   motorLeftPID.compute();
   int leftSpeed = max(-motorSpeedMaxPwm, min(motorSpeedMaxPwm, motorLeftPWMCurr + motorLeftPID.y));
   if((motorLeftSpeedRpmSet >= 0 ) && (leftSpeed <0 )) leftSpeed = 0;
   if((motorLeftSpeedRpmSet <= 0 ) && (leftSpeed >0 )) leftSpeed = 0;    
 
-  // Korrektur erfolgt über Abbremsen des rechten Antriebsrades, falls Kursabweichung nach links 
-  // Regelbereich entspricht maximaler PWM am Antriebsrad (motorSpeedMaxPwm), um auch an Steigungen höchstes Drehmoment für die Solldrehzahl zu gewährleisten
+  // Correction is made by braking the right drive wheel if the course deviates to the left
+  // The control range corresponds to the maximum PWM on the drive wheel (motorSpeedMaxPwm) in order to ensure the highest torque for the target speed even on gradients
   motorRightPID.Kp = motorLeftPID.Kp;
   motorRightPID.Ki = motorLeftPID.Ki;
   motorRightPID.Kd = motorLeftPID.Kd;
-  motorRightPID.x = motorRightRpmCurr;                   // IST 
-  motorRightPID.w = motorRightSpeedRpmSet - correctRight;  // SOLL 
-  motorRightPID.y_min = -motorSpeedMaxPwm;           // Regel-MIN
-  motorRightPID.y_max = motorSpeedMaxPwm;      // Regel-MAX
-  motorRightPID.max_output = motorSpeedMaxPwm;       // Begrenzung
+  motorRightPID.x = motorRightRpmCurr;                   // IS 
+  motorRightPID.w = motorRightSpeedRpmSet - correctRight;  // SHOULD BE 
+  motorRightPID.y_min = -motorSpeedMaxPwm;           // Rule MIN
+  motorRightPID.y_max = motorSpeedMaxPwm;      // Rule MAX
+  motorRightPID.max_output = motorSpeedMaxPwm;       // Limitation
   motorRightPID.compute();            
   int rightSpeed = max(-motorSpeedMaxPwm, min(motorSpeedMaxPwm, motorRightPWMCurr + motorRightPID.y));
   if((motorRightSpeedRpmSet >= 0 ) && (rightSpeed <0 )) rightSpeed = 0;
