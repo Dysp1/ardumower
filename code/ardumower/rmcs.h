@@ -469,7 +469,10 @@ void Robot::processRMCSCommand(String command){
             break;
 
          case '2':
-            setNextState(STATE_PERI_FIND, 0);
+            //setNextState(STATE_PERI_FIND, 0);
+            if (gpsHomingInUse && imuUse) setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
+            else setNextState(STATE_PERI_FIND, 0); 
+
             break;
 
          case '3':

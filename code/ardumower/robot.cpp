@@ -959,9 +959,10 @@ void Robot::checkBumpersPerimeter(){
 void Robot::checkPerimeterBoundary(){
 
   if (gpsPerimeterUse) {
-    if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
+    if ((stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) && gpsPerimeter.getNumberOfPoints("MA",0) > 2) {
       if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) == 0) {
         setSensorTriggered(SEN_GPSPERIMETER);
+        Serial.println("STATE_GPSPERIMETER_CHANGE_DIR");
         setNextState(STATE_GPSPERIMETER_CHANGE_DIR, rollDir);
       }
     }
@@ -976,7 +977,12 @@ void Robot::checkPerimeterBoundary(){
     }
   }
 
-  if (!perimeterUse) return;
+  if (!perimeterUse && !(gpsPerimeterUse && gpsPerimeter.getNumberOfPoints("MA",0) > 2) ) {
+    setSensorTriggered(SEN_PERIM_LEFT_EXTRA);
+    setNextState(STATE_ERROR,0);
+    return;
+  }
+
   if (millis() >= nextTimeRotationChange){
       nextTimeRotationChange = millis() + 60000;
       rotateLeft = !rotateLeft;
@@ -1243,7 +1249,6 @@ void Robot::checkIfStuck(){
   }
 }
 
-
 void Robot::processGPSData()
 {
   long nlat, nlon;
@@ -1481,12 +1486,12 @@ void Robot::setNextState(byte stateNew, byte dir){
       motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;    
     //motorMowEnable = false;     // FIXME: should be an option?
   }
-  
+
   if (stateNew == STATE_GPS_HOMING_FIRST_TURN){
     if (gpsHomingInUse && imuUse) {
-      imuDriveHeading = gpsPerimeter.getHeadingToClosestHomingPointDegrees(gpsLat, gpsLon)*PI/180;
+      imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToClosestHomingPointDegrees(gpsLat, gpsLon));
       imuRollHeading = imuDriveHeading;
-      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees((imu.ypr.yaw/PI*180.0) , (imuDriveHeading/PI*180.0));
+      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
       
       if (dir == RIGHT){
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
@@ -1504,9 +1509,9 @@ void Robot::setNextState(byte stateNew, byte dir){
       motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
       motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;           
 
-      imuDriveHeading = gpsPerimeter.getHeadingToClosestHomingPointDegrees(gpsLat, gpsLon)*PI/180;
+      imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToClosestHomingPointDegrees(gpsLat, gpsLon));
       imuRollHeading = imuDriveHeading;
-      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees((imu.ypr.yaw/PI*180.0) , (imuDriveHeading/PI*180.0));
+      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
   }
   
   if (stateNew == STATE_PERI_TRACK){        
@@ -2356,16 +2361,28 @@ void Robot::loop()  {
       break;
 
     case STATE_GPS_HOMING_FIRST_TURN:
+      Serial.print("STATE_GPS_HOMING_FIRST_TURN:");
+      Serial.println(abs(distancePI(imu.ypr.yaw, imuRollHeading)));
+      Serial.print("imu.ypr.yaw:");
+      Serial.println(imu.ypr.yaw);
+      Serial.print(" / ");      
+      Serial.println(imu.ypr.yaw/PI*180.0);
+      Serial.print("imuRollHeading:");
+      Serial.println(imuRollHeading);
+      Serial.print(" / ");      
+      Serial.println(imuRollHeading/PI*180.0);
+
       if (abs(distancePI(imu.ypr.yaw, imuRollHeading)) < PI/36) setNextState(STATE_GPS_HOMING_FOLLOW_POINTS,0);                
       if (millis() >= stateEndTime) setNextState(STATE_GPS_HOMING_FIRST_TURN,0);                  
       
       break;        
 
     case STATE_GPS_HOMING_FOLLOW_POINTS:
-      imuDriveHeading = gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon)*PI/180;
+      Serial.println("STATE_GPS_HOMING_FOLLOW_POINTS");
+      imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon));
       imuRollHeading = imuDriveHeading;
-      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees((imu.ypr.yaw/PI*180.0) , (imuDriveHeading/PI*180.0));
-      if (gpsPerimeter.lastPointBeforeStation()) setNextState(STATE_PERI_FIND,0);
+      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
+      if (gpsPerimeter.lastPointBeforeStation() == 1) setNextState(STATE_PERI_FIND,0);
       break;
   } // end switch  
       
@@ -2377,7 +2394,10 @@ void Robot::loop()  {
   // decide which motor control to use
   if ( ((mowPatternCurr == MOW_LANES) && (stateCurr == STATE_ROLL)) 
        || stateCurr == STATE_ROLL_WAIT 
-       || stateCurr == STATE_GPS_HOMING_FIRST_TURN) motorControlImuRoll();
+       || stateCurr == STATE_GPS_HOMING_FIRST_TURN) {
+                                                      motorControlImuRoll();
+                                                      Serial.println("motorControlImuRoll");
+                                                    }
     
     else if (stateCurr == STATE_PERI_TRACK) motorControlPerimeter();
 
