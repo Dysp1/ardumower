@@ -166,6 +166,33 @@ void IMU::calibComStartStop(){
 void IMU::calibComUpdate(){
 }
 
+float imuSmoothedYaw[20]= {-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,
+                           -9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0,-9999.0};
+float IMU::smoothedYawRads(float newYaw){
+//Serial.println("----------");
+//Serial.println(newYaw/PI*180.0);
+  float addedYaw = 0;
+  int sampleCount = 0;
+  for (int i=0; i<19; i++) {
+    if (imuSmoothedYaw[i] > -9000) {
+      addedYaw += imuSmoothedYaw[i];
+      sampleCount++;
+    }
+//    Serial.print(imuSmoothedYaw[i]/PI*180.0);
+//    Serial.print(",");
+    imuSmoothedYaw[i] = imuSmoothedYaw[i+1];
+  }
+  sampleCount++;
+  imuSmoothedYaw[19] = newYaw;
+
+//  Serial.println(imuSmoothedYaw[19]/PI*180.0);
+
+//  Serial.println(sampleCount);
+//  Serial.println((addedYaw+newYaw)/PI*180.0);
+  float yawToReturn = round((((addedYaw + newYaw)/sampleCount)/PI*180)); //convert to degrees and round to 1 degree precision
+  return yawToReturn*PI/180; // return as rads
+}
+
 boolean IMU::calibAccNextAxis(){  
 }
 
@@ -178,7 +205,9 @@ void IMU::update(){
     read(); // not reading imu data while calibrating compass
       ypr.pitch = mpu.getPitch()*PI/180.0;
       ypr.roll  = mpu.getRoll()*PI/180.0;
-      ypr.yaw   = mpu.getYaw()*PI/180.0;
+      ypr.yaw   = smoothedYawRads(mpu.getYaw()*PI/180.0);
+      //ypr.yaw   = mpu.getYaw()*PI/180.0;
+      //Serial.println(ypr.yaw/PI*180);
       robot.caseTemperature = mpu.getTemperature();
   } else if (state == IMU_CAL_COM) {
     calibComUpdate();

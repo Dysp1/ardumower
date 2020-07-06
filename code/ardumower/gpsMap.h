@@ -41,6 +41,8 @@ typedef struct  {
 class gpsMap
 {
     private:
+
+        // TURN THIS true IF you wish to test without saving all the gps perimeter data to eeprom
         bool _unitTesting = false; 
 
 

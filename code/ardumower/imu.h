@@ -114,6 +114,7 @@ public:
   boolean newMinMaxFound();
 private:  
   void read();
+  float smoothedYawRads(float newYaw);
   void loadSaveCalib(boolean readflag);  
   void loadCalib();  
   // print IMU values
