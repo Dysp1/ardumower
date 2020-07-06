@@ -167,7 +167,8 @@ enum {
   STATE_BUMPER_FORWARD,      // drive forward	
   STATE_GPSPERIMETER_CHANGE_DIR,
   STATE_GPS_LONG_GRASS_CHANGE_DIR,
-  STATE_GPS_HOMING_FIRST_TURN
+  STATE_GPS_HOMING_FIRST_TURN,
+  STATE_GPS_HOMING_FOLLOW_POINTS
 };
 
 // roll types
@@ -226,6 +227,7 @@ class Robot
     char gpsUse            ;       // use GPS?        
     char gpsPerimeterUse            ;       // use GPS Perimeter?  
     char gpsHomingInUse ;
+    uint8_t gpsHomingLastStep;
     float gpsPerimeterRollState;
     float gpsPerimeterRollSubStateStartTime;
     float gpsPerimeterRollNewHeading;  

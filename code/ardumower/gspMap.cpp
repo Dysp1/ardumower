@@ -231,7 +231,7 @@ float gpsMap::getNewHeadingLongGrassAreaDegrees( long lat, long lon) {
   }
 }
 
-bool gpsMap::getShortestWayToTurn( float currentHeading, float gpsPerimeterRollNewHeading) {
+bool gpsMap::getShortestWayToTurnDegrees( float currentHeading, float gpsPerimeterRollNewHeading) {
 
   bool rollDir;
   float first = abs(gpsPerimeterRollNewHeading - currentHeading);
@@ -260,6 +260,7 @@ float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long 
     if (shortestDistance < lastShortestDistance) {
       lastShortestDistance = shortestDistance;
       closestPoint = i;
+      if (areaType == "HP") currentHomingPoint = i;
     }
 
   }
@@ -270,8 +271,36 @@ float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long 
   return degrees;
 }
 
+float gpsMap::getHeadingToNextHomingPointDegrees(long lat, long lon) {
+  float distanceToCurrent = getDistanceBetweenPoints(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
+  float distanceToNext =  getDistanceBetweenPoints(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
+  float distanceCurrentToNext =  getDistanceBetweenPoints(_homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y,_homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
 
-float gpsMap::getHeadingToClosestHomingPoint(long lat, long lon) {
+  if ((distanceToCurrent < 5 || distanceToNext < distanceCurrentToNext) && currentHomingPoint > 0) {
+    float nextPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
+    currentHomingPoint--;
+    return nextPointHeading;
+  } else {
+    float currentPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
+    return currentPointHeading;
+  }
+}
+
+int gpsMap::lastPointBeforeStation() {
+  if (currentHomingPoint == 0) return 1;
+  else return 0;
+}
+
+float gpsMap::getDistanceBetweenPoints (long lat1, long lon1, long lat2, long lon2) {
+  return (sqrt( pow((lat1 - lat2),2) + pow((lon1 - lon2),2) ));
+}
+
+float gpsMap::getHeadingBetweenPointsDegrees (long lat1, long lon1, long lat2, long lon2) {
+  float degrees = atan2( (lon2 - lon1 ), (lat2 - lat1) )/PI*180.0;
+  if (degrees < 0) degrees += 360; 
+}
+
+float gpsMap::getHeadingToClosestHomingPointDegrees(long lat, long lon) {
   return getNewHeadingToClosestPoint("HP", 0, lat, lon);
 }
 

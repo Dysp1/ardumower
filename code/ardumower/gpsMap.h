@@ -61,6 +61,7 @@ class gpsMap
         float _tempAreaSize = 10;
         float _wiredPerimeterInUse = 0;
         float _tempAreaTimeIfNoLongGrassFound = 300000;
+        int currentHomingPoint = 999;
 
         inline long isLeft( Point P0, Point P1, Point P2 );
         void doTest(uint8_t testNum, long lat, long lon, bool expectZero);
@@ -84,8 +85,13 @@ class gpsMap
         long getPointX(String areaType, int areaNumber, int pointNumber);
         long getPointY(String areaType, int areaNumber, int pointNumber);
 
-        float getHeadingToClosestHomingPoint(long lat, long lon);
-        bool getShortestWayToTurn( float currentHeading, float gpsPerimeterRollNewHeading);
+        float getHeadingToClosestHomingPointDegrees(long lat, long lon);
+        float getHeadingToNextHomingPointDegrees(long lat, long lon);
+        int lastPointBeforeStation();
+        float getDistanceBetweenPoints (long lat1, long lon1, long lat2, long lon2);
+        float getHeadingBetweenPointsDegrees (long lat1, long lon1, long lat2, long lon2);
+
+        bool getShortestWayToTurnDegrees( float currentHeading, float gpsPerimeterRollNewHeading);
         float getNewHeadingFromPerimeterDegrees( long lat, long lon);
         int insidePerimeter(long x, long y);
         float distanceToClosestWall(long x, long y);

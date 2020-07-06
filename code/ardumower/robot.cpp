@@ -36,7 +36,7 @@
 #define ADDR_ROBOT_STATS 800
 
 const char* stateNames[] ={"OFF ", "ROS", "RC  ", "FORW", "ROLL", "REV ", "CIRC", "ERR ", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK",
-  "STREV", "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "TILT", "BUMPREV", "BUMPFORW", "GPSPERIMROLL", "GPSHOMEROLL"};
+  "STREV", "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "TILT", "BUMPREV", "BUMPFORW", "GPSPERIMROLL", "GPSHOMEROLL", "GPSHOMING"};
 
 const char* sensorNames[] ={"SEN_PERIM_LEFT", "SEN_PERIM_RIGHT", "SEN_PERIM_LEFT_EXTRA", "SEN_PERIM_RIGHT_EXTRA", "SEN_LAWN_FRONT", "SEN_LAWN_BACK", 
 	"SEN_BAT_VOLTAGE", "SEN_CHG_CURRENT", "SEN_CHG_VOLTAGE", "SEN_MOTOR_LEFT", "SEN_MOTOR_RIGHT", "SEN_MOTOR_MOW", "SEN_BUMPER_LEFT", "SEN_BUMPER_RIGHT", 
@@ -158,6 +158,10 @@ Robot::Robot(){
   gpsAchievedSpeed = 0;
   gpsSpeedUpdatedTime = 0;
   gpsDeclination = 0;
+  gpsPerimeterRollState = 0;
+  gpsPerimeterRollSubStateStartTime = 0;
+  gpsHomingLastStep = 0;
+
   imuDriveHeading = 0;
   imuRollHeading = 0;
   imuRollDir = LEFT;  
@@ -252,9 +256,6 @@ Robot::Robot(){
   rmcsInfoLastSendBumper = 0;
   rmcsInfoLastSendOdometry = 0;
   rmcsInfoLastSendPeri = 0;
-  gpsPerimeterRollState = 0;
-  gpsPerimeterRollSubStateStartTime = 0;
-
 }
 
 const char *Robot::mowPatternName(){
@@ -426,7 +427,8 @@ void Robot::checkButton(){
         setNextState(STATE_PERI_TRACK, 0);        
       } else if (buttonCounter == 5){
         // drive home
-        setNextState(STATE_PERI_FIND, 0);        
+        if (gpsHomingInUse && imuUse) setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
+        else setNextState(STATE_PERI_FIND, 0); 
       } else if (buttonCounter == 1){
         /*if ((perimeterUse) && (!perimeter.isInside())){
           Console.println("start inside perimeter!");
@@ -1052,8 +1054,12 @@ void Robot::checkRain(){
   if (!rainUse) return;
   if (rain){
     Console.println(F("RAIN"));
-    if (perimeterUse) setNextState(STATE_PERI_FIND, 0);    
-      else setNextState(STATE_OFF, 0);    
+    if (perimeterUse) {
+      if (gpsHomingInUse && imuUse) setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
+      else setNextState(STATE_PERI_FIND, 0); 
+    } else {
+      setNextState(STATE_OFF, 0);
+    }
   }
 }
 
@@ -1472,31 +1478,36 @@ void Robot::setNextState(byte stateNew, byte dir){
   }
   
   if (stateNew == STATE_PERI_FIND){
-
-    if (gpsHomingInUse) {
-      imuDriveHeading = gpsPerimeter.getHeadingToClosestHomingPoint(gpsLat, gpsLon);
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;    
+    //motorMowEnable = false;     // FIXME: should be an option?
+  }
+  
+  if (stateNew == STATE_GPS_HOMING_FIRST_TURN){
+    if (gpsHomingInUse && imuUse) {
+      imuDriveHeading = gpsPerimeter.getHeadingToClosestHomingPointDegrees(gpsLat, gpsLon)*PI/180;
       imuRollHeading = imuDriveHeading;
-      imuRollDir = gpsPerimeter.getShortestWayToTurn((imu.ypr.yaw/PI*180.0) , imuDriveHeading);
+      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees((imu.ypr.yaw/PI*180.0) , (imuDriveHeading/PI*180.0));
       
       if (dir == RIGHT){
-       motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-       motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;           
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+        motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;           
       } else {
         motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
         motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;  
       }      
   
       stateEndTime = millis() + random(motorRollTimeMin,motorRollTimeMax) + motorZeroSettleTime;
-      stateNew = STATE_GPS_HOMING_FIRST_TURN;
-      stateNext = stateNew;
-  
-    } else {
-      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;    
-    //motorMowEnable = false;     // FIXME: should be an option?
     }
   }
 
+  if (stateNew == STATE_GPS_HOMING_FOLLOW_POINTS) {
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+      motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;           
 
+      imuDriveHeading = gpsPerimeter.getHeadingToClosestHomingPointDegrees(gpsLat, gpsLon)*PI/180;
+      imuRollHeading = imuDriveHeading;
+      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees((imu.ypr.yaw/PI*180.0) , (imuDriveHeading/PI*180.0));
+  }
   
   if (stateNew == STATE_PERI_TRACK){        
     //motorMowEnable = false;     // FIXME: should be an option?
@@ -2342,7 +2353,20 @@ void Robot::loop()  {
     case STATE_STATION_FORW:
       // forward (charge station)    
       if (millis() >= stateEndTime) setNextState(STATE_FORWARD,0);				        
-      break;      
+      break;
+
+    case STATE_GPS_HOMING_FIRST_TURN:
+      if (abs(distancePI(imu.ypr.yaw, imuRollHeading)) < PI/36) setNextState(STATE_GPS_HOMING_FOLLOW_POINTS,0);                
+      if (millis() >= stateEndTime) setNextState(STATE_GPS_HOMING_FIRST_TURN,0);                  
+      
+      break;        
+
+    case STATE_GPS_HOMING_FOLLOW_POINTS:
+      imuDriveHeading = gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon)*PI/180;
+      imuRollHeading = imuDriveHeading;
+      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees((imu.ypr.yaw/PI*180.0) , (imuDriveHeading/PI*180.0));
+      if (gpsPerimeter.lastPointBeforeStation()) setNextState(STATE_PERI_FIND,0);
+      break;
   } // end switch  
       
 
@@ -2350,19 +2374,23 @@ void Robot::loop()  {
   //if ((useRemoteRC) && (remoteSwitch < -50)) setNextState(STATE_REMOTE, 0);
 
   
-    // decide which motor control to use
-    if ( ((mowPatternCurr == MOW_LANES) && (stateCurr == STATE_ROLL)) || (stateCurr == STATE_ROLL_WAIT) ) motorControlImuRoll();
-      else if (stateCurr == STATE_PERI_TRACK) motorControlPerimeter();
-      else if (  (stateCurr == STATE_FORWARD)
-       //&&  (mowPatternCurr == MOW_RANDOM)
-       && (imuUse) 
-       && (imuCorrectDir || (mowPatternCurr == MOW_LANES))        
-       ) motorControlImuDir();                                   //&& (millis() > stateStartTime + 3000)
-      else motorControl();  
+  // decide which motor control to use
+  if ( ((mowPatternCurr == MOW_LANES) && (stateCurr == STATE_ROLL)) 
+       || stateCurr == STATE_ROLL_WAIT 
+       || stateCurr == STATE_GPS_HOMING_FIRST_TURN) motorControlImuRoll();
+    
+    else if (stateCurr == STATE_PERI_TRACK) motorControlPerimeter();
+
+      else if (stateCurr == STATE_GPS_HOMING_FOLLOW_POINTS) motorControlImuDir();
+      
+        else if (  (stateCurr == STATE_FORWARD) 
+                    && (imuUse) 
+                    && (imuCorrectDir || (mowPatternCurr == MOW_LANES))) motorControlImuDir();                            
+      
+          else motorControl();  
   
   if (stateCurr != STATE_REMOTE) motorMowSpeedPWMSet = motorMowSpeedMaxPwm;
-    
-    
+      
   bumperRight = false;
   bumperLeft = false;     
   
