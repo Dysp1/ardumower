@@ -189,12 +189,28 @@ float IMU::smoothedYawRads(float newYaw){
 
 //  Serial.println(sampleCount);
 //  Serial.println((addedYaw+newYaw)/PI*180.0);
-  float yawToReturn = round((((addedYaw + newYaw)/sampleCount)/PI*180)); //convert to degrees and round to 1 degree precision
-  return yawToReturn*PI/180; // return as rads
+  float yawToReturn = round((((addedYaw + newYaw)/sampleCount)/PI*180))*PI/180; //convert to degrees and round to 1 degree precision and back to rads
+  return yawToReturn; 
+}
+
+
+float IMU::degreesToRads (float degrees) {
+  float rads = degrees;
+  if (rads  > 180) rads -= 360;
+  rads = rads*PI/180.0;
+  return rads;
+}
+
+float IMU::radsToDegrees (float rads) {
+  float degrees = rads;
+  degrees = degrees/PI*180.0;
+  if (degrees < 0) degrees += 360;
+  return degrees;
 }
 
 boolean IMU::calibAccNextAxis(){  
 }
+
 
 void IMU::update(){
   now = millis();
@@ -203,9 +219,12 @@ void IMU::update(){
 
   if (state == IMU_RUN){
     read(); // not reading imu data while calibrating compass
-      ypr.pitch = mpu.getPitch()*PI/180.0;
-      ypr.roll  = mpu.getRoll()*PI/180.0;
-      ypr.yaw   = smoothedYawRads(mpu.getYaw()*PI/180.0);
+
+      ypr.pitch = degreesToRads(mpu.getPitch());
+      ypr.roll  = degreesToRads(mpu.getRoll());
+//      ypr.yaw = smoothedYawRads(degreesToRads(mpu.getYaw()));
+      ypr.yaw = degreesToRads(mpu.getYaw());
+
       //ypr.yaw   = mpu.getYaw()*PI/180.0;
       //Serial.println(ypr.yaw/PI*180);
       robot.caseTemperature = mpu.getTemperature();
@@ -257,15 +276,15 @@ void IMU::read(){
   Serial.print(" yaw:");
   Serial.println(mpu.getYaw());
 */
-  gyro.x = mpu.getGyro(0)*PI/180.0;
-  gyro.y = mpu.getGyro(1)*PI/180.0;
-  gyro.z = mpu.getGyro(2)*PI/180.0;
+  gyro.x = mpu.getGyro(0);
+  gyro.y = mpu.getGyro(1);
+  gyro.z = mpu.getGyro(2);
 
-  acc.x = mpu.getAcc(0)*PI/180.0;
-  acc.y = mpu.getAcc(1)*PI/180.0;
-  acc.z = mpu.getAcc(2)*PI/180.0;
+  acc.x = mpu.getAcc(0);
+  acc.y = mpu.getAcc(1);
+  acc.z = mpu.getAcc(2);
 
-  com.x = mpu.getMag(0)*PI/180.0;
-  com.y = mpu.getMag(1)*PI/180.0;
-  com.z = mpu.getMag(2)*PI/180.0;
+  com.x = mpu.getMag(0);
+  com.y = mpu.getMag(1);
+  com.z = mpu.getMag(2);
 }

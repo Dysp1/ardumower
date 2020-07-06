@@ -631,7 +631,10 @@ void RemoteControl::processPerimeterMenu(String pfodCmd){
     else if (pfodCmd.startsWith("e13")) robot->trackingBlockInnerWheelWhilePerimeterStruggling = !robot->trackingBlockInnerWheelWhilePerimeterStruggling;          
     else if (pfodCmd.startsWith("e14")) processSlider(pfodCmd, robot->perimeter.timeOutSecIfNotInside, 1);     
     else if (pfodCmd.startsWith("e19")) robot->setNextState(STATE_OFF, 0);          
-		else if (pfodCmd.startsWith("e20")) robot->setNextState(STATE_PERI_FIND, 0);                      
+		else if (pfodCmd.startsWith("e20")) {
+                                          if (robot->gpsHomingInUse && robot->imuUse) robot->setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
+                                          else robot->setNextState(STATE_PERI_FIND, 0); 
+                                        }                      
 		else if (pfodCmd.startsWith("e21")) robot->setNextState(STATE_PERI_TRACK, 0);                          
   sendPerimeterMenu(true);
 }
@@ -1354,7 +1357,10 @@ void RemoteControl::processCommandMenu(String pfodCmd){
     sendCommandMenu(true);
   } else if (pfodCmd == "rh"){
     // cmd: home      
-    robot->setNextState(STATE_PERI_FIND, 0);                      
+    //robot->setNextState(STATE_PERI_FIND, 0);  
+    if (robot->gpsHomingInUse && robot->imuUse) robot->setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
+    else robot->setNextState(STATE_PERI_FIND, 0); 
+                    
     sendCommandMenu(true);
   } else if (pfodCmd == "rr"){
     robot->setNextState(STATE_MANUAL, 0);

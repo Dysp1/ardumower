@@ -79,6 +79,9 @@ public:
   int getCallCounter();
   int getErrorCounter();
   void deleteCalib();  
+  float degreesToRads (float degrees);
+  float radsToDegrees (float rads);
+
 
   int callCounter;
   int errorCounter;
