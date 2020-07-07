@@ -236,16 +236,18 @@ void IMU::update(){
 boolean IMU::init(){
   loadCalib();
   
-  mpu.setup();
+  bool imuInitOK = mpu.setup();
 
   delay(500);
 
   mpu.calibrateAccelGyro();
   mpu.printCalibration();
 
-  now = 0;  
-  hardwareInitialized = true;
-  return true;
+  if (imuInitOK == true){
+    now = 0;  
+    hardwareInitialized = true;
+  }
+  return imuInitOK;
 }
 
 int IMU::getCallCounter(){

@@ -161,6 +161,7 @@ Robot::Robot(){
   gpsPerimeterRollState = 0;
   gpsPerimeterRollSubStateStartTime = 0;
   gpsHomingLastStep = 0;
+  nextTimeGPSHomingPointCheck = 0;
 
   imuDriveHeading = 0;
   imuRollHeading = 0;
@@ -1695,7 +1696,9 @@ void Robot::loop()  {
         if (lastErrType == ERR_TRACKING);
         if (lastErrType == ERR_IMU_COMM);
         if (lastErrType == ERR_IMU_CALIB);
-        if (lastErrType == ERR_IMU_TILT);
+        if (lastErrType == ERR_IMU_TILT){
+          if (imu.init() == false) Serial.println("Reinitialiation of IMU failed.");
+        }
         if (lastErrType == ERR_RTC_COMM);
         if (lastErrType == ERR_RTC_DATA);
         if (lastErrType == ERR_GPS_COMM);
@@ -2379,14 +2382,24 @@ void Robot::loop()  {
 
     case STATE_GPS_HOMING_FOLLOW_POINTS:
       Serial.println("STATE_GPS_HOMING_FOLLOW_POINTS");
-      imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon));
-      imuRollHeading = imuDriveHeading;
-      imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
+
+      if(millis() > nextTimeGPSHomingPointCheck) {
+        nextTimeGPSHomingPointCheck = millis() + 1000;
+        imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon));
+      }
+
+      //imuRollHeading = imuDriveHeading;
+      //imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
       if (gpsPerimeter.lastPointBeforeStation() == 1) setNextState(STATE_PERI_FIND,0);
       break;
   } // end switch  
-      
-
+/*      
+Serial.println("-------------");
+Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247264.0, 2544012.0));
+Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247265.0, 2544012.0));
+Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247265.0, 2544012.0));
+Serial.println("-------------");
+*/
   // next line deactivated (issue with RC failsafe)
   //if ((useRemoteRC) && (remoteSwitch < -50)) setNextState(STATE_REMOTE, 0);
 

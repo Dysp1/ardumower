@@ -272,16 +272,22 @@ float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long 
 }
 
 float gpsMap::getHeadingToNextHomingPointDegrees(long lat, long lon) {
+  //currentHomingPoint = 5;
+
   float distanceToCurrent = getDistanceBetweenPoints(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
   float distanceToNext =  getDistanceBetweenPoints(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
   float distanceCurrentToNext =  getDistanceBetweenPoints(_homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y,_homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
-Serial.print("distanceToCurrent:");
-Serial.println(distanceToCurrent);
-Serial.print("distanceToNext:");
-Serial.println(distanceToNext);
-Serial.print("distanceCurrentToNext:");
-Serial.println(distanceCurrentToNext);
+/*
+  Serial.print("distanceToCurrent:");
+  Serial.println(distanceToCurrent);
+  Serial.print("distanceToNext:");
+  Serial.println(distanceToNext);
+  Serial.print("distanceCurrentToNext:");
+  Serial.println(distanceCurrentToNext);
 
+  Serial.print("currentHomingPoint:");
+  Serial.println(currentHomingPoint);
+*/
 
   if ((distanceToCurrent < 5 || distanceToNext < distanceCurrentToNext) && currentHomingPoint > 0) {
     float nextPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
@@ -291,11 +297,6 @@ Serial.println(distanceCurrentToNext);
     float currentPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
     return currentPointHeading;
   }
-
-Serial.print("currentHomingPoint:");
-Serial.println(currentHomingPoint);
-
-
 }
 
 int gpsMap::lastPointBeforeStation() {
@@ -308,8 +309,9 @@ float gpsMap::getDistanceBetweenPoints (long lat1, long lon1, long lat2, long lo
 }
 
 float gpsMap::getHeadingBetweenPointsDegrees (long lat1, long lon1, long lat2, long lon2) {
-  float degrees = atan2( (lon2 - lon1 ), (lat2 - lat1) )/PI*180.0;
-  if (degrees < 0) degrees += 360; 
+  float degrees = atan2( (lon1 - lon2 ), (lat1 - lat2) )/PI*180.0;
+  if (degrees < 0) degrees += 360;
+  return round(degrees); 
 }
 
 float gpsMap::getHeadingToClosestHomingPointDegrees(long lat, long lon) {
@@ -402,8 +404,10 @@ void gpsMap::addPointInMiddle(String areaType, int areaNumber, int positionToAdd
       for (i = arrayToModify.numPoints; i > positionToAdd; i--) {
         arrayToModify.point[i+1] = arrayToModify.point[i];
       }
-      arrayToModify.point[positionToAdd+1].x = random(1,200); //lat;
-      arrayToModify.point[positionToAdd+1].y = random(1,200); //lon;
+//      arrayToModify.point[positionToAdd+1].x = random(1,200); //lat;
+//      arrayToModify.point[positionToAdd+1].y = random(1,200); //lon;
+      arrayToModify.point[positionToAdd+1].x = lat;
+      arrayToModify.point[positionToAdd+1].y = lon;
       arrayToModify.numPoints++;
     }
 
@@ -553,25 +557,35 @@ void gpsMap::loadSaveMapData(boolean readflag){
     eereadwrite(readflag, addr, _safePointList[i].numPoints);  
     int j=0;
     if (_safePointList[i].numPoints > 0 && _safePointList[i].numPoints <= MAXPOINTS) {
-      for (j; j <= _safePointList[i].numPoints; j++) {
+      for (j; j < _safePointList[i].numPoints; j++) {
         eereadwrite(readflag, addr, _safePointList[i].point[j].x);      
         eereadwrite(readflag, addr, _safePointList[i].point[j].y);      
       }
     }
   }
 
+  Serial.println("-----------------");
   eereadwrite(readflag, addr, _numberOfHomingPointLists);  
+  Serial.print(_numberOfHomingPointLists,0);
+  Serial.println(" homing point lists loaded:");
 
   for (int i=0; i <= _numberOfHomingPointLists; i++) {
     eereadwrite(readflag, addr, _homingPointList[i].numPoints);  
+
     int j=0;
     if (_homingPointList[i].numPoints > 0 && _homingPointList[i].numPoints <= MAXPOINTS) {
-      for (j; j <= _homingPointList[i].numPoints; j++) {
+      Serial.print(_homingPointList[i].numPoints);
+      Serial.println(" homing points loaded:");
+      for (j; j < _homingPointList[i].numPoints; j++) {
         eereadwrite(readflag, addr, _homingPointList[i].point[j].x);      
-        eereadwrite(readflag, addr, _homingPointList[i].point[j].y);      
+        eereadwrite(readflag, addr, _homingPointList[i].point[j].y);  
+        Serial.print(_homingPointList[i].point[j].x );
+        Serial.print (",");
+        Serial.println(_homingPointList[i].point[j].y);  
       }
     }
   }
+  Serial.println("-----------------");
 
   Serial.print(F("loadSaveMapData addrstop="));
   Serial.println(addr);

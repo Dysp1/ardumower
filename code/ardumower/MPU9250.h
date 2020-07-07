@@ -59,7 +59,7 @@ public:
 
     MPU9250_() : aRes(getAres()), gRes(getGres()), mRes(getMres()) {}
 
-    void setup(WireType& w = Wire)
+    bool setup(WireType& w = Wire)
     {
         wire = &w;
 
@@ -81,13 +81,16 @@ public:
             {
                 Serial.print("Could not connect to AK8963: 0x");
                 Serial.println(a_whoami);
+                return false;
             }
         }
         else
         {
             Serial.print("Could not connect to MPU9250: 0x");
             Serial.println(m_whoami);
+            return false;
         }
+        return true;
     }
 
     void calibrateAccelGyro()

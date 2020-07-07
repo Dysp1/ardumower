@@ -239,6 +239,7 @@ class Robot
     float gpsY ;   // Y position (m)
     unsigned long nextTimeGPS ;
     unsigned long nextTimeCheckIfStuck ;
+    unsigned long nextTimeGPSHomingPointCheck;
     float stuckIfGpsSpeedBelow ;
     int gpsSpeedIgnoreTime ; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
     int robotIsStuckCounter ;
