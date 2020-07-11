@@ -272,30 +272,27 @@ float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long 
 }
 
 float gpsMap::getHeadingToNextHomingPointDegrees(long lat, long lon) {
-  //currentHomingPoint = 5;
-
   float distanceToCurrent = getDistanceBetweenPoints(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
   float distanceToNext =  getDistanceBetweenPoints(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
   float distanceCurrentToNext =  getDistanceBetweenPoints(_homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y,_homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
-/*
+
   Serial.print("distanceToCurrent:");
   Serial.println(distanceToCurrent);
   Serial.print("distanceToNext:");
   Serial.println(distanceToNext);
   Serial.print("distanceCurrentToNext:");
   Serial.println(distanceCurrentToNext);
-
   Serial.print("currentHomingPoint:");
   Serial.println(currentHomingPoint);
-*/
+
 
   if ((distanceToCurrent < 5 || distanceToNext < distanceCurrentToNext) && currentHomingPoint > 0) {
     float nextPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
     currentHomingPoint--;
-    return nextPointHeading;
+    return round(nextPointHeading);
   } else {
     float currentPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
-    return currentPointHeading;
+    return round(currentPointHeading);
   }
 }
 

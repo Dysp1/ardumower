@@ -189,7 +189,8 @@ float IMU::smoothedYawRads(float newYaw){
 
 //  Serial.println(sampleCount);
 //  Serial.println((addedYaw+newYaw)/PI*180.0);
-  float yawToReturn = round((((addedYaw + newYaw)/sampleCount)/PI*180))*PI/180; //convert to degrees and round to 1 degree precision and back to rads
+//  float yawToReturn = round((((addedYaw + newYaw)/sampleCount)/PI*180))*PI/180; //convert to degrees and round to 1 degree precision and back to rads
+  float yawToReturn = degreesToRads(round(radsToDegrees((addedYaw + newYaw)/sampleCount))); //convert to degrees and round to 1 degree precision and back to rads
   return yawToReturn; 
 }
 
@@ -222,8 +223,8 @@ void IMU::update(){
 
       ypr.pitch = degreesToRads(mpu.getPitch());
       ypr.roll  = degreesToRads(mpu.getRoll());
-//      ypr.yaw = smoothedYawRads(degreesToRads(mpu.getYaw()));
-      ypr.yaw = degreesToRads(mpu.getYaw());
+      ypr.yaw = smoothedYawRads(degreesToRads(mpu.getYaw()));
+//      ypr.yaw = degreesToRads(mpu.getYaw());
 
       //ypr.yaw   = mpu.getYaw()*PI/180.0;
       //Serial.println(ypr.yaw/PI*180);
