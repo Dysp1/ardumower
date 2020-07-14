@@ -774,6 +774,8 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 		serialPort->print(insidePerim);
 //    if (insidePerim != 0) serialPort->print("Yes");
 //    else serialPort->print("No");
+    serialPort->print(F("|sgpsPMmm~Closest Homing Point:"));
+
 	  serialPort->print(F("|sgpsPMmm~New heading:"));
 		serialPort->print(robot->gpsPerimeterRollNewHeading);
 	  serialPort->print(F("|sgpsPMmm~Mag heading:"));
@@ -1015,7 +1017,7 @@ void RemoteControl::sendBatteryMenu(boolean update){
 
   if (robot->developerActive)
   {
-    sendSlider("j05", F("Calibrate batFactor "), robot->batFactor, "", 0.001, 0.30, 0.55);
+    sendSlider("j05", F("Calibrate batFactor "), robot->batFactor, "", 0.001, 0.55, 0.30);
   }
   
   //bb remove
@@ -1032,8 +1034,8 @@ void RemoteControl::sendBatteryMenu(boolean update){
   
   if (robot->developerActive)
   {
-    sendSlider("j09", F("Calibrate batChgFactor"), robot->batChgFactor, "", 0.001, 0.30, 0.55);
-    sendSlider("j08", F("Charge factor"), robot->chgFactor, "", 0.001, 0.01, 0.06);   
+    sendSlider("j09", F("Calibrate batChgFactor"), robot->batChgFactor, "", 0.001, 0.55, 0.30);
+    sendSlider("j08", F("Charge factor"), robot->chgFactor, "", 0.0001, 0.0600, 0.0150);   
   }
 
   
@@ -1050,27 +1052,36 @@ void RemoteControl::sendBatteryMenu(boolean update){
 
 void RemoteControl::processBatteryMenu(String pfodCmd){      
   if (pfodCmd == "j01") robot->batMonitor = !robot->batMonitor;
-    else if (pfodCmd.startsWith("j02")) {
+  else if (pfodCmd.startsWith("j02")) {
       processSlider(pfodCmd, robot->batGoHomeIfBelow, 0.1);
       //Console.print("gohomeifbelow=");
       //Console.println(robot->batGoHomeIfBelow);
-    } else if (pfodCmd == "j13") {
+  } else if (pfodCmd == "j13") {
       if (robot->stateCurr == STATE_STATION_CHARGING || robot->stateCurr == STATE_STATION) {
         robot->setActuator(ACT_CHGRELAY, 1); 
         robot->setNextState(STATE_STATION_CHARGING,0);
       }
-    }
-    else if (pfodCmd.startsWith("j03")) processSlider(pfodCmd, robot->batSwitchOffIfBelow, 0.1); 
+  }
+  else if (pfodCmd.startsWith("j03")) processSlider(pfodCmd, robot->batSwitchOffIfBelow, 0.1); 
     //bb change
     //else if (pfodCmd.startsWith("j05")) processSlider(pfodCmd, robot->batFactor, 0.01);
-    else if (pfodCmd.startsWith("j05")) processSlider(pfodCmd, robot->batFactor, 0.001);    
-    else if (pfodCmd.startsWith("j08")) processSlider(pfodCmd, robot->chgFactor, 0.001);    
+  else if (pfodCmd.startsWith("j05")) processSlider(pfodCmd, robot->batFactor, 0.001);    
+
+  else if (pfodCmd.startsWith("j08")) { 
+    processSlider(pfodCmd, robot->chgFactor, 0.0001);
+    Serial.println("here");
+  } 
     //bb change
     //else if (pfodCmd.startsWith("j09")) processSlider(pfodCmd, robot->batChgFactor, 0.01);
-    else if (pfodCmd.startsWith("j09")) processSlider(pfodCmd, robot->batChgFactor, 0.001);
-    else if (pfodCmd.startsWith("j10")) processSlider(pfodCmd, robot->startChargingIfBelow, 0.1);
-    else if (pfodCmd.startsWith("j11")) processSlider(pfodCmd, robot->batFullCurrent, 0.1);
-    else if (pfodCmd.startsWith("j12")) processSlider(pfodCmd, robot->batSwitchOffIfIdle, 1);
+  else if (pfodCmd.startsWith("j09")) { 
+    processSlider(pfodCmd, robot->batChgFactor, 0.001);
+    Serial.println("here2");
+  }
+   
+
+  else if (pfodCmd.startsWith("j10")) processSlider(pfodCmd, robot->startChargingIfBelow, 0.1);
+  else if (pfodCmd.startsWith("j11")) processSlider(pfodCmd, robot->batFullCurrent, 0.1);
+  else if (pfodCmd.startsWith("j12")) processSlider(pfodCmd, robot->batSwitchOffIfIdle, 1);
   sendBatteryMenu(true);
 }
 

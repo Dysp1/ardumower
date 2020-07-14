@@ -662,14 +662,19 @@ void Robot::readSensors(){
     batADC = readSensor(SEN_BAT_VOLTAGE);
 		int currentADC = readSensor(SEN_CHG_CURRENT);
 		int chgADC = readSensor(SEN_CHG_VOLTAGE);    
-		//Console.println(currentADC);
+//Console.println("--------");
+//Console.println(currentADC);
+//Console.println(chgFactor,4);
+
     double batvolt = ((double)batADC) * batFactor / 10;  // / 10 due to arduremote bug, can be removed after fixing    
     double chgvolt = ((double)chgADC) * batChgFactor / 10;  // / 10 due to arduremote bug, can be removed after fixing    
 		double curramp = ((double)currentADC) * chgFactor / 10;  // / 10 due to arduremote bug, can be removed after fixing		
+//Console.println(curramp);
 
     #if defined (PCB_1_3)         // Prüfe ob das V1.3 Board verwendet wird - und wenn ja **UZ**
     batvolt = batvolt + DiodeD9;  // dann rechnet zur Batteriespannung den Spannungsabfall der Diode D9 hinzu. (Spannungsabfall an der Diode D9 auf den 1.3 Board (Die Spannungsanzeige ist zu niedrig verursacht durch die Diode D9) **UZ**
     #endif                        // **UZ**
+//Console.println(chgCurrent,4);
     
     // low-pass filter
     double accel = 0.01;
@@ -677,7 +682,10 @@ void Robot::readSensors(){
     if (abs(batVoltage-batvolt)>5)   batVoltage = batvolt; else batVoltage = (1.0-accel) * batVoltage + accel * batvolt;
     if (abs(chgVoltage-chgvolt)>5)   chgVoltage = chgvolt; else chgVoltage = (1.0-accel) * chgVoltage + accel * chgvolt;
 		if (abs(chgCurrent-curramp)>0.5) chgCurrent = curramp; else chgCurrent = (1.0-accel) * chgCurrent + accel * curramp;       
+//Console.println(chgCurrent,5);
+
   } 
+
 
   if ((rainUse) && (millis() >= nextTimeRain)) {
     // read rain sensor
@@ -1715,6 +1723,11 @@ void Robot::loop()  {
         }
       
         if (lastErrType == ERR_PERIMETER_TIMEOUT) {
+          if (gpsPerimeterUse == 1 && imuUse == 1) {
+            setNextState(STATE_GPSPERIMETER_CHANGE_DIR,1);
+            break;
+          }
+
           if (perimeter.isInside(0)) {
             if(rotateLeft){  
               setNextState(STATE_PERI_OUT_REV, LEFT);
