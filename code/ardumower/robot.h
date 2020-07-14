@@ -144,7 +144,6 @@ enum {
   STATE_FORWARD,      // drive forward
   STATE_ROLL,         // drive roll right/left  
   STATE_REVERSE,      // drive reverse
-
   STATE_CIRCLE,       // drive circle  
   STATE_ERROR,        // error
   STATE_PERI_FIND,    // perimeter find 

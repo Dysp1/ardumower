@@ -35,8 +35,38 @@
 #define ADDR_ERR_COUNTERS 400
 #define ADDR_ROBOT_STATS 800
 
-const char* stateNames[] ={"OFF ", "ROS", "RC  ", "FORW", "ROLL", "REV ", "CIRC", "ERR ", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK",
-  "STREV", "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "TILT", "BUMPREV", "BUMPFORW", "GPSPERIMROLL", "GPSHOMEROLL", "GPSHOMING"};
+const char* stateNames[] ={
+  "OFF ",         
+  "ROS", 
+  "RC  ", 
+  "FORW", 
+  "ROLL", 
+  "REV ", 
+  "CIRC", 
+  "ERR ", 
+  "PFND", 
+  "PTRK", 
+  "PROL", 
+  "PREV", 
+  "STAT", 
+  "CHARG", 
+  "STCHK",
+  "STREV", 
+  "STROL", 
+  "STFOR", 
+  "MANU", 
+  "ROLW", 
+  "POUTFOR", 
+  "POUTREV", 
+  "POUTROLL", 
+  "TILT", 
+  "BUMPREV", 
+  "BUMPFORW", 
+  "GPSPERIMROLL",
+  "GPSLONGGROLL",
+  "GPSHOMEROLL", 
+  "GPSHOMING"
+};
 
 const char* sensorNames[] ={"SEN_PERIM_LEFT", "SEN_PERIM_RIGHT", "SEN_PERIM_LEFT_EXTRA", "SEN_PERIM_RIGHT_EXTRA", "SEN_LAWN_FRONT", "SEN_LAWN_BACK", 
 	"SEN_BAT_VOLTAGE", "SEN_CHG_CURRENT", "SEN_CHG_VOLTAGE", "SEN_MOTOR_LEFT", "SEN_MOTOR_RIGHT", "SEN_MOTOR_MOW", "SEN_BUMPER_LEFT", "SEN_BUMPER_RIGHT", 
@@ -1307,6 +1337,13 @@ const char* Robot::sensorName(byte nameForThisSensor){
 void Robot::setNextState(byte stateNew, byte dir){
   unsigned long stateTime = millis() - stateStartTime;
   
+  Serial.print("stateNew: ");
+  Serial.println(stateNew);
+  Serial.print("stateCurr: ");
+  Serial.println(stateCurr);
+  Serial.print("stateNext:");
+  Serial.println(stateNext);
+
   if (stateNew == stateCurr) return;
   
   // state correction  
@@ -1705,6 +1742,7 @@ void Robot::loop()  {
         if (lastErrType == ERR_IMU_COMM);
         if (lastErrType == ERR_IMU_CALIB);
         if (lastErrType == ERR_IMU_TILT){
+          I2Creset();
           if (imu.init() == false) Serial.println("Reinitialiation of IMU failed.");
         }
         if (lastErrType == ERR_RTC_COMM);
@@ -2397,22 +2435,25 @@ void Robot::loop()  {
       Serial.println("STATE_GPS_HOMING_FOLLOW_POINTS");
 
       if(millis() > nextTimeGPSHomingPointCheck) {
+  
+
         nextTimeGPSHomingPointCheck = millis() + 1000;
         imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon));
+        Serial.println(imu.radsToDegrees(imuDriveHeading));
+        imuRollHeading = imuDriveHeading;
+        imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
       }
 
-      //imuRollHeading = imuDriveHeading;
-      //imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
       if (gpsPerimeter.lastPointBeforeStation() == 1) setNextState(STATE_PERI_FIND,0);
       break;
   } // end switch  
-/*      
-Serial.println("-------------");
-Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247264.0, 2544012.0));
-Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247265.0, 2544012.0));
-Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247265.0, 2544012.0));
-Serial.println("-------------");
-*/
+      
+//Serial.println("-------------");
+//Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247264.0, 2544012.0));
+//Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247265.0, 2544012.0));
+//Serial.println(gpsPerimeter.getHeadingToNextHomingPointDegrees(6247265.0, 2544012.0));
+//Serial.println("-------------");
+
   // next line deactivated (issue with RC failsafe)
   //if ((useRemoteRC) && (remoteSwitch < -50)) setNextState(STATE_REMOTE, 0);
 
