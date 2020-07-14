@@ -1037,7 +1037,17 @@ void Robot::checkPerimeterBoundary(){
       }     
     }
   } else {  
-    if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
+
+    if (stateCurr == STATE_REVERSE || stateCurr == STATE_PERI_REV) {
+      if (!perimeterInside && millis() > (stateStartTime+500)) {
+        setMotorPWM( 0, 0, false );         
+        perimeterTriggerTime = 0;
+        setNextState(STATE_FORWARD,1);
+        
+      }
+    } 
+
+    else if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
       if (perimeterTriggerTime != 0) {
         if (millis() >= perimeterTriggerTime){        
           perimeterTriggerTime = 0;
