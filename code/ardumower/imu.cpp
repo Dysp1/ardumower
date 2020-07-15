@@ -219,7 +219,7 @@ void IMU::update(){
   lastAHRSTime = now;
 
   if (state == IMU_RUN){
-    read(); // not reading imu data while calibrating compass
+      read(); // not reading imu data while calibrating compass
 
       ypr.pitch = degreesToRads(mpu.getPitch());
       ypr.roll  = degreesToRads(mpu.getRoll());
