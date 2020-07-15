@@ -1039,11 +1039,10 @@ void Robot::checkPerimeterBoundary(){
   } else {  
 
     if (stateCurr == STATE_REVERSE || stateCurr == STATE_PERI_REV) {
-      if (!perimeterInside && millis() > (stateStartTime+500)) {
+      if (!perimeterInside && millis() > (stateStartTime+1500)) {
         setMotorPWM( 0, 0, false );         
         perimeterTriggerTime = 0;
         setNextState(STATE_FORWARD,1);
-        
       }
     } 
 
@@ -1548,6 +1547,13 @@ void Robot::setNextState(byte stateNew, byte dir){
 
   if (stateNew == STATE_GPS_HOMING_FIRST_TURN){
     if (gpsHomingInUse && imuUse) {
+      stateEndTime = millis() + 15000;
+      gpsPerimeterRollState = 0;
+      gpsPerimeterRollSubStateStartTime = millis();
+      gpsPerimeterRollNewHeading = gpsPerimeter.getNewHeadingLongGrassAreaDegrees(gpsLat, gpsLon);
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0; 
+
+/*
       imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToClosestHomingPointDegrees(gpsLat, gpsLon));
       imuRollHeading = imuDriveHeading;
       imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
@@ -1561,6 +1567,7 @@ void Robot::setNextState(byte stateNew, byte dir){
       }      
   
       stateEndTime = millis() + random(motorRollTimeMin,motorRollTimeMax) + motorZeroSettleTime;
+      */
     }
   }
 
@@ -2492,19 +2499,10 @@ void Robot::loop()  {
       }
 
       if (gpsPerimeterRollState == 4) {      
-   //     checkSonar();             
         motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
         motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-        if (millis() >= gpsPerimeterRollSubStateStartTime + 2000){
-          gpsPerimeterRollState = 5;
-          gpsPerimeterRollSubStateStartTime = millis();
-        }
-        break;
-      }
-
-      if (gpsPerimeterRollState == 5) {  
-        gpsPerimeterRollState = 0;
         setNextState(STATE_GPS_HOMING_FOLLOW_POINTS, rollDir);
+        break;
       }
 
       break;
@@ -2529,13 +2527,30 @@ void Robot::loop()  {
       Serial.println("STATE_GPS_HOMING_FOLLOW_POINTS");
 
       if(millis() > nextTimeGPSHomingPointCheck) {
-  
-
         nextTimeGPSHomingPointCheck = millis() + 1000;
-        imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon));
-        Serial.println(imu.radsToDegrees(imuDriveHeading));
-        imuRollHeading = imuDriveHeading;
-        imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
+        
+        gpsPerimeterRollNewHeading = gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon);
+        float degreesToTurn = gpsPerimeter.getDegreesToTurn(gpsPerimeterRollNewHeading, imu.radsToDegrees(imu.ypr.yaw));
+        if (degreesToTurn > 20) setNextState(STATE_GPS_HOMING_FIRST_TURN,1);
+        else {
+          if (degreesToTurn > 5) {
+            int turnDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw),gpsPerimeterRollNewHeading);
+            if (turnDir == LEFT) {
+              motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.15;
+              motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+            } else {
+              motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+              motorRightSpeedRpmSet = motorSpeedMaxRpm/1.15;
+            }
+          } else {
+            motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+            motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+          }
+        }
+        //imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon));
+        //Serial.println(imu.radsToDegrees(imuDriveHeading));
+        //imuRollHeading = imuDriveHeading;
+        //imuRollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw) , imu.radsToDegrees(imuDriveHeading));
       }
 
       if (gpsPerimeter.lastPointBeforeStation() == 1) setNextState(STATE_PERI_FIND,0);

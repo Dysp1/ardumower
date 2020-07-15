@@ -231,6 +231,16 @@ float gpsMap::getNewHeadingLongGrassAreaDegrees( long lat, long lon) {
   }
 }
 
+float gpsMap::getDegreesToTurn( float currentHeading, float gpsPerimeterRollNewHeading) {
+  float first = abs(gpsPerimeterRollNewHeading - currentHeading);
+  float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
+  float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
+
+  if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) return first;
+    else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) return second;
+      else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) return third;
+}
+
 bool gpsMap::getShortestWayToTurnDegrees( float currentHeading, float gpsPerimeterRollNewHeading) {
 
   bool rollDir;

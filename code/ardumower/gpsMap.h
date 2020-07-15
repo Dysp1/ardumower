@@ -92,6 +92,7 @@ class gpsMap
         int lastPointBeforeStation();
         float getDistanceBetweenPoints (long lat1, long lon1, long lat2, long lon2);
         float getHeadingBetweenPointsDegrees (long lat1, long lon1, long lat2, long lon2);
+        float getDegreesToTurn( float currentHeading, float gpsPerimeterRollNewHeading);
 
         bool getShortestWayToTurnDegrees( float currentHeading, float gpsPerimeterRollNewHeading);
         float getNewHeadingFromPerimeterDegrees( long lat, long lon);
