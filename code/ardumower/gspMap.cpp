@@ -296,14 +296,21 @@ float gpsMap::getHeadingToNextHomingPointDegrees(long lat, long lon) {
   Serial.println(currentHomingPoint);
 
 
-  if ((distanceToCurrent < 5 || distanceToNext < distanceCurrentToNext) && currentHomingPoint > 0) {
+  if ((distanceToCurrent <= 8 || distanceToNext < distanceCurrentToNext) && currentHomingPoint > 0) {
     float nextPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
     currentHomingPoint--;
+  Serial.print("nextPointHeading: ");
+  Serial.println(round(nextPointHeading));
+
     return round(nextPointHeading);
   } else {
     float currentPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
+  Serial.print("nextPointHeading: ");
+  Serial.println(round(currentPointHeading));
+
     return round(currentPointHeading);
   }
+
 }
 
 int gpsMap::lastPointBeforeStation() {

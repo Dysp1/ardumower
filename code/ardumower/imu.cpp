@@ -234,6 +234,8 @@ void IMU::update(){
   }
 }  
 
+float imuInitNextTime = millis()+360000;
+
 boolean IMU::init(){
   loadCalib();
   
@@ -248,6 +250,7 @@ boolean IMU::init(){
     now = 0;  
     hardwareInitialized = true;
   }
+  imuInitNextTime = millis()+360000;
   return imuInitOK;
 }
 
@@ -264,6 +267,8 @@ int IMU::getErrorCounter(){
 }
 
 void IMU::read(){  
+  if(millis() > imuInitNextTime) init();
+
   if (!hardwareInitialized) {
     errorCounter++;
     return;

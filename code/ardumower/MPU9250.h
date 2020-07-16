@@ -66,9 +66,20 @@ public:
         uint8_t m_whoami = 0x00;
         uint8_t a_whoami = 0x00;
 
+            // reset device
+            writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x80); // Write a one to bit 7 reset bit; toggle reset device
+            delay(100);
+
+            writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x01);
+            writeByte(MPU9250_ADDRESS, PWR_MGMT_2, 0x00);
+            delay(200);
+
+
+
         m_whoami = isConnectedMPU9250();
         if (m_whoami)
         {
+            
             Serial.println("MPU9250 is online...");
             initMPU9250();
 
