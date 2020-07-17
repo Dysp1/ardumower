@@ -1928,7 +1928,7 @@ void Robot::loop()  {
 
       if (gpsPerimeterRollState == 4) {      
  
-        float currentHeading = imu.ypr.yaw/PI*180.0;
+        float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
         float first = abs(gpsPerimeterRollNewHeading - currentHeading);
         float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
         float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
@@ -1962,7 +1962,7 @@ void Robot::loop()  {
             motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
           }
   
-          float currentHeading = imu.ypr.yaw/PI*180.0;
+          float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
   
           float first = abs(gpsPerimeterRollNewHeading - currentHeading);
           float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
@@ -2006,7 +2006,7 @@ void Robot::loop()  {
         } else {
           if (millis() >= gpsPerimeterRollSubStateStartTime + 100) {
           
-            float currentHeading = imu.ypr.yaw/PI*180.0;
+            float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
             float first = abs(gpsPerimeterRollNewHeading - currentHeading);
             float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
             float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
@@ -2095,7 +2095,7 @@ void Robot::loop()  {
 
       if (gpsPerimeterRollState == 4) {      
  
-        float currentHeading = imu.ypr.yaw/PI*180.0;
+        float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
 
         float first = abs(gpsPerimeterRollNewHeading - currentHeading);
         float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
@@ -2130,7 +2130,7 @@ void Robot::loop()  {
             motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
           }
   
-          float currentHeading = imu.ypr.yaw/PI*180.0;
+          float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
   
           float first = abs(gpsPerimeterRollNewHeading - currentHeading);
           float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
@@ -2443,7 +2443,7 @@ Serial.println(gpsPerimeterRollState);
 
       if (gpsPerimeterRollState == 1) {      
  
-        float currentHeading = imu.ypr.yaw/PI*180.0;
+        float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
 
         float first = abs(gpsPerimeterRollNewHeading - currentHeading);
         float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
@@ -2469,7 +2469,7 @@ Serial.println(gpsPerimeterRollState);
       }
 
       if (gpsPerimeterRollState == 2) {  
-        Serial.print("-------------");
+        Serial.println("-------------");
 
         if (millis() > gpsPerimeterRollSubStateStartTime + 102) {
           if (rollDir == LEFT) {
@@ -2480,7 +2480,7 @@ Serial.println(gpsPerimeterRollState);
             motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
           }
   
-          float currentHeading = imu.ypr.yaw/PI*180.0;
+          float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
 
         Serial.print("currentHeading: ");
         Serial.println(currentHeading);
@@ -2503,7 +2503,7 @@ Serial.println(gpsPerimeterRollState);
 
         Serial.print("gpsPerimeterRollNewHeading: ");
         Serial.println(gpsPerimeterRollNewHeading);
-        Serial.print("-------------");
+        Serial.println("-------------");
 
         break;
       }
@@ -2545,40 +2545,44 @@ Serial.println(gpsPerimeterRollState);
       break;        
 
     case STATE_GPS_HOMING_FOLLOW_POINTS:
-      Serial.println("STATE_GPS_HOMING_FOLLOW_POINTS");
-
+ 
       if(millis() > nextTimeGPSHomingPointCheck) {
         nextTimeGPSHomingPointCheck = millis() + 500;
-        
+  
+        Serial.println("STATE_GPS_HOMING_FOLLOW_POINTS");
+       
         gpsPerimeterRollNewHeading = gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon);
         Serial.print("gpsPerimeterRollNewHeading: ");
         Serial.println(gpsPerimeterRollNewHeading);
         Serial.print("currentdir: ");
         Serial.println(imu.radsToDegrees(imu.ypr.yaw));
 
-        float degreesToTurn = gpsPerimeter.getDegreesToTurn(imu.radsToDegrees(imu.ypr.yaw), gpsPerimeterRollNewHeading);
+        float degreesToTurn = gpsPerimeter.getDegreesToTurn(gpsPerimeterRollNewHeading, imu.radsToDegrees(imu.ypr.yaw));
         Serial.print("degreesToTurn: ");
         Serial.println(degreesToTurn);
 
-        if (degreesToTurn > 20) setNextState(STATE_GPS_HOMING_FIRST_TURN,1);
-        else {
+//        if (degreesToTurn > 20) setNextState(STATE_GPS_HOMING_FIRST_TURN,1);
+//        else {
           if (degreesToTurn > 5) {
             int turnDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw), gpsPerimeterRollNewHeading);
         Serial.print("turnDir: ");
-        Serial.println(turnDir);
+        if (turnDir == LEFT) Serial.println("LEFT");
+        if (turnDir == RIGHT) Serial.println("RIGHT");
 
             if (turnDir == LEFT) {
-              motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.50;
+              motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25 - (degreesToTurn/5);
+              if (motorLeftSpeedRpmSet < -motorSpeedMaxRpm/1.25 < 0) motorLeftSpeedRpmSet = -motorSpeedMaxRpm/1.25;
               motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
             } else {
               motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
-              motorRightSpeedRpmSet = motorSpeedMaxRpm/1.50;
+              motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25 - (degreesToTurn/5);
+              if (motorRightSpeedRpmSet < -motorSpeedMaxRpm/1.25 < 0) motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;
             }
           } else {
             motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
             motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
           }
-        }
+//        }
         //imuDriveHeading = imu.degreesToRads(gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon));
         //Serial.println(imu.radsToDegrees(imuDriveHeading));
         //imuRollHeading = imuDriveHeading;

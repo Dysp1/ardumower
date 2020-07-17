@@ -231,29 +231,70 @@ float gpsMap::getNewHeadingLongGrassAreaDegrees( long lat, long lon) {
   }
 }
 
-float gpsMap::getDegreesToTurn( float currentHeading, float gpsPerimeterRollNewHeading) {
+float gpsMap::getDegreesToTurn( float gpsPerimeterRollNewHeading, float currentHeading ) {
+  float first = abs(gpsPerimeterRollNewHeading - currentHeading);
+  float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
+  float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
+  
+  float minimumAngle = min(first, second);
+  minimumAngle = min(minimumAngle, third);
+
+Serial.println(first);
+Serial.println(second);
+Serial.println(third);
+
+Serial.print("minimumAngle: ");
+Serial.println(minimumAngle);
+
+  return minimumAngle;
+/*
+Serial.println(currentHeading);
+Serial.println(gpsPerimeterRollNewHeading);
+
+
   float first = abs(gpsPerimeterRollNewHeading - currentHeading);
   float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
   float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
 
-  if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) return first;
-    else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) return second;
-      else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) return third;
+Serial.println(first);
+Serial.println(second);
+Serial.println(third);
+
+  if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) return (float)(gpsPerimeterRollNewHeading - currentHeading);
+    else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) return (float)(gpsPerimeterRollNewHeading - currentHeading + 360.0);
+      else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) return (float)(gpsPerimeterRollNewHeading- currentHeading - 360.0);
+*/
 }
 
 bool gpsMap::getShortestWayToTurnDegrees( float currentHeading, float gpsPerimeterRollNewHeading) {
 
-  bool rollDir;
+//  bool rollDir;
+
+  if (currentHeading <= gpsPerimeterRollNewHeading) {
+    if ((gpsPerimeterRollNewHeading - currentHeading) <= 180 ) {
+      return RIGHT;
+    } else {
+      return LEFT;
+    }
+  } else {
+    if ((currentHeading - gpsPerimeterRollNewHeading) <= 180 ) {
+      return LEFT;
+    } else {
+      return RIGHT;
+    }
+  }
+  
+
+/*
   float first = abs(gpsPerimeterRollNewHeading - currentHeading);
   float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
   float third = abs(gpsPerimeterRollNewHeading - currentHeading - 360);
 
-  rollDir = RIGHT;
-  if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) rollDir = LEFT;
-    else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) rollDir = LEFT;
-      else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) rollDir = LEFT;
-
-  return rollDir;
+  if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) return LEFT;
+    else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) return LEFT;
+      else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) return LEFT;
+*/
+  return RIGHT;
 }
 
 float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long lat, long lon) {
@@ -298,17 +339,22 @@ float gpsMap::getHeadingToNextHomingPointDegrees(long lat, long lon) {
 
   if ((distanceToCurrent <= 8 || distanceToNext < distanceCurrentToNext) && currentHomingPoint > 0) {
     float nextPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
-    currentHomingPoint--;
-  Serial.print("nextPointHeading, new point: ");
-  Serial.println(round(nextPointHeading));
+Serial.println(_homingPointList[0].point[currentHomingPoint-1].x);
+Serial.println(_homingPointList[0].point[currentHomingPoint-1].y);
 
-    return round(nextPointHeading);
+    currentHomingPoint--;
+  
+
+  Serial.print("nextPointHeading, new point: ");
+  Serial.println(nextPointHeading);
+
+    return nextPointHeading;
   } else {
     float currentPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
   Serial.print("nextPointHeading, no change: ");
-  Serial.println(round(currentPointHeading));
+  Serial.println(currentPointHeading);
 
-    return round(currentPointHeading);
+    return currentPointHeading;
   }
 
 }
