@@ -338,7 +338,7 @@ float gpsMap::getHeadingToNextHomingPointDegrees(long lat, long lon) {
 
 
   if ((distanceToCurrent <= 8 || distanceToNext < distanceCurrentToNext) && currentHomingPoint > 0) {
-    float nextPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y);
+    float nextPointHeading = getHeadingBetweenPointsDegrees(_homingPointList[0].point[currentHomingPoint-1].x, _homingPointList[0].point[currentHomingPoint-1].y,lat, lon);
 Serial.println(_homingPointList[0].point[currentHomingPoint-1].x);
 Serial.println(_homingPointList[0].point[currentHomingPoint-1].y);
 
@@ -350,7 +350,7 @@ Serial.println(_homingPointList[0].point[currentHomingPoint-1].y);
 
     return nextPointHeading;
   } else {
-    float currentPointHeading = getHeadingBetweenPointsDegrees(lat, lon, _homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y);
+    float currentPointHeading = getHeadingBetweenPointsDegrees(_homingPointList[0].point[currentHomingPoint].x, _homingPointList[0].point[currentHomingPoint].y, lat, lon);
   Serial.print("nextPointHeading, no change: ");
   Serial.println(currentPointHeading);
 
