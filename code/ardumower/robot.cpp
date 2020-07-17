@@ -2548,7 +2548,7 @@ Serial.println(gpsPerimeterRollState);
       Serial.println("STATE_GPS_HOMING_FOLLOW_POINTS");
 
       if(millis() > nextTimeGPSHomingPointCheck) {
-        nextTimeGPSHomingPointCheck = millis() + 1000;
+        nextTimeGPSHomingPointCheck = millis() + 500;
         
         gpsPerimeterRollNewHeading = gpsPerimeter.getHeadingToNextHomingPointDegrees(gpsLat, gpsLon);
         Serial.print("gpsPerimeterRollNewHeading: ");
@@ -2556,14 +2556,14 @@ Serial.println(gpsPerimeterRollState);
         Serial.print("currentdir: ");
         Serial.println(imu.radsToDegrees(imu.ypr.yaw));
 
-        float degreesToTurn = gpsPerimeter.getDegreesToTurn(gpsPerimeterRollNewHeading, imu.radsToDegrees(imu.ypr.yaw));
+        float degreesToTurn = gpsPerimeter.getDegreesToTurn(imu.radsToDegrees(imu.ypr.yaw), gpsPerimeterRollNewHeading);
         Serial.print("degreesToTurn: ");
         Serial.println(degreesToTurn);
 
         if (degreesToTurn > 20) setNextState(STATE_GPS_HOMING_FIRST_TURN,1);
         else {
           if (degreesToTurn > 5) {
-            int turnDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw),gpsPerimeterRollNewHeading);
+            int turnDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw), gpsPerimeterRollNewHeading);
         Serial.print("turnDir: ");
         Serial.println(turnDir);
 
