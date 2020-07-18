@@ -848,8 +848,8 @@ void Robot::checkCurrent(){
       && motorMowSense >= motorMowCircleTriggerPower
       && stateCurr == STATE_FORWARD
       && millis() >= stateStartTime + 5000
-      && perimeter.isInside(0)
-      && abs(perimeterMag) < 1000
+      && (perimeter.isInside(0) || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
+      && (abs(perimeterMag) < 1000 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
         setSensorTriggered(SEN_MOW_POWER);
 
@@ -1949,7 +1949,8 @@ void Robot::loop()  {
       } 
 
       if (gpsPerimeterRollState == 4) {      
- 
+        rollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw),gpsPerimeterRollNewHeading);
+/*
         float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
         float first = abs(gpsPerimeterRollNewHeading - currentHeading);
         float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
@@ -1959,7 +1960,7 @@ void Robot::loop()  {
         if (first < second && first < third && (gpsPerimeterRollNewHeading - currentHeading) > 0) rollDir = LEFT;
         else if (second < first && second < third && (gpsPerimeterRollNewHeading - currentHeading + 360) > 0) rollDir = LEFT;
         else if (third < first && third < second && (gpsPerimeterRollNewHeading- currentHeading - 360) > 0) rollDir = LEFT;
-
+*/
         if (rollDir == LEFT) {
           motorLeftSpeedRpmSet  =  motorSpeedMaxRpm * 0.5;
           motorRightSpeedRpmSet = -motorSpeedMaxRpm * 0.5;                    
@@ -1983,8 +1984,9 @@ void Robot::loop()  {
             motorLeftSpeedRpmSet  = -motorSpeedMaxRpm * 0.5;
             motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
           }
-  
-          float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
+
+          float minimumAngle = gpsPerimeter.getDegreesToTurn(gpsPerimeterRollNewHeading, imu.radsToDegrees(imu.ypr.yaw));
+          /*float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
   
           float first = abs(gpsPerimeterRollNewHeading - currentHeading);
           float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
@@ -1992,7 +1994,7 @@ void Robot::loop()  {
   
           float minimumAngle = min(first, second);
           minimumAngle = min(minimumAngle, third);
-  
+  */
           if (abs(minimumAngle) <= 10) {
             gpsPerimeterRollState = 6;
             gpsPerimeterRollSubStateStartTime = millis();
@@ -2027,7 +2029,10 @@ void Robot::loop()  {
           gpsPerimeterRollSubStateStartTime = millis();
         } else {
           if (millis() >= gpsPerimeterRollSubStateStartTime + 100) {
-          
+            gpsPerimeterRollSubStateStartTime = millis();          
+            
+            float degreesToTurn = gpsPerimeter.getDegreesToTurn(gpsPerimeterRollNewHeading, imu.radsToDegrees(imu.ypr.yaw));
+/*
             float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
             float first = abs(gpsPerimeterRollNewHeading - currentHeading);
             float second = abs(gpsPerimeterRollNewHeading - currentHeading + 360);
@@ -2040,7 +2045,25 @@ void Robot::loop()  {
 
             float minimumAngle = min(first, second);
             minimumAngle = min(minimumAngle, third);
-  
+*/  
+            if (degreesToTurn >= 10) {
+              rollDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw), gpsPerimeterRollNewHeading);
+
+              if (rollDir == LEFT) {
+                motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25 - (degreesToTurn/5);
+                if (motorLeftSpeedRpmSet < -motorSpeedMaxRpm/1.25 < 0) motorLeftSpeedRpmSet = -motorSpeedMaxRpm/1.25;
+                motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+              } else {
+                motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+                motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25 - (degreesToTurn/5);
+                if (motorRightSpeedRpmSet < -motorSpeedMaxRpm/1.25 < 0) motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.25;
+              }
+            } else {
+              motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
+              motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
+            }
+
+/*
             if (abs(minimumAngle) >= 10) {
               if (rollDir == LEFT) {
                 motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.35;
@@ -2053,9 +2076,9 @@ void Robot::loop()  {
               motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.25;
               motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
             }
-
+*/
 //            gpsPerimeterRollState = 9;
-            gpsPerimeterRollSubStateStartTime = millis();
+
           }
         }
         break;
@@ -2585,9 +2608,6 @@ void Robot::loop()  {
 //        else {
           if (degreesToTurn > 5) {
             int turnDir = gpsPerimeter.getShortestWayToTurnDegrees(imu.radsToDegrees(imu.ypr.yaw), gpsPerimeterRollNewHeading);
-        Serial.print("turnDir: ");
-        if (turnDir == LEFT) Serial.println("LEFT");
-        if (turnDir == RIGHT) Serial.println("RIGHT");
 
             if (turnDir == LEFT) {
               motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25 - (degreesToTurn/5);
