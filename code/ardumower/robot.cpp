@@ -192,6 +192,7 @@ Robot::Robot(){
   gpsPerimeterRollSubStateStartTime = 0;
   gpsHomingLastStep = 0;
   nextTimeGPSHomingPointCheck = 0;
+  compassOffsetFromGPS = 0;
 
   imuDriveHeading = 0;
   imuRollHeading = 0;
@@ -1349,15 +1350,6 @@ const char* Robot::sensorName(byte nameForThisSensor){
 void Robot::setNextState(byte stateNew, byte dir){
   unsigned long stateTime = millis() - stateStartTime;
   
-  Serial.print("stateNew: ");
-  Serial.println(stateNew);
-  Serial.print("stateCurr: ");
-  Serial.println(stateCurr);
-  Serial.print("stateNext:");
-  Serial.println(stateNext);
-
-  if (stateNew == stateCurr) return;
-  
   // state correction  
 	if ((stateNew == STATE_ERROR) && (stateCurr == STATE_STATION_CHARGING)) {
 		stateNew = STATE_STATION_CHARGING; // do not enter ERROR state when charging
@@ -1374,6 +1366,8 @@ void Robot::setNextState(byte stateNew, byte dir){
       stateNew = STATE_STATION_CHECK;         
     } 
   }
+
+  if (stateNew == stateCurr) return;
 
   // evaluate new state
   stateNext = stateNew;
@@ -1399,10 +1393,10 @@ void Robot::setNextState(byte stateNew, byte dir){
             stateEndTime = millis() + perimeterTrackRollTime + motorZeroSettleTime;                     
             if (dir == RIGHT){
 	            motorLeftSpeedRpmSet = motorSpeedMaxRpm/2;
-	            motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;						
+	            motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.5;
             } else {
               motorRightSpeedRpmSet = motorSpeedMaxRpm/2;
-              motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;	
+              motorLeftSpeedRpmSet = -motorSpeedMaxRpm/1.5;	
             }
           } 
   
@@ -1662,7 +1656,29 @@ void Robot::loop()  {
       nextTimeGPS = millis() + 100;
       gps.feed();
       processGPSData();
+    
+      if(gps.f_speed_kmph() > 0.5 && 
+          (stateCurr == STATE_FORWARD
+//         || stateCurr == STATE_GPS_HOMING_FOLLOW_POINTS
+          )
+        ) {
+        compassOffsetFromGPS = gps.f_course() - imu.radsToDegrees(imu.ypr.yaw);
+        Serial.print("gps.f_course()");
+        Serial.println(gps.f_course());
+        Serial.print("imu.radsToDegrees(imu.ypr.yaw)");
+        Serial.println(imu.radsToDegrees(imu.ypr.yaw));
+        Serial.print("compassOffsetFromGPS: ");
+        Serial.println(compassOffsetFromGPS);
+      }
     }
+
+    float gpsCorrectedHeading = imu.radsToDegrees(imu.ypr.yaw) + compassOffsetFromGPS;
+    if (gpsCorrectedHeading < 0) gpsCorrectedHeading += 360.0;
+    if (gpsCorrectedHeading > 360) gpsCorrectedHeading -= 360.0;
+    Serial.print("gpsCorrectedHeading: ");
+    Serial.println(gpsCorrectedHeading);
+
+    imu.ypr.yaw = imu.degreesToRads(gpsCorrectedHeading);
   }
 
   if (millis() >= nextTimePfodLoop){
@@ -2337,7 +2353,7 @@ void Robot::loop()  {
       break;
     case STATE_PERI_REV:
       // perimeter tracking reverse
-      if (millis() >= stateEndTime) setNextState(STATE_PERI_ROLL, RIGHT); //rollDir);				               
+      if (millis() >= stateEndTime) setNextState(STATE_PERI_ROLL, LEFT); //rollDir);				               
       
       break;
     case STATE_PERI_FIND:

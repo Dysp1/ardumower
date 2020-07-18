@@ -576,16 +576,28 @@ void gpsMap::loadSaveMapData(boolean readflag){
   short magic = 30;
   eereadwrite(readflag, addr, magic); // magic
 
-
   eereadwrite(readflag, addr, _numberOfMainAreas);  
+  if (readflag) {
+    Serial.print(_numberOfMainAreas,0);
+    Serial.println(" exclusion area lists loaded:");
+  }
 
-  for (int i=0; i <= _numberOfMainAreas; i++) {
+  for (int i=0; i < _numberOfMainAreas; i++) {
     eereadwrite(readflag, addr, _mainAreas[i].numPoints);  
+    if (readflag) {
+      Serial.print(_mainAreas[i].numPoints);
+      Serial.println(" main area points loaded:");
+    }
     int j=0;
     if (_mainAreas[i].numPoints > 0 && _mainAreas[i].numPoints <= MAXPOINTS) {
       for (j; j <= _mainAreas[i].numPoints; j++) {
         eereadwrite(readflag, addr, _mainAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _mainAreas[i].point[j].y);      
+        if (readflag) {
+          Serial.print(_mainAreas[i].point[j].x );
+          Serial.print (",");
+          Serial.println(_mainAreas[i].point[j].y);
+        }
       }
       if (readflag) {
         _mainAreas[i].point[j+1].x = _mainAreas[i].point[0].x;
@@ -595,14 +607,26 @@ void gpsMap::loadSaveMapData(boolean readflag){
   }
 
   eereadwrite(readflag, addr, _numberOfExclusionAreas);  
-
-  for (int i=0; i <= _numberOfExclusionAreas; i++) {
+  if (readflag) {
+    Serial.print(_numberOfExclusionAreas,0);
+    Serial.println(" exclusion area lists loaded:");
+  }
+  for (int i=0; i < _numberOfExclusionAreas; i++) {
     eereadwrite(readflag, addr, _exclusionAreas[i].numPoints);  
+    if (readflag) {
+      Serial.print(_exclusionAreas[i].numPoints);
+      Serial.println(" exclusion area points loaded:");
+    }
     int j=0;
     if (_exclusionAreas[i].numPoints > 0 && _exclusionAreas[i].numPoints <= MAXPOINTS) {
       for (j; j <= _exclusionAreas[i].numPoints; j++) {
         eereadwrite(readflag, addr, _exclusionAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _exclusionAreas[i].point[j].y);      
+        if (readflag) {
+          Serial.print(_exclusionAreas[i].point[j].x );
+          Serial.print (",");
+          Serial.println(_exclusionAreas[i].point[j].y);
+        }
       }
       if (readflag) {
         _exclusionAreas[i].point[j+1].x = _exclusionAreas[i].point[0].x;
@@ -612,36 +636,52 @@ void gpsMap::loadSaveMapData(boolean readflag){
   }
 
   eereadwrite(readflag, addr, _numberOfSafePointLists);  
-
-  for (int i=0; i <= _numberOfSafePointLists; i++) {
+  if (readflag) {
+    Serial.print(_numberOfSafePointLists,0);
+    Serial.println(" safe point lists loaded:");
+  }
+  for (int i=0; i < _numberOfSafePointLists; i++) {
     eereadwrite(readflag, addr, _safePointList[i].numPoints);  
+    if (readflag) {
+      Serial.print(_safePointList[i].numPoints);
+      Serial.println(" safe points loaded:");
+    }
     int j=0;
     if (_safePointList[i].numPoints > 0 && _safePointList[i].numPoints <= MAXPOINTS) {
       for (j; j < _safePointList[i].numPoints; j++) {
         eereadwrite(readflag, addr, _safePointList[i].point[j].x);      
         eereadwrite(readflag, addr, _safePointList[i].point[j].y);      
+        if (readflag) {
+          Serial.print(_safePointList[i].point[j].x );
+          Serial.print (",");
+          Serial.println(_safePointList[i].point[j].y);
+        }
       }
     }
   }
 
   Serial.println("-----------------");
   eereadwrite(readflag, addr, _numberOfHomingPointLists);  
-  Serial.print(_numberOfHomingPointLists,0);
-  Serial.println(" homing point lists loaded:");
-
-  for (int i=0; i <= _numberOfHomingPointLists; i++) {
+  if (readflag) {
+    Serial.print(_numberOfHomingPointLists,0);
+    Serial.println(" homing point lists loaded:");
+  }
+  for (int i=0; i < _numberOfHomingPointLists; i++) {
     eereadwrite(readflag, addr, _homingPointList[i].numPoints);  
-
-    int j=0;
-    if (_homingPointList[i].numPoints > 0 && _homingPointList[i].numPoints <= MAXPOINTS) {
+    if (readflag) {
       Serial.print(_homingPointList[i].numPoints);
       Serial.println(" homing points loaded:");
+    }
+    int j=0;
+    if (_homingPointList[i].numPoints > 0 && _homingPointList[i].numPoints <= MAXPOINTS) {
       for (j; j < _homingPointList[i].numPoints; j++) {
         eereadwrite(readflag, addr, _homingPointList[i].point[j].x);      
         eereadwrite(readflag, addr, _homingPointList[i].point[j].y);  
-        Serial.print(_homingPointList[i].point[j].x );
-        Serial.print (",");
-        Serial.println(_homingPointList[i].point[j].y);  
+        if (readflag) {
+          Serial.print(_homingPointList[i].point[j].x );
+          Serial.print (",");
+          Serial.println(_homingPointList[i].point[j].y);
+        }
       }
     }
   }

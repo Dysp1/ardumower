@@ -693,9 +693,9 @@ void RemoteControl::sendGPSMenu(boolean update){
     serialPort->print(F("|q06~speed kmph "));
     serialPort->print(robot->gps.f_speed_kmph());
     serialPort->print(F("|q07~course "));
-    serialPort->print(robot->gps.f_course()*100000);
+    serialPort->print(robot->gps.f_course());
     serialPort->print(F("|q08~altitude "));
-    serialPort->print(robot->gps.f_altitude()*100000);
+    serialPort->print(robot->gps.f_altitude());
     serialPort->print(F("|q09~lat "));
     serialPort->print(lat,5);
     serialPort->print(F("|q09~lon "));
@@ -779,11 +779,12 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
 	  serialPort->print(F("|sgpsPMmm~New heading:"));
 		serialPort->print(robot->gpsPerimeterRollNewHeading);
 	  serialPort->print(F("|sgpsPMmm~Mag heading:"));
-	  float myHeading2 = (robot->imu.ypr.yaw/PI*180);
-  	if (myHeading2 < 0) myHeading2 += 360;
-  	serialPort->print(myHeading2);
+  	serialPort->print(robot->imu.radsToDegrees(robot->imu.ypr.yaw));
     serialPort->print(F("|q07~GPS heading"));
     serialPort->print(robot->gps.f_course());
+    serialPort->print(F("|ComOffsFromGPS "));
+    serialPort->print(robot->compassOffsetFromGPS);
+
 //	  serialPort->print(F("|sgpsPMmm~dist:"));
 //		serialPort->print(robot->gpsPerimeter.distanceFromTempAreaMiddle(robot->gpsLat, robot->gpsLon),6);
   }
