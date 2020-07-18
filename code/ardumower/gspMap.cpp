@@ -306,8 +306,8 @@ float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long 
   float shortestDistance = 99999.0;
   int i = 0;
   for (i=0; i < arrayToModify.numPoints; i++) {
-    shortestDistance = min(shortestDistance, (sqrt( pow((lat - arrayToModify.point[i].x),2) + pow((lon - arrayToModify.point[i].y),2) )));
-
+    //shortestDistance = min(shortestDistance, (sqrt( pow((lat - arrayToModify.point[i].x),2) + pow((lon - arrayToModify.point[i].y),2) )));
+    shortestDistance = getDistanceBetweenPoints(arrayToModify.point[i].x,arrayToModify.point[i].y,lat,lon);
     if (shortestDistance < lastShortestDistance) {
       lastShortestDistance = shortestDistance;
       closestPoint = i;
@@ -316,9 +316,9 @@ float gpsMap::getNewHeadingToClosestPoint(String areaType, int areaNumber, long 
 
   }
 
-  float degrees = atan2( (arrayToModify.point[closestPoint].y - lon ), (arrayToModify.point[closestPoint].x - lat) )/PI*180.0;
-  if (degrees < 0) degrees += 360; 
-
+  //float degrees = atan2( (arrayToModify.point[closestPoint].y - lon ), (arrayToModify.point[closestPoint].x - lat) )/PI*180.0;
+  //if (degrees < 0) degrees += 360; 
+  float degrees = getHeadingBetweenPointsDegrees(arrayToModify.point[closestPoint].x, arrayToModify.point[closestPoint].y,lat, lon);
   return degrees;
 }
 
@@ -579,7 +579,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
   eereadwrite(readflag, addr, _numberOfMainAreas);  
   if (readflag) {
     Serial.print(_numberOfMainAreas,0);
-    Serial.println(" exclusion area lists loaded:");
+    Serial.println(" main area lists loaded:");
   }
 
   for (int i=0; i < _numberOfMainAreas; i++) {

@@ -705,7 +705,7 @@ void RemoteControl::sendGPSMenu(boolean update){
   }
   
     serialPort->print(F("|q09~gpsAchievedSpeed"));
-    serialPort->print(robot->gpsAchievedSpeed );
+    serialPort->print(robot->gpsAchievedSpeed );   
     serialPort->print(F("|q09~motorLeftRpmCurr"));
     serialPort->print(abs(robot->motorLeftRpmCurr));    
     serialPort->print(F("|q09~motorRightRpmCurr"));
@@ -782,7 +782,7 @@ void RemoteControl::sendGPSPerimeterMainMenu(boolean update){
   	serialPort->print(robot->imu.radsToDegrees(robot->imu.ypr.yaw));
     serialPort->print(F("|q07~GPS heading"));
     serialPort->print(robot->gps.f_course());
-    serialPort->print(F("|ComOffsFromGPS "));
+    serialPort->print(F("|asd~ComOffsFromGPS"));
     serialPort->print(robot->compassOffsetFromGPS);
 
 //	  serialPort->print(F("|sgpsPMmm~dist:"));

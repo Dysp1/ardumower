@@ -1648,6 +1648,15 @@ void Robot::loop()  {
       nextTimeIMU = millis() + 100;
       imu.update();  
       //checkIfImuAccelerationMaxed();
+      /*
+      if (gpsUse) { 
+        float gpsCorrectedHeading = imu.radsToDegrees(imu.ypr.yaw) + compassOffsetFromGPS;
+        if (gpsCorrectedHeading < 0) gpsCorrectedHeading += 360.0;
+        if (gpsCorrectedHeading > 360) gpsCorrectedHeading -= 360.0;
+        imu.ypr.yaw = imu.degreesToRads(gpsCorrectedHeading);
+      }
+      */
+
     }
   }
 
@@ -1656,12 +1665,15 @@ void Robot::loop()  {
       nextTimeGPS = millis() + 100;
       gps.feed();
       processGPSData();
-    
-      if(gps.f_speed_kmph() > 0.5 && 
-          (stateCurr == STATE_FORWARD
-//         || stateCurr == STATE_GPS_HOMING_FOLLOW_POINTS
-          )
-        ) {
+  /*
+      if((float)gps.f_speed_kmph() > 0.5 && stateCurr == STATE_FORWARD && millis() > stateStartTime+5000) {
+        Serial.print("gps.f_speed_kmph()");
+        Serial.println(gps.f_speed_kmph());
+        Serial.print("stateCurr: ");
+        Serial.print(stateCurr);        
+        Serial.print("  should be: ");
+        Serial.println(STATE_FORWARD);        
+
         compassOffsetFromGPS = gps.f_course() - imu.radsToDegrees(imu.ypr.yaw);
         Serial.print("gps.f_course()");
         Serial.println(gps.f_course());
@@ -1670,15 +1682,9 @@ void Robot::loop()  {
         Serial.print("compassOffsetFromGPS: ");
         Serial.println(compassOffsetFromGPS);
       }
+    */
     }
 
-    float gpsCorrectedHeading = imu.radsToDegrees(imu.ypr.yaw) + compassOffsetFromGPS;
-    if (gpsCorrectedHeading < 0) gpsCorrectedHeading += 360.0;
-    if (gpsCorrectedHeading > 360) gpsCorrectedHeading -= 360.0;
-    Serial.print("gpsCorrectedHeading: ");
-    Serial.println(gpsCorrectedHeading);
-
-    imu.ypr.yaw = imu.degreesToRads(gpsCorrectedHeading);
   }
 
   if (millis() >= nextTimePfodLoop){
@@ -2445,8 +2451,6 @@ void Robot::loop()  {
     case STATE_GPS_HOMING_FIRST_TURN:
 
 
-Serial.print("gpsPerimeterRollState: ");
-Serial.println(gpsPerimeterRollState);
       if (millis() > stateEndTime) setNextState(STATE_FORWARD,rollDir);
 
       if (gpsPerimeterRollState == 0) {
