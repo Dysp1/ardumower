@@ -9,6 +9,19 @@ buildscript {
     }
 }
 
+allprojects {
+    buildscript {
+        repositories {
+            jcenter()
+        }
+    }
+
+    repositories {
+        jcenter()
+        google()
+    }
+}
+
 apply plugin: 'com.android.application'
 
 dependencies {
