@@ -1976,7 +1976,8 @@ void Robot::loop()  {
       }
 
       if (gpsPerimeterRollState == 5) {  
-        if (millis() > gpsPerimeterRollSubStateStartTime + 102) {
+        if (millis() > gpsPerimeterRollSubStateStartTime + 5) {
+          gpsPerimeterRollSubStateStartTime = millis();
           if (rollDir == LEFT) {
             motorLeftSpeedRpmSet  =  motorSpeedMaxRpm * 0.5;
             motorRightSpeedRpmSet = -motorSpeedMaxRpm * 0.5;                    
@@ -1984,8 +1985,13 @@ void Robot::loop()  {
             motorLeftSpeedRpmSet  = -motorSpeedMaxRpm * 0.5;
             motorRightSpeedRpmSet =  motorSpeedMaxRpm * 0.5;                    
           }
+          Serial.println("*********************");
+          Serial.println(gpsPerimeterRollNewHeading);
+          Serial.println(imu.radsToDegrees(imu.ypr.yaw));
 
           float minimumAngle = gpsPerimeter.getDegreesToTurn(gpsPerimeterRollNewHeading, imu.radsToDegrees(imu.ypr.yaw));
+          Serial.println(minimumAngle);
+          Serial.println("*********************");
           /*float currentHeading = imu.radsToDegrees(imu.ypr.yaw);
   
           float first = abs(gpsPerimeterRollNewHeading - currentHeading);
@@ -1995,7 +2001,7 @@ void Robot::loop()  {
           float minimumAngle = min(first, second);
           minimumAngle = min(minimumAngle, third);
   */
-          if (abs(minimumAngle) <= 10) {
+          if (abs(minimumAngle) <= 10.0) {
             gpsPerimeterRollState = 6;
             gpsPerimeterRollSubStateStartTime = millis();
           } 

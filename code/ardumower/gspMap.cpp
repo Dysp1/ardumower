@@ -594,9 +594,22 @@ void gpsMap::loadSaveMapData(boolean readflag){
         eereadwrite(readflag, addr, _mainAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _mainAreas[i].point[j].y);      
         if (readflag) {
-          Serial.print(_mainAreas[i].point[j].x );
+//['1: 62.47132,25.44054',62.47132,25.44054,1],
+          Serial.print ("['");
+          Serial.print (j+1);
+          Serial.print (": ");
+
+          Serial.print(((float)_mainAreas[i].point[j].x/100000),5);
           Serial.print (",");
-          Serial.println(_mainAreas[i].point[j].y);
+          Serial.print(((float)_mainAreas[i].point[j].y/100000),5);
+          Serial.print ("',");
+          Serial.print(((float)_mainAreas[i].point[j].x/100000),5);
+          Serial.print (",");
+          Serial.print(((float)_mainAreas[i].point[j].y/100000),5);
+          Serial.print (",");
+          Serial.print (j+1);
+          Serial.println ("],");
+
         }
       }
       if (readflag) {
