@@ -1797,7 +1797,7 @@ void RemoteControl::run(){
 // process serial input from pfod App
 bool RemoteControl::readSerial(){
   bool res = false;
-  while(serialPort->available() > 0){
+  while(serialPort->available() > 0) {
     res = true;
     if (serialPort->available() > 0) {
       char ch = serialPort->read();
@@ -1807,11 +1807,19 @@ bool RemoteControl::readSerial(){
         else if (ch == '{') pfodCmd = "";
         else pfodCmd += ch;                
     }
+    if(pfodCmd.length() > 30) {
+      serialPort->flush();
+      pfodCmdComplete = false;
+      pfodCmd = "";
+      sendMainMenu(false);
+      break;
+    }
+
     if (pfodCmdComplete) {
       Console.print("pfod cmd=");
       Console.println(pfodCmd);
       pfodState = PFOD_MENU;    
-      if (pfodCmd == ".") sendMainMenu(false);      
+      if (pfodCmd == ".") sendMainMenu(false);
         else if (pfodCmd == "m1") {
           // log raw sensors
           serialPort->println(F("{=Log sensors}"));
@@ -1926,7 +1934,9 @@ bool RemoteControl::readSerial(){
         else if (pfodCmd.startsWith("z")) processErrorMenu(pfodCmd);                    
         else {
           // no match
-          serialPort->println("{}");
+          sendMainMenu(false);      
+
+          //serialPort->println("{}");
         }
       serialPort->flush();
       pfodCmd = "";

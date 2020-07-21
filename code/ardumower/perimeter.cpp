@@ -161,6 +161,17 @@ void Perimeter::matchedFilter(byte idx){
   smoothMag[idx] = 0.99 * smoothMag[idx] + 0.01 * ((float)abs(mag[idx]));
 
   // perimeter inside/outside detection
+  if (mag[idx] > 0){
+    signalCounter[idx] = min(signalCounter[idx]+1, 15);    
+  } else {
+    signalCounter[idx] = max(signalCounter[idx]-1, -15);    
+  }
+  if (signalCounter[idx] < 0){
+    lastInsideTime[idx] = millis();
+  } 
+    
+
+/*
   if (abs(smoothMag[idx]) < timedOutIfBelowSmag) {
 //    if (mag[idx] > 0){ //bugged with this
       signalCounter[idx] = min(signalCounter[idx]+1, 15);    
@@ -171,6 +182,8 @@ void Perimeter::matchedFilter(byte idx){
       lastInsideTime[idx] = millis();
 //    } 
   }
+
+  */
   ADCMan.restart(idxPin[idx]);    
   if (idx == 0) callCounter++;
 }

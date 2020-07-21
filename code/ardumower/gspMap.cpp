@@ -99,8 +99,11 @@ int gpsMap::insidePerimeter(long x, long y)
 
       // loop through all edges of the polygon
       for (int i=0; i < _mainAreas[j].numPoints; i++) {   // edge from area[i] to  area[i+1]
-
-/*Serial.print("HERE2: i: ");
+/*
+Serial.println("");
+Serial.print("HERE2: ");
+Serial.print(i);
+Serial.print(": ");
 Serial.print(_mainAreas[j].point[i].x);
 delay(2);
 Serial.print(" , ");
@@ -122,7 +125,7 @@ delay(2);*/
           if (_mainAreas[j].point[i+1].y  > _currentLocation.y) {      // an upward crossing
             if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) > 0) { // P left of  edge
               ++wn;            // have  a valid up intersect
-  //           Serial.println("ma++");
+             Serial.println("ma++");
             }
           }
         }
@@ -130,7 +133,7 @@ delay(2);*/
           if (_mainAreas[j].point[i+1].y  <= _currentLocation.y) {    // a downward crossing
             if (isLeft( _mainAreas[j].point[i], _mainAreas[j].point[i+1], _currentLocation) < 0) { // P right of  edge
               --wn;            // have  a valid down intersect
-  //            Serial.println("ma--");
+              Serial.println("ma--");
             }
           }
         }
@@ -379,25 +382,6 @@ float gpsMap::getHeadingToClosestHomingPointDegrees(long lat, long lon) {
 }
 
 float gpsMap::getNewHeadingFromPerimeterDegrees(long lat, long lon) {
-/*
-  int closestPoint = 0;
-  float lastShortestDistance = 88888.0;
-  float shortestDistance = 99999.0;
-  int i = 0;
-  for (i=0; i < _safePointList[0].numPoints; i++) {
-    shortestDistance = min(shortestDistance, (sqrt( pow((lat - _safePointList[0].point[i].x),2) + pow((lon - _safePointList[0].point[i].y),2) )));
-
-    if (shortestDistance < lastShortestDistance) {
-      lastShortestDistance = shortestDistance;
-      closestPoint = i;
-    }
-
-  }
-
-  float degrees = atan2( (_safePointList[0].point[closestPoint].y - lon ), (_safePointList[0].point[closestPoint].x - lat) )/PI*180.0;
-  if (degrees < 0) degrees += 360; 
-*/
-  
   return getNewHeadingToClosestPoint("SP", 0, lat, lon);
 }
 
@@ -464,8 +448,6 @@ void gpsMap::addPointInMiddle(String areaType, int areaNumber, int positionToAdd
       for (i = arrayToModify.numPoints; i > positionToAdd; i--) {
         arrayToModify.point[i+1] = arrayToModify.point[i];
       }
-//      arrayToModify.point[positionToAdd+1].x = random(1,200); //lat;
-//      arrayToModify.point[positionToAdd+1].y = random(1,200); //lon;
       arrayToModify.point[positionToAdd+1].x = lat;
       arrayToModify.point[positionToAdd+1].y = lon;
       arrayToModify.numPoints++;
@@ -584,8 +566,8 @@ void gpsMap::loadSaveMapData(boolean readflag){
 
   for (int i=0; i < _numberOfMainAreas; i++) {
     eereadwrite(readflag, addr, _mainAreas[i].numPoints);  
-    if (readflag) {
-      Serial.print(_mainAreas[i].numPoints);
+    if (readflag && _mainAreas[i].numPoints > 0) {
+      Serial.print(_mainAreas[i].numPoints+1);
       Serial.println(" main area points loaded:");
     }
     int j=0;
@@ -594,11 +576,9 @@ void gpsMap::loadSaveMapData(boolean readflag){
         eereadwrite(readflag, addr, _mainAreas[i].point[j].x);      
         eereadwrite(readflag, addr, _mainAreas[i].point[j].y);      
         if (readflag) {
-//['1: 62.47132,25.44054',62.47132,25.44054,1],
           Serial.print ("['");
           Serial.print (j+1);
           Serial.print (": ");
-
           Serial.print(((float)_mainAreas[i].point[j].x/100000),5);
           Serial.print (",");
           Serial.print(((float)_mainAreas[i].point[j].y/100000),5);
@@ -609,7 +589,6 @@ void gpsMap::loadSaveMapData(boolean readflag){
           Serial.print (",");
           Serial.print (j+1);
           Serial.println ("],");
-
         }
       }
       if (readflag) {
@@ -619,6 +598,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
     }
   }
 
+_numberOfExclusionAreas = 2;
   eereadwrite(readflag, addr, _numberOfExclusionAreas);  
   if (readflag) {
     Serial.print(_numberOfExclusionAreas,0);
@@ -626,8 +606,8 @@ void gpsMap::loadSaveMapData(boolean readflag){
   }
   for (int i=0; i < _numberOfExclusionAreas; i++) {
     eereadwrite(readflag, addr, _exclusionAreas[i].numPoints);  
-    if (readflag) {
-      Serial.print(_exclusionAreas[i].numPoints);
+    if (readflag && _exclusionAreas[i].numPoints > 0) {
+      Serial.print(_exclusionAreas[i].numPoints+1,0);
       Serial.println(" exclusion area points loaded:");
     }
     int j=0;
@@ -648,6 +628,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
     }
   }
 
+_numberOfSafePointLists = 1;
   eereadwrite(readflag, addr, _numberOfSafePointLists);  
   if (readflag) {
     Serial.print(_numberOfSafePointLists,0);
@@ -655,8 +636,8 @@ void gpsMap::loadSaveMapData(boolean readflag){
   }
   for (int i=0; i < _numberOfSafePointLists; i++) {
     eereadwrite(readflag, addr, _safePointList[i].numPoints);  
-    if (readflag) {
-      Serial.print(_safePointList[i].numPoints);
+    if (readflag && _safePointList[i].numPoints > 0) {
+      Serial.print(_safePointList[i].numPoints,0);
       Serial.println(" safe points loaded:");
     }
     int j=0;
@@ -672,7 +653,7 @@ void gpsMap::loadSaveMapData(boolean readflag){
       }
     }
   }
-
+_numberOfHomingPointLists = 1;
   Serial.println("-----------------");
   eereadwrite(readflag, addr, _numberOfHomingPointLists);  
   if (readflag) {
@@ -681,8 +662,8 @@ void gpsMap::loadSaveMapData(boolean readflag){
   }
   for (int i=0; i < _numberOfHomingPointLists; i++) {
     eereadwrite(readflag, addr, _homingPointList[i].numPoints);  
-    if (readflag) {
-      Serial.print(_homingPointList[i].numPoints);
+    if (readflag && _homingPointList[i].numPoints > 0) {
+      Serial.print(_homingPointList[i].numPoints,0);
       Serial.println(" homing points loaded:");
     }
     int j=0;

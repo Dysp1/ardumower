@@ -459,20 +459,20 @@ void Robot::checkButton(){
         setNextState(STATE_PERI_TRACK, 0);        
       } else if (buttonCounter == 5){
         // drive home
-        if (gpsHomingInUse && imuUse) setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
+        if (gpsHomingInUse && imuUse && gpsPerimeter.getNumberOfPoints("HP",0)) setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
         else setNextState(STATE_PERI_FIND, 0); 
       } else if (buttonCounter == 1){
-        /*if ((perimeterUse) && (!perimeter.isInside())){
+        if ((perimeterUse) && (!perimeter.isInside(0))){
           Console.println("start inside perimeter!");
           addErrorCounter(ERR_PERIMETER_TIMEOUT);
           setNextState(STATE_ERROR, 0);                          
-        } else {*/
+        } else {
           // start normal with mowing        
           motorMowEnable = true;
           //motorMowModulate = true;                     
           mowPatternCurr = MOW_RANDOM;   
           setNextState(STATE_FORWARD, 0);                
-        //}
+        }
       } 
       
       buttonCounter = 0;                 
@@ -556,7 +556,8 @@ void Robot::readSensors(){
       	&& (stateCurr != STATE_STATION_CHARGING) && (stateCurr != STATE_STATION_CHECK) 
       	&& (stateCurr != STATE_STATION_REV) && (stateCurr != STATE_STATION_ROLL) 
       	&& (stateCurr != STATE_STATION_FORW) && (stateCurr != STATE_REMOTE) && (stateCurr != STATE_PERI_OUT_FORW)
-        && (stateCurr != STATE_PERI_OUT_REV) && (stateCurr != STATE_PERI_OUT_ROLL) && (stateCurr != STATE_PERI_TRACK)) {
+        && (stateCurr != STATE_PERI_OUT_REV) && (stateCurr != STATE_PERI_OUT_ROLL) && (stateCurr != STATE_PERI_TRACK)
+        && (stateCurr != STATE_GPS_HOMING_FIRST_TURN) && (stateCurr != STATE_GPS_HOMING_FOLLOW_POINTS)) {
         Console.println("Error: perimeter too far away");
         addErrorCounter(ERR_PERIMETER_TIMEOUT);
         setNextState(STATE_ERROR,0);
@@ -998,7 +999,7 @@ void Robot::checkBumpersPerimeter(){
 // check perimeter as a boundary
 void Robot::checkPerimeterBoundary(){
 
-  if (gpsPerimeterUse) {
+  if (gpsPerimeterUse == 1) {
     if ((stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) && gpsPerimeter.getNumberOfPoints("MA",0) > 2) {
       if (gpsPerimeter.insidePerimeter(gpsLat, gpsLon) == 0) {
         setSensorTriggered(SEN_GPSPERIMETER);
@@ -1017,7 +1018,7 @@ void Robot::checkPerimeterBoundary(){
     }
   }
 
-  if (!perimeterUse && !(gpsPerimeterUse && gpsPerimeter.getNumberOfPoints("MA",0) > 2) ) {
+  if (!perimeterUse && (gpsPerimeterUse != 1 || gpsPerimeter.getNumberOfPoints("MA",0) < 3) ) {
     setSensorTriggered(SEN_PERIM_LEFT_EXTRA);
     setNextState(STATE_ERROR,0);
     return;
@@ -1038,6 +1039,10 @@ void Robot::checkPerimeterBoundary(){
       }     
     }
   } else {  
+    if (perimeterTriggerTime > 0) {
+      Serial.print("perimeterTriggerTime");
+      Serial.println(perimeterTriggerTime);
+    }
 
     if (stateCurr == STATE_REVERSE || stateCurr == STATE_PERI_REV) {
       if (!perimeterInside && millis() > (stateStartTime+1500)) {
@@ -1046,7 +1051,6 @@ void Robot::checkPerimeterBoundary(){
         setNextState(STATE_FORWARD,1);
       }
     } 
-
     else if (stateCurr == STATE_FORWARD || stateCurr == STATE_CIRCLE) {
       if (perimeterTriggerTime != 0) {
         if (millis() >= perimeterTriggerTime){        
@@ -1109,12 +1113,12 @@ void Robot::checkRain(){
   if (!rainUse) return;
   if (rain){
     Console.println(F("RAIN"));
-    if (perimeterUse) {
-      if (gpsHomingInUse && imuUse) setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
-      else setNextState(STATE_PERI_FIND, 0); 
-    } else {
-      setNextState(STATE_OFF, 0);
-    }
+    if (gpsHomingInUse && imuUse && gpsPerimeter.getNumberOfPoints("HP",0) > 2) setNextState(STATE_GPS_HOMING_FIRST_TURN, 0);
+    else if (perimeterUse) {
+        setNextState(STATE_PERI_FIND, 0); 
+      } else {
+        setNextState(STATE_OFF, 0);
+      }
   }
 }
 
@@ -1358,6 +1362,11 @@ void Robot::setNextState(byte stateNew, byte dir){
   if ((stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_PERI_TRACK)) {
     if (stateNew == STATE_ROLL) stateNew = STATE_PERI_ROLL;
     if (stateNew == STATE_REVERSE) stateNew = STATE_PERI_REV;    
+  }
+
+  if ((stateCurr == STATE_GPS_HOMING_FIRST_TURN) || (stateCurr == STATE_GPS_HOMING_FOLLOW_POINTS)) {
+    if (stateNew == STATE_ROLL) stateNew = STATE_GPS_HOMING_FIRST_TURN;
+    if (stateNew == STATE_REVERSE) stateNew = STATE_GPS_HOMING_FIRST_TURN;    
   }
 
   if (stateNew == STATE_FORWARD) {    
@@ -1702,8 +1711,23 @@ void Robot::loop()  {
   
     //gpsPerimeter.doUnitTest();
     //gpsPerimeter.getNewHeadingFromPerimeterDegrees(gpsLat, gpsLon);
-    //gpsPerimeter.insidePerimeter(random(6247269,6247280), random(2544013,2544030));
-    
+   /* 
+          long randLat = random(6247111,6247132);
+          long randLon = random(6247018,6247093);
+          Serial.print ("['");
+          Serial.print (gpsPerimeter.insidePerimeter(randLat, randLon));
+          Serial.print (": ");
+          Serial.print(((float)randLat/100000),5);
+          Serial.print (",");
+          Serial.print(((float)randLon/100000),5);
+          Serial.print ("',");
+          Serial.print(((float)randLat/100000),5);
+          Serial.print (",");
+          Serial.print(((float)randLon/100000),5);
+          Serial.print (",");
+          Serial.print ("100");
+          Serial.println ("],");
+*/
     if (rmcsUse == false) { 
       printInfo(Console); 
       printErrors();

@@ -166,13 +166,14 @@ void I2CScanner(){
         Console.print(" (");
         nDevices++;
         switch (address){          
+          case 0x0C: Console.print("probably MPU9250 - Magnetometer"); break;          
           case 0x1E: Console.print("probably HMC5883L - Magnetometer"); break;          
           case 0x2F: Console.print("probably L3G4200D - Gyro"); break;          
           case 0x30: Console.print("probably MMC5883MA - Magnetometer"); break;          
           case 0x50: Console.print("probably AT24C32 - EEPROM Memory"); break;
           case 0x53: Console.print("probably ADXL345B - Accelerometer"); break;
           case 0x60: Console.print("probably CMPS11 - Magnetometer"); break;          
-          case 0x68: Console.print("probably DS1307 - RTC (Clock)"); break;
+          case 0x68: Console.print("probably DS1307 - RTC (Clock battery)"); break;
           case 0x69: Console.print("probably MPU6050/9150 Acceleromer/Compass"); break;          
           case 0x77: Console.print("probably BMP180 - Barometric pressure/temperature/altitude"); break;                    
           default: Console.print("unknown module");
