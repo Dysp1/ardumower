@@ -1018,7 +1018,7 @@ void Robot::checkPerimeterBoundary(){
     }
   }
 
-  if (!perimeterUse && (gpsPerimeterUse != 1 || gpsPerimeter.getNumberOfPoints("MA",0) < 3) ) {
+  if (!perimeterUse && !(gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2) ) {
     setSensorTriggered(SEN_PERIM_LEFT_EXTRA);
     setNextState(STATE_ERROR,0);
     return;
@@ -1199,9 +1199,6 @@ void Robot::checkTilt(){
     }
   }
 
-  //temporarely disable tilt detection.
-  return;    
-  
   if(!imuUse) return;    
   int pitchAngle = (imu.ypr.pitch/PI*180.0);
   int rollAngle  = (imu.ypr.roll/PI*180.0);
@@ -1776,8 +1773,8 @@ void Robot::loop()  {
     case STATE_ERROR:
       // fatal-error
       if (millis() >= nextTimeErrorBeep){
-        nextTimeErrorBeep = millis() + 5000;
-        beep(1, true);
+        nextTimeErrorBeep = millis() + 2000;
+        beep(2, false);
       }			      
 
       if (stateStartTime + 10000 
@@ -1814,7 +1811,9 @@ void Robot::loop()  {
         if (lastErrType == ERR_IMU_CALIB);
         if (lastErrType == ERR_IMU_TILT){
           I2Creset();
+          delay(500);
           if (imu.init() == false) Serial.println("Reinitialiation of IMU failed.");
+          else setNextState(STATE_FORWARD,0);
         }
         if (lastErrType == ERR_RTC_COMM);
         if (lastErrType == ERR_RTC_DATA);
@@ -1839,7 +1838,7 @@ void Robot::loop()  {
             setNextState(STATE_GPSPERIMETER_CHANGE_DIR,1);
             break;
           }
-
+/*
           if (perimeter.isInside(0)) {
             if(rotateLeft){  
               setNextState(STATE_PERI_OUT_REV, LEFT);
@@ -1847,6 +1846,7 @@ void Robot::loop()  {
               setNextState(STATE_PERI_OUT_REV, RIGHT);
             }
           }
+          */
         }
 
       }

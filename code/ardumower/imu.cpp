@@ -241,7 +241,7 @@ boolean IMU::init(){
   
   bool imuInitOK = mpu.setup();
 
-  delay(500);
+  delay(10);
 
   mpu.calibrateAccelGyro();
   mpu.printCalibration();
@@ -250,7 +250,7 @@ boolean IMU::init(){
     now = 0;  
     hardwareInitialized = true;
   }
-  imuInitNextTime = millis()+360000;
+  imuInitNextTime = millis()+60000;
   return imuInitOK;
 }
 
@@ -267,7 +267,7 @@ int IMU::getErrorCounter(){
 }
 
 void IMU::read(){  
-  if(millis() > imuInitNextTime) init();
+  //if(millis() > imuInitNextTime) init();
 
   if (!hardwareInitialized) {
     errorCounter++;
