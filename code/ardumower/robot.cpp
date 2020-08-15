@@ -850,7 +850,7 @@ void Robot::checkCurrent(){
       && stateCurr == STATE_FORWARD
       && millis() >= stateStartTime + 5000
       && (perimeter.isInside(0) || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
-      && (abs(perimeterMag) < 1000 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
+      && (abs(perimeterMag) < 2000 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
         setSensorTriggered(SEN_MOW_POWER);
 
@@ -1045,7 +1045,7 @@ void Robot::checkPerimeterBoundary(){
     }
 
     if (stateCurr == STATE_REVERSE || stateCurr == STATE_PERI_REV) {
-      if (!perimeterInside && millis() > (stateStartTime+1500)) {
+      if (!perimeterInside && millis() > (stateStartTime+2500)) {
         setMotorPWM( 0, 0, false );         
         perimeterTriggerTime = 0;
         setNextState(STATE_FORWARD,1);
@@ -1770,6 +1770,7 @@ void Robot::loop()  {
 		  if (millis() >= stateStartTime + 10000)  setNextState(STATE_OFF, 0);
 			if (!tilt) setNextState(stateLast, 0);
       break;
+
     case STATE_ERROR:
       // fatal-error
       if (millis() >= nextTimeErrorBeep){
@@ -1810,10 +1811,10 @@ void Robot::loop()  {
         if (lastErrType == ERR_IMU_COMM);
         if (lastErrType == ERR_IMU_CALIB);
         if (lastErrType == ERR_IMU_TILT){
-          I2Creset();
-          delay(500);
-          if (imu.init() == false) Serial.println("Reinitialiation of IMU failed.");
-          else setNextState(STATE_FORWARD,0);
+      //    I2Creset();
+      //    delay(500);
+      //    if (imu.init() == false) Serial.println("Reinitialiation of IMU failed.");
+      //    else setNextState(STATE_FORWARD,0);
         }
         if (lastErrType == ERR_RTC_COMM);
         if (lastErrType == ERR_RTC_DATA);
@@ -1823,14 +1824,7 @@ void Robot::loop()  {
         if (lastErrType == ERR_EEPROM_DATA);
         
         if (lastErrType == ERR_CPU_SPEED) {
-          I2Creset();
-          if (imu.init() == false) Serial.println("Reinitialiation of IMU failed.");
-
-          if (stateLast == STATE_REVERSE) {
-            setNextState(STATE_FORWARD,0);
-          } else {
-            setNextState(STATE_REVERSE,0);            
-          }
+          setNextState(STATE_OFF,0);            
         }
       
         if (lastErrType == ERR_PERIMETER_TIMEOUT) {
@@ -2092,23 +2086,6 @@ void Robot::loop()  {
               motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.25;
               motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
             }
-
-/*
-            if (abs(minimumAngle) >= 10) {
-              if (rollDir == LEFT) {
-                motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.35;
-                motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-              } else {
-                motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.25;
-                motorRightSpeedRpmSet = motorSpeedMaxRpm/1.35;
-              }
-            } else {
-              motorLeftSpeedRpmSet  = motorSpeedMaxRpm/1.25;
-              motorRightSpeedRpmSet = motorSpeedMaxRpm/1.25;
-            }
-*/
-//            gpsPerimeterRollState = 9;
-
           }
         }
         break;
