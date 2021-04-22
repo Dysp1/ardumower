@@ -850,7 +850,7 @@ void Robot::checkCurrent(){
       && stateCurr == STATE_FORWARD
       && millis() >= stateStartTime + 5000
       && (perimeter.isInside(0) || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
-      && (abs(perimeterMag) < 2000 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
+      && (abs(perimeterMag) < 2500 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
         setSensorTriggered(SEN_MOW_POWER);
 
