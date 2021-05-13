@@ -206,7 +206,8 @@ float Perimeter::getFilterQuality(byte idx){
 }
 
 boolean Perimeter::isInside(byte idx){
-  if (abs(mag[idx]) > 2500) {
+//  if (abs(mag[idx]) > 2500) { //FOR DUAL RECEIVER
+  if (abs(mag[idx]) > 500) {
     // Large signal, the in/out detection is reliable.
     // Using mag yields very fast in/out transition reporting.
     return (mag[idx]<0);

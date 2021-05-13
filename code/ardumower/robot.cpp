@@ -348,8 +348,14 @@ void Robot::setUserSwitches(){
   setActuator(ACT_USER_SW3, userSwitch3);     
 }
 
+int ledPin1 = 12;
+int ledPin2 = 11;
+int ledPin3 = 10;
+
 void Robot::setup()  {     
-  
+  pinMode(ledPin1, OUTPUT);    
+  pinMode(ledPin2, OUTPUT);    
+
   while(Console.available() > 0) {
     char t = Console.read();
   }
@@ -411,6 +417,10 @@ void Robot::setup()  {
   Console.print(F("current console mode: "));
   Console.println(consoleModeNames[consoleMode]);
   Console.println(F("-------------------------------------------"));  
+
+  digitalWrite(ledPin1, HIGH);   // turn the LED on (HIGH is the voltage level)
+  digitalWrite(ledPin2, HIGH);   // turn the LED on (HIGH is the voltage level)
+
 } 
 
 
@@ -850,7 +860,8 @@ void Robot::checkCurrent(){
       && stateCurr == STATE_FORWARD
       && millis() >= stateStartTime + 5000
       && (perimeter.isInside(0) || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
-      && (abs(perimeterMag) < 2500 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
+//      && (abs(perimeterMag) < 2500 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2)) //FOR DUAL RECEIVER
+      && (abs(perimeterMag) < 1000 || (gpsPerimeterUse == 1 && gpsPerimeter.getNumberOfPoints("MA",0) > 2))
       && mowPatternCurr == MOW_RANDOM) {  // if motor power goes above motorMowCircleTriggerPower assume that we hit longer grass and start moving around it
         setSensorTriggered(SEN_MOW_POWER);
 
@@ -1624,7 +1635,14 @@ double Robot::debugTimer(double currentMax, double lastTime, int stage) {
 */
 
 
-
+/*
+  digitalWrite(ledPin1, HIGH);   // turn the LED on (HIGH is the voltage level)
+  digitalWrite(ledPin2, LOW);    // turn the LED off by making the voltage LOW
+  delay(3000);                       // wait for a second
+  digitalWrite(ledPin1, LOW);    // turn the LED off by making the voltage LOW
+  digitalWrite(ledPin2, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(3000);  
+*/
 
 void Robot::loop()  {
   stateTime = millis() - stateStartTime;
