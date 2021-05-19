@@ -61,13 +61,13 @@ GPS::GPS()
 //Serial1 = using wifi port
 //Serial3 = using gps port
 void GPS::init(){
-  Serial1.begin(9600);
+  Serial3.begin(9600);
 }
 
 boolean GPS::feed(){
-  while (Serial1.available())
+  while (Serial3.available())
   {
-    if (encode(Serial1.read()))
+    if (encode(Serial3.read()))
       return true;
   }  
   return false;

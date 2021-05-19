@@ -867,11 +867,11 @@ void Robot::checkCurrent(){
 
         if(longGrassTempAreaSize > 5) {
           gpsPerimeter.setTemporaryArea(gpsLat, gpsLon);
-          if((rand() % 2) == 0) {
-            rollDir = LEFT;
-          } else {
-            rollDir = RIGHT;
-          }
+        }
+        if((rand() % 2) == 0) {
+          rollDir = LEFT;
+        } else {
+          rollDir = RIGHT;
         }
         setNextState(STATE_CIRCLE, rollDir);
   }
