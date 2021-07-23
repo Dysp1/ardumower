@@ -348,13 +348,7 @@ void Robot::setUserSwitches(){
   setActuator(ACT_USER_SW3, userSwitch3);     
 }
 
-int ledPin1 = 12;
-int ledPin2 = 11;
-int ledPin3 = 10;
-
 void Robot::setup()  {     
-  pinMode(ledPin1, OUTPUT);    
-  pinMode(ledPin2, OUTPUT);    
 
   while(Console.available() > 0) {
     char t = Console.read();
@@ -417,9 +411,6 @@ void Robot::setup()  {
   Console.print(F("current console mode: "));
   Console.println(consoleModeNames[consoleMode]);
   Console.println(F("-------------------------------------------"));  
-
-  digitalWrite(ledPin1, HIGH);   // turn the LED on (HIGH is the voltage level)
-  digitalWrite(ledPin2, HIGH);   // turn the LED on (HIGH is the voltage level)
 
 } 
 
@@ -1656,6 +1647,9 @@ void Robot::loop()  {
   } else {
     rc.readSerial();
   }
+
+//  digitalWrite(11, HIGH);   // turn the LED on (HIGH is the voltage level)
+//  digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
   
   readSensors(); 
   checkBattery(); 

@@ -106,7 +106,7 @@ Mower::Mower(){
   sonarLeftUse               = 1;
   sonarRightUse              = 1;
   sonarCenterUse             = 1;
-  sonarTriggerBelow          = 15;       // ultrasonic sensor trigger distance (0=off)
+  sonarTriggerBelow          = 25;       // ultrasonic sensor trigger distance (0=off)
 	sonarSlowBelow             = 50;     // ultrasonic sensor slow down distance
   
   // ------ perimeter ---------------------------------
@@ -120,7 +120,7 @@ Mower::Mower(){
   perimeterTrackRollTime     = 1500;       // roll time during perimeter tracking
   perimeterTrackRevTime      = 2200;       // reverse time during perimeter tracking
   #if defined (ROBOT_ARDUMOWER)
-	  perimeterPID.Kp            = 18.5;       // perimeter PID controller
+	  perimeterPID.Kp            = 18.50;       // perimeter PID controller
     perimeterPID.Ki            = 5.90;
     perimeterPID.Kd            = 0.80;  
 	#else // ROBOT_MINI
@@ -156,7 +156,7 @@ Mower::Mower(){
 		batGoHomeIfBelow           = 23.7;       // drive home voltage (Volt)  	
 		startChargingIfBelow       = 32.0;      // start charging if battery Voltage is below (99999=disabled)
 		batFull                    = 29.4;      // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V		
-		batFullCurrent             = 0.2;       // current flowing when battery is fully charged	(amp), (-99999=disabled)	
+		batFullCurrent             = 0.1;       // current flowing when battery is fully charged	(amp), (-99999=disabled)	
 	#else  // ROBOT_MINI
 		batMonitor                 = 0;          // monitor battery and charge voltage?
 		batSwitchOffIfBelow        = 5.0;       // switch off battery if below voltage (Volt)
@@ -174,7 +174,7 @@ Mower::Mower(){
 		batChgFactor               = voltageDividerUges(47, 5.1, 1.0)*ADC2voltage(1)*10;   // ADC to battery voltage factor *10	
 		chgFactor                  = ADC2voltage(1)*10;        // ADC to charging current ampere factor  (see mower.h for macros)								  
   #elif defined (PCB_1_3)   // PCB 1.3
-		batSwitchOffIfIdle         = 8;          // switch off battery if idle (minutes, 0=off) 
+		batSwitchOffIfIdle         = 0;          // switch off battery if idle (minutes, 0=off) 
   	batFactor                  = voltageDividerUges(100, 10, 1.0)*ADC2voltage(1)*10;   // ADC to battery voltage factor *10
 		batChgFactor               = voltageDividerUges(100, 10, 1.0)*ADC2voltage(1)*10;   // ADC to battery voltage factor *10
 		chgFactor                  = ADC2voltage(1)*5;        // ADC to charging current ampere factor  (see mower.h for macros)	
@@ -193,7 +193,7 @@ Mower::Mower(){
   odometryUse                = 1;          // use odometry?    
   
 	#if defined (ROBOT_ARDUMOWER)
-	  odometryTicksPerRevolution = 700;       // encoder ticks per one full resolution (without any divider)
+	  odometryTicksPerRevolution = 500;       // encoder ticks per one full resolution (without any divider)
 		wheelDiameter              = 250;        // wheel diameter (mm)
 		odometryWheelBaseCm        = 25;         // wheel-to-wheel distance (cm)
 		odoLeftRightCorrection     = true;       // left-right correction for straight lines?
@@ -208,10 +208,10 @@ Mower::Mower(){
 		#define DIVIDER_DIP_SWITCH  2             //  sets used PCB odometry divider (2=DIV/2, 4=DIV/4, 8=DIV/8, etc.) 
 		odometryTicksPerRevolution /= DIVIDER_DIP_SWITCH;        // encoder ticks per one full resolution 
   #endif
-  odometryTicksPerCm         = ((float)odometryTicksPerRevolution) / (((float)wheelDiameter)/10.0) / (3.1415);    // computes encoder ticks per cm (do not change)
+  odometryTicksPerCm         = 14; //MarkoR ((float)odometryTicksPerRevolution) / (((float)wheelDiameter)/10.0) / (3.1415);    // computes encoder ticks per cm (do not change)
   
   // ----- GPS -------------------------------------------
-  gpsUse                     = 0;          // use GPS?
+  gpsUse                     = 1;          // use GPS?
   gpsHomingInUse             = 0;
   stuckIfGpsSpeedBelow       = 0.2;        // if Gps speed is below given value the mower is stuck
   gpsSpeedIgnoreTime         = 5000;       // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
@@ -343,6 +343,10 @@ NewPing NewSonarCenter(pinSonarCenterTrigger, pinSonarCenterEcho, 110);
 // WARNING: never use 'Serial' in the Ardumower code - use 'Console' instead
 // (required so we can use Arduino Due native port)
 
+//int ledPin1 = 12;
+//int ledPin2 = 11;
+//int ledPin3 = 10;
+
 void Mower::setup(){
 	PinMan.begin();    
   // keep battery switched ON (keep this at system start!)
@@ -364,6 +368,12 @@ void Mower::setup(){
 	ADCMan.init();
   Console.println(F("SETUP"));
   
+  //pinMode(11, OUTPUT);    
+  //pinMode(12, OUTPUT);  
+
+  //digitalWrite(11, HIGH);   // turn the LED on (HIGH is the voltage level)
+  //digitalWrite(12, HIGH);   // turn the LED on (HIGH is the voltage level)
+
   // LED, buzzer, battery
   pinMode(pinLED, OUTPUT);    
   pinMode(pinBuzzer, OUTPUT);    
