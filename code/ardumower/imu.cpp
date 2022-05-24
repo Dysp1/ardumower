@@ -1,4 +1,4 @@
-/*
+/* 
   Ardumower (www.ardumower.de)
   Copyright (c) 2013-2014 by Alexander Grau
   Copyright (c) 2013-2014 by Sven Gennat
