@@ -1043,7 +1043,7 @@ void RemoteControl::sendBatteryMenu(boolean update){
   //Console.print("batFactor=");
   //Console.println(robot->batFactor);   
   sendSlider("j02", F("Go home if below Volt"), robot->batGoHomeIfBelow, "", 0.1, robot->batFull, (robot->batFull*0.72));  // for Sony Konion cells 4.2V * 0,72= 3.024V which is pretty safe to use 
-  sendSlider("j12", F("Switch off if idle minutes"), robot->batSwitchOffIfIdle, "", 0, 300, 1);  
+  sendSlider("j12", F("Switch off if idle minutes"), robot->batSwitchOffIfIdle, "", 1, 300, 0);  
   sendSlider("j03", F("Switch off if below Volt"), robot->batSwitchOffIfBelow, "", 0.1, robot->batFull, (robot->batFull*0.72));  
      
   sendSlider("j10", F("charging starts if Voltage is below"), robot->startChargingIfBelow, "", 0.1, robot->batFull+2);       
