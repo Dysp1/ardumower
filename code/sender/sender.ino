@@ -91,7 +91,7 @@ double periCurrentAvg = 0;
 double periCurrentMax = 0; 
 int faults = 0;
 boolean isCharging = false;
-boolean stateLED = false;
+int stateLED = 0;
 unsigned int chargeADCZero = 0;
 RunningMedian<unsigned int,16> periCurrentMeasurements;
 RunningMedian<unsigned int,96> chargeCurrentMeasurements;
@@ -358,6 +358,8 @@ void loop(){
     Serial.print(faults); 
     Serial.print("\ttout=");    
     Serial.print(robotOutOfStationTimeMins);
+    Serial.print("\tstateLED=");    
+    Serial.print(stateLED);
     Serial.println();
     
     if (USE_POT){
@@ -380,13 +382,26 @@ void loop(){
     // charging
     if (millis() >= nextTimeToggleLED){
       nextTimeToggleLED = millis() + 500;
-      stateLED = !stateLED;
+      //stateLED = !stateLED;
+      if (stateLED >= 10) {
+        stateLED = 0;
+      } else {
+        stateLED = 255;
+      }
     }
   } else {
     // not charging => indicate perimeter wire state (OFF=broken/perimeter turned off)
-    stateLED = (periCurrentAvg >= PERI_CURRENT_MIN);
+    //stateLED = (periCurrentAvg >= PERI_CURRENT_MIN);
+    if (periCurrentAvg >= PERI_CURRENT_MIN) {
+      stateLED = 255;
+    } else {
+      stateLED = 0;
+    }
+
   }
-  digitalWrite(pinLED, stateLED);   
+//  digitalWrite(pinLED, stateLED);   
+
+  analogWrite(pinLED, stateLED);   
 
 }
 
