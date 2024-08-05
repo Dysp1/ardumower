@@ -694,13 +694,15 @@ void Robot::readSensors(){
     // convert to double  
     batADC = readSensor(SEN_BAT_VOLTAGE);
 		int currentADC = readSensor(SEN_CHG_CURRENT);
-		int chgADC = readSensor(SEN_CHG_VOLTAGE);    
+		int chgADC = 0;    
+    chgADC = readSensor(SEN_CHG_VOLTAGE);
 //Console.println("--------");
 //Console.println(currentADC);
 //Console.println(chgFactor,4);
 
     double batvolt = ((double)batADC) * batFactor / 10;  // / 10 due to arduremote bug, can be removed after fixing    
-    double chgvolt = ((double)chgADC) * batChgFactor / 10;  // / 10 due to arduremote bug, can be removed after fixing    
+    double chgvolt = 0.0;
+    chgvolt = ((double)chgADC) * batChgFactor / 10;  // / 10 due to arduremote bug, can be removed after fixing    
 		double curramp = ((double)currentADC) * chgFactor / 10;  // / 10 due to arduremote bug, can be removed after fixing		
 //Console.println(curramp);
 
@@ -2406,6 +2408,7 @@ void Robot::loop()  {
       break;
     case STATE_PERI_FIND:
       // find perimeter
+      chgVoltage = 0;
       if (motorLeftSpeedRpmSet == motorRightSpeedRpmSet){ // do not check during 'outside=>inside' rotation              
         checkCurrent();
         checkBumpersPerimeter();

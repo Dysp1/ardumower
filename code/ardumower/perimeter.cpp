@@ -213,7 +213,8 @@ boolean Perimeter::isInside(byte idx){
     return (mag[idx]<0);
   } else {
     // Low signal, use filtered value for increased reliability
-    return (signalCounter[idx] < 0);
+    //return (signalCounter[idx] < 0);
+    return 1<0;
   }
 }
 
