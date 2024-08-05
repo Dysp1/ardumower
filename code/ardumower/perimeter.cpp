@@ -214,12 +214,15 @@ boolean Perimeter::isInside(byte idx){
   } else {
     // Low signal, use filtered value for increased reliability
     //return (signalCounter[idx] < 0);
-    return 1<0;
+    return true;
   }
 }
 
 
 boolean Perimeter::signalTimedOut(byte idx){
+  return false;
+  if (abs(mag[idx]) < 500) { return false;}
+
   if (getSmoothMagnitude(idx) < timedOutIfBelowSmag) return true;
   if (millis() - lastInsideTime[idx] > timeOutSecIfNotInside * 1000) return true;
   return false;
